@@ -3,4 +3,4 @@
 // eslint-disable-next-line n/shebang
 import { main } from "./main.js";
 
-main();
+await main();

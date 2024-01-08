@@ -1,8 +1,35 @@
+import * as fs from "node:fs/promises";
+import { createInterface } from "node:readline";
+
 export function add(a: number, b: number) {
 	return a + b;
 }
 
-export function main() {
+export function run(contents: string): void {
+	console.log(contents);
+}
+
+export async function runFile(path: string) {
+	const contents = await fs.readFile(path, "utf-8");
+	run(contents);
+}
+
+export async function runPrompt() {
+	for await (const line of createInterface({ input: process.stdin })) {
+		// Do something with `line` here.
+		console.log(line);
+	}
+}
+
+export async function main() {
 	const args = process.argv.slice(2);
-	console.log(args);
+	if (args.length > 1) {
+		console.error("Usage:", args[1], "[script]");
+		// eslint-disable-next-line n/no-process-exit
+		process.exit(64);
+	} else if (args.length == 1) {
+		await runFile(args[0]);
+	} else {
+		await runPrompt();
+	}
 }
