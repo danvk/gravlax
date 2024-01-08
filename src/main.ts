@@ -5,20 +5,31 @@ export function add(a: number, b: number) {
 	return a + b;
 }
 
-export function run(contents: string): void {
-	console.log(contents);
-}
-
 export async function runFile(path: string) {
 	const contents = await fs.readFile(path, "utf-8");
-	run(contents);
+	new Lox().run(contents);
 }
 
 export async function runPrompt() {
 	process.stdout.write("> ");
 	for await (const line of createInterface({ input: process.stdin })) {
-		run(line);
+		new Lox().run(line);
 		process.stdout.write("> ");
+	}
+}
+
+export class Lox {
+	hadError = false;
+	error(line: number, message: string) {
+		this.report(line, "", message);
+	}
+
+	report(line: number, where: string, message: string) {
+		console.error(`[line ${line}] Error${where}: ${message}`);
+	}
+
+	run(contents: string): void {
+		console.log(contents);
 	}
 }
 
