@@ -7,30 +7,30 @@ export function add(a: number, b: number) {
 
 export async function runFile(path: string) {
 	const contents = await fs.readFile(path, "utf-8");
-	new Lox().run(contents);
+	run(contents);
 }
 
 export async function runPrompt() {
 	process.stdout.write("> ");
 	for await (const line of createInterface({ input: process.stdin })) {
-		new Lox().run(line);
+		run(line);
+		hadError = false;
 		process.stdout.write("> ");
 	}
 }
 
-export class Lox {
-	hadError = false;
-	error(line: number, message: string) {
-		this.report(line, "", message);
-	}
+let hadError = false;
 
-	report(line: number, where: string, message: string) {
-		console.error(`[line ${line}] Error${where}: ${message}`);
-	}
+function error(line: number, message: string) {
+	report(line, "", message);
+}
 
-	run(contents: string): void {
-		console.log(contents);
-	}
+function report(line: number, where: string, message: string) {
+	console.error(`[line ${line}] Error${where}: ${message}`);
+}
+
+function run(contents: string): void {
+	console.log(contents);
 }
 
 export async function main() {
@@ -43,5 +43,10 @@ export async function main() {
 		await runFile(args[0]);
 	} else {
 		await runPrompt();
+	}
+
+	if (hadError) {
+		// eslint-disable-next-line n/no-process-exit
+		process.exit(65);
 	}
 }
