@@ -15,9 +15,10 @@ export async function runFile(path: string) {
 }
 
 export async function runPrompt() {
+	process.stdout.write("> ");
 	for await (const line of createInterface({ input: process.stdin })) {
-		// Do something with `line` here.
-		console.log(line);
+		run(line);
+		process.stdout.write("> ");
 	}
 }
 
