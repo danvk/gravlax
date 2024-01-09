@@ -3,7 +3,7 @@ import { TokenType } from "./token-type.js";
 export interface Token {
 	lexeme: string;
 	line: number;
-	literal: number | string;
+	literal: null | number | string;
 	type: TokenType;
 }
 

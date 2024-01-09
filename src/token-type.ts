@@ -9,7 +9,7 @@ export type TokenType =
 	| "."
 	| "-"
 	| "+"
-	| ":"
+	| ";"
 	| "/"
 	| "*"
 	// One or two character tokens
@@ -44,3 +44,22 @@ export type TokenType =
 	| "while"
 	| "eof";
 /* eslint-enable */
+
+export const RESERVED_WORDS: TokenType[] = [
+	"and",
+	"class",
+	"else",
+	"false",
+	"for",
+	"fun", // XXX out of order in the book
+	"if",
+	"nil",
+	"or",
+	"print",
+	"return",
+	"super",
+	"this",
+	"true",
+	"var",
+	"while",
+];

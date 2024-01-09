@@ -1,6 +1,8 @@
 import * as fs from "node:fs/promises";
 import { createInterface } from "node:readline";
 
+import { Scanner } from "./scanner.js";
+
 export function add(a: number, b: number) {
 	return a + b;
 }
@@ -21,7 +23,7 @@ export async function runPrompt() {
 
 let hadError = false;
 
-function error(line: number, message: string) {
+export function error(line: number, message: string) {
 	report(line, "", message);
 }
 
@@ -30,7 +32,9 @@ function report(line: number, where: string, message: string) {
 }
 
 function run(contents: string): void {
-	console.log(contents);
+	const scanner = new Scanner(contents);
+	const tokens = scanner.scanTokens();
+	console.log(tokens);
 }
 
 export async function main() {

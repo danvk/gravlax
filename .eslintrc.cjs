@@ -37,9 +37,11 @@ module.exports = {
 				"operator-assignment": "error",
 
 				// These on-by-default rules don't work well for this repo and we like them off.
+				"@typescript-eslint/padding-line-between-statements": "off",
 				"jsdoc/require-jsdoc": "off",
 				"jsdoc/require-param": "off",
 				"jsdoc/require-property": "off",
+
 				"jsdoc/require-returns": "off",
 			},
 		},
