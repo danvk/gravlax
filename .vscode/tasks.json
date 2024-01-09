@@ -1,0 +1,22 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"type": "npm",
+			"script": "lint:knip",
+			"label": "npm: lint:knip",
+			"detail": "knip",
+			"problemMatcher": {
+				"owner": "tsc",
+				"fileLocation": ["relative", "${workspaceFolder}"],
+				"pattern": {
+					"regexp": "([^ ]+) +([^ ]+) +([^:]+):(\\d+):(\\d+)",
+					"file": 3,
+					"line": 4,
+					"column": 5,
+					"message": 2
+				}
+			}
+		}
+	]
+}
