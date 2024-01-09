@@ -150,7 +150,7 @@ export class Scanner {
 				} else if (isAlpha(c)) {
 					this.#identifier();
 				} else {
-					error(this.line, `Unexpected character: ${c}`);
+					error(this.line, `Unexpected character "${c}"`);
 				}
 		}
 	}

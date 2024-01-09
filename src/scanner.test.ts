@@ -98,4 +98,18 @@ describe("Scanner", () => {
 		`);
 		expect(error).toHaveBeenCalledWith("[line 1] Error: Unterminated string.");
 	});
+
+	it("should report invalid characters", () => {
+		const error = vi
+			.spyOn(console, "error")
+			.mockImplementation(() => undefined);
+		expect(scan("@")).toMatchInlineSnapshot(`
+			[
+			  "'': eof",
+			]
+		`);
+		expect(error).toHaveBeenCalledWith(
+			`[line 1] Error: Unexpected character "@"`,
+		);
+	});
 });
