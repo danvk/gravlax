@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { Scanner } from "./scanner.js";
 import { tokenToString } from "./token.js";
@@ -41,9 +41,26 @@ describe("Scanner", () => {
 		`);
 	});
 
+	it("should scan operators", () => {
+		expect(scan("!(12 <= 34) != true")).toMatchInlineSnapshot(`
+			[
+			  "'!': !",
+			  "'(': (",
+			  "'12': number: 12",
+			  "'<=': <=",
+			  "'34': number: 34",
+			  "')': )",
+			  "'!=': !=",
+			  "'true': true: true",
+			  "'': eof",
+			]
+		`);
+	});
+
 	it("should scan a full program", () => {
 		expect(
 			scan(`
+      // This function prints Hello World!
       fun hello() {
         print "Hello World!";
       }
@@ -68,5 +85,17 @@ describe("Scanner", () => {
 			  "'': eof",
 			]
 		`);
+	});
+
+	it("should report an unterminated string", () => {
+		const error = vi
+			.spyOn(console, "error")
+			.mockImplementation(() => undefined);
+		expect(scan(`"this is an unterminated string`)).toMatchInlineSnapshot(`
+			[
+			  "'': eof",
+			]
+		`);
+		expect(error).toHaveBeenCalledWith("[line 1] Error: Unterminated string.");
 	});
 });

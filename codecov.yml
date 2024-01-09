@@ -1,0 +1,12 @@
+# github_checks:
+#   annotations: false
+
+coverage:
+  status:
+    # do not run coverage on patch nor changes
+    patch: false
+    project:
+      default:
+        target: auto
+        threshold: 2% # allow for 2% reduction of coverage without failing
+
