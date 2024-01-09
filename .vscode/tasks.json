@@ -1,0 +1,42 @@
+{
+	"tasks": [
+		{
+			"detail": "knip",
+			"label": "npm: lint:knip",
+			"problemMatcher": {
+				"fileLocation": ["relative", "${workspaceFolder}"],
+				"owner": "tsc",
+				"pattern": [
+					{
+						"message": 1,
+						"regexp": "^([^\\s].*) \\(\\d+\\)$"
+					},
+					{
+						"column": 5,
+						"file": 3,
+						"line": 4,
+						"loop": true,
+						"regexp": "([^ ]+) +([^ ]+) +([^:]+):(\\d+):(\\d+)"
+					}
+				]
+			},
+			"script": "lint:knip",
+			"type": "npm"
+		},
+		{
+			"detail": "cspell \"**\" \".github/**/*\"",
+			"label": "npm: lint:spelling",
+			"problemMatcher": ["$markdownlint"],
+			"script": "lint:spelling",
+			"type": "npm"
+		},
+		{
+			"detail": "eslint . .*js --max-warnings 0",
+			"label": "npm: lint",
+			"problemMatcher": ["$eslint-stylish"],
+			"script": "lint",
+			"type": "npm"
+		}
+	],
+	"version": "2.0.0"
+}
