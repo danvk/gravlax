@@ -60,6 +60,7 @@ describe("Scanner", () => {
 	it("should scan a full program", () => {
 		expect(
 			scan(`
+      // This function prints Hello World!
       fun hello() {
         print "Hello World!";
       }
