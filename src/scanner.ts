@@ -118,7 +118,7 @@ export class Scanner {
 			case "=":
 			case "<":
 			case ">": // neat that `${c}=` works at the type level!
-				this.#addCharToken(this.#match("=") ? `${c}=` : "!");
+				this.#addCharToken(this.#match("=") ? `${c}=` : c);
 				break;
 
 			case "/":
