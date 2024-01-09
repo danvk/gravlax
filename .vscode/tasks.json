@@ -27,8 +27,8 @@
 			"detail": "cspell \"**\" \".github/**/*\"",
 			"label": "npm: lint:spelling",
 			"problemMatcher": ["$markdownlint"],
-			"script": "lint:spelling",
-			"type": "npm"
+			"type": "npm",
+			"script": "lint:spelling"
 		},
 		{
 			"detail": "eslint . .*js --max-warnings 0",

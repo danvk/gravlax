@@ -41,6 +41,22 @@ describe("Scanner", () => {
 		`);
 	});
 
+	it("should scan operators", () => {
+		expect(scan("!(12 <= 34) != true")).toMatchInlineSnapshot(`
+			[
+			  "'!': !",
+			  "'(': (",
+			  "'12': number: 12",
+			  "'<=': <=",
+			  "'34': number: 34",
+			  "')': )",
+			  "'!=': !=",
+			  "'true': true: true",
+			  "'': eof",
+			]
+		`);
+	});
+
 	it("should scan a full program", () => {
 		expect(
 			scan(`
