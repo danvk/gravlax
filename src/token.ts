@@ -3,6 +3,7 @@ import { TokenType } from "./token-type.js";
 export interface Token {
 	lexeme: string;
 	line: number;
+	// XXX: not all TokenTypes should have "literal"
 	literal: null | number | string;
 	type: TokenType;
 }

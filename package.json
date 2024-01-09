@@ -29,7 +29,8 @@
 		"lint:packages": "pnpm dedupe --check",
 		"lint:spelling": "cspell \"**\" \".github/**/*\"",
 		"prepare": "husky install",
-		"repl": "node --loader ts-node/esm --no-warnings src/index.ts",
+		"repl": "pnpm run:ts src/index.ts",
+		"run:ts": "node --loader ts-node/esm --no-warnings",
 		"should-semantic-release": "should-semantic-release --verbose",
 		"test": "vitest",
 		"tsc": "tsc"
