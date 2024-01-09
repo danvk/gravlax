@@ -6,7 +6,6 @@
 			"script": "lint:knip",
 			"label": "npm: lint:knip",
 			"detail": "knip",
-			// https://github.com/webpro/knip/issues/438
 			"problemMatcher": {
 				"owner": "tsc",
 				"fileLocation": ["relative", "${workspaceFolder}"],
@@ -24,6 +23,13 @@
 					}
 				]
 			}
+		},
+		{
+			"type": "npm",
+			"script": "lint:spelling",
+			"problemMatcher": ["$markdownlint"],
+			"label": "npm: lint:spelling",
+			"detail": "cspell \"**\" \".github/**/*\""
 		}
 	]
 }
