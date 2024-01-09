@@ -37,7 +37,6 @@ module.exports = {
 				"operator-assignment": "error",
 
 				// These on-by-default rules don't work well for this repo and we like them off.
-				"@typescript-eslint/padding-line-between-statements": "off",
 				"jsdoc/require-jsdoc": "off",
 				"jsdoc/require-param": "off",
 				"jsdoc/require-property": "off",
@@ -137,10 +136,7 @@ module.exports = {
 		"no-mixed-spaces-and-tabs": "off",
 
 		// Stylistic concerns that don't interfere with Prettier
-		"@typescript-eslint/padding-line-between-statements": [
-			"error",
-			{ blankLine: "always", next: "*", prev: "block-like" },
-		],
+		"@typescript-eslint/padding-line-between-statements": "off",
 		"no-useless-rename": "error",
 		"object-shorthand": "error",
 		"perfectionist/sort-objects": [
