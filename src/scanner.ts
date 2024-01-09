@@ -118,7 +118,7 @@ export class Scanner {
 			case "=":
 			case "<":
 			case ">": // neat that `${c}=` works at the type level!
-				this.#addCharToken(this.#match("=") ? `${c}=` : "!");
+				this.#addCharToken(this.#match("=") ? `${c}=` : c);
 				break;
 
 			case "/":
@@ -150,7 +150,7 @@ export class Scanner {
 				} else if (isAlpha(c)) {
 					this.#identifier();
 				} else {
-					error(this.line, `Unexpected character: ${c}`);
+					error(this.line, `Unexpected character "${c}"`);
 				}
 		}
 	}

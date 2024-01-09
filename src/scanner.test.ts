@@ -9,7 +9,7 @@ function scan(source: string) {
 
 describe("Scanner", () => {
 	it("should scan an arithmetic expression", () => {
-		expect(scan("1 + 2 * 3 + 4")).toMatchInlineSnapshot(`
+		expect(scan("1 + 2 * 3 + 4 / 8")).toMatchInlineSnapshot(`
 			[
 			  "'1': number: 1",
 			  "'+': +",
@@ -18,6 +18,8 @@ describe("Scanner", () => {
 			  "'3': number: 3",
 			  "'+': +",
 			  "'4': number: 4",
+			  "'/': /",
+			  "'8': number: 8",
 			  "'': eof",
 			]
 		`);
@@ -97,5 +99,51 @@ describe("Scanner", () => {
 			]
 		`);
 		expect(error).toHaveBeenCalledWith("[line 1] Error: Unterminated string.");
+	});
+
+	it("should report invalid characters", () => {
+		const error = vi
+			.spyOn(console, "error")
+			.mockImplementation(() => undefined);
+		expect(scan("@")).toMatchInlineSnapshot(`
+			[
+			  "'': eof",
+			]
+		`);
+		expect(error).toHaveBeenCalledWith(
+			`[line 1] Error: Unexpected character "@"`,
+		);
+	});
+
+	it("should scan a string with an embedded newline", () => {
+		expect(
+			scan(`
+    "hello
+    world"`),
+		).toMatchInlineSnapshot(`
+			[
+			  "'"hello
+			    world"': string: hello
+			    world",
+			  "'': eof",
+			]
+		`);
+	});
+
+	it("should scan source with surprising terminal characters", () => {
+		expect(scan(`123.`)).toMatchInlineSnapshot(`
+			[
+			  "'123': number: 123",
+			  "'.': .",
+			  "'': eof",
+			]
+		`);
+		expect(scan(`12>`)).toMatchInlineSnapshot(`
+			[
+			  "'12': number: 12",
+			  "'>': >",
+			  "'': eof",
+			]
+		`);
 	});
 });
