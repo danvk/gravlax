@@ -1,10 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { Scanner } from "./scanner.js";
+import { scan as rawScan } from "./scanner.js";
 import { tokenToString } from "./token.js";
 
 function scan(source: string) {
-	return new Scanner(source).scanTokens().map(tokenToString);
+	// 	return new Scanner(source).scanTokens().map(tokenToString);
+	return [...rawScan(source)].map(tokenToString);
 }
 
 describe("Scanner", () => {

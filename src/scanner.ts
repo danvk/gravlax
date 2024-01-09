@@ -187,3 +187,126 @@ export class Scanner {
 		return this.tokens;
 	}
 }
+
+export function* scan(source: string): Generator<Token> {
+	let current = 0;
+	let line = 1;
+	let start = 0;
+
+	const charToken = (c: TokenType) => token(c, null);
+	const token = (type: TokenType, literal: Token["literal"]): Token => {
+		const text = source.slice(start, current);
+		return { lexeme: text, line, literal, type };
+	};
+	const advance = () => source.charAt(current++);
+	const isAtEnd = () => current >= source.length;
+	const match = (expected: string) => {
+		if (isAtEnd() || peek() != expected) {
+			return false;
+		}
+		current++;
+		return true;
+	};
+	const peek = () => (isAtEnd() ? "\0" : source.charAt(current));
+	const peekNext = () =>
+		current + 1 >= source.length ? "\0" : source.charAt(current + 1);
+
+	const scanString = function* () {
+		while (peek() != '"' && !isAtEnd()) {
+			if (peek() == "\n") {
+				line++;
+			}
+			advance();
+		}
+		if (isAtEnd()) {
+			error(line, "Unterminated string.");
+			return;
+		}
+		advance(); // closing quote.
+		const value = source.slice(start + 1, current - 1);
+		yield token("string", value);
+	};
+
+	const scanNumber = function* () {
+		while (isDigit(peek())) {
+			advance();
+		}
+		if (peek() === "." && isDigit(peekNext())) {
+			advance(); // consume the '.'
+			while (isDigit(peek())) {
+				advance();
+			}
+		}
+		yield token("number", Number(source.slice(start, current)));
+	};
+
+	const identifier = function* () {
+		while (isAlphaNumeric(peek())) {
+			advance();
+		}
+		const text = source.slice(start, current);
+		yield token(
+			narrowingIncludes(RESERVED_WORDS, text) ? text : "identifier",
+			text,
+		);
+	};
+
+	while (!isAtEnd()) {
+		start = current;
+		const c = advance();
+		switch (c) {
+			case "(":
+			case ")":
+			case "{":
+			case "}":
+			case ",":
+			case ".":
+			case "-":
+			case "+":
+			case ";":
+			case "*":
+				yield charToken(c);
+				break;
+
+			case "!":
+			case "=":
+			case "<":
+			case ">": // neat that `${c}=` works at the type level!
+				yield charToken(match("=") ? `${c}=` : "!");
+				break;
+
+			case "/":
+				if (match("/")) {
+					while (peek() != "\n" && !isAtEnd()) {
+						advance();
+					}
+				} else {
+					yield charToken(c);
+				}
+				break;
+
+			case " ":
+			case "\r":
+			case "\t":
+				break;
+
+			case "\n":
+				line++;
+				break;
+
+			case '"':
+				yield* scanString();
+				break;
+
+			default:
+				if (isDigit(c)) {
+					yield* scanNumber();
+				} else if (isAlpha(c)) {
+					yield* identifier();
+				} else {
+					error(line, `Unexpected character: ${c}`);
+				}
+		}
+	}
+	yield { lexeme: "", line, literal: null, type: "eof" };
+}
