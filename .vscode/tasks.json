@@ -6,16 +6,23 @@
 			"script": "lint:knip",
 			"label": "npm: lint:knip",
 			"detail": "knip",
+			// https://github.com/webpro/knip/issues/438
 			"problemMatcher": {
 				"owner": "tsc",
 				"fileLocation": ["relative", "${workspaceFolder}"],
-				"pattern": {
-					"regexp": "([^ ]+) +([^ ]+) +([^:]+):(\\d+):(\\d+)",
-					"file": 3,
-					"line": 4,
-					"column": 5,
-					"message": 2
-				}
+				"pattern": [
+					{
+						"regexp": "^([^\\s].*) \\(\\d+\\)$",
+						"message": 1
+					},
+					{
+						"regexp": "([^ ]+) +([^ ]+) +([^:]+):(\\d+):(\\d+)",
+						"file": 3,
+						"line": 4,
+						"column": 5,
+						"loop": true
+					}
+				]
 			}
 		}
 	]

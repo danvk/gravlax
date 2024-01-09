@@ -7,6 +7,6 @@ export interface Token {
 	type: TokenType;
 }
 
-export function tokenToString(token: Token): string {
-	return `${token.type} ${token.lexeme} ${token.literal}`;
-}
+// export function tokenToString(token: Token): string {
+// 	return `${token.type} ${token.lexeme} ${token.literal}`;
+// }
