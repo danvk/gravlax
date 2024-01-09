@@ -27,14 +27,7 @@
 			"detail": "cspell \"**\" \".github/**/*\"",
 			"label": "npm: lint:spelling",
 			"problemMatcher": ["$markdownlint"],
-			"type": "npm",
-			"script": "lint:spelling"
-		},
-		{
-			"detail": "eslint . .*js --max-warnings 0",
-			"label": "npm: lint",
-			"problemMatcher": ["$eslint-stylish"],
-			"script": "lint",
+			"script": "lint:spelling",
 			"type": "npm"
 		}
 	],
