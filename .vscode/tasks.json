@@ -1,35 +1,42 @@
 {
-	"version": "2.0.0",
 	"tasks": [
 		{
-			"type": "npm",
-			"script": "lint:knip",
-			"label": "npm: lint:knip",
 			"detail": "knip",
+			"label": "npm: lint:knip",
 			"problemMatcher": {
-				"owner": "tsc",
 				"fileLocation": ["relative", "${workspaceFolder}"],
+				"owner": "tsc",
 				"pattern": [
 					{
-						"regexp": "^([^\\s].*) \\(\\d+\\)$",
-						"message": 1
+						"message": 1,
+						"regexp": "^([^\\s].*) \\(\\d+\\)$"
 					},
 					{
-						"regexp": "([^ ]+) +([^ ]+) +([^:]+):(\\d+):(\\d+)",
+						"column": 5,
 						"file": 3,
 						"line": 4,
-						"column": 5,
-						"loop": true
+						"loop": true,
+						"regexp": "([^ ]+) +([^ ]+) +([^:]+):(\\d+):(\\d+)"
 					}
 				]
-			}
+			},
+			"script": "lint:knip",
+			"type": "npm"
 		},
 		{
-			"type": "npm",
-			"script": "lint:spelling",
-			"problemMatcher": ["$markdownlint"],
+			"detail": "cspell \"**\" \".github/**/*\"",
 			"label": "npm: lint:spelling",
-			"detail": "cspell \"**\" \".github/**/*\""
+			"problemMatcher": ["$markdownlint"],
+			"script": "lint:spelling",
+			"type": "npm"
+		},
+		{
+			"detail": "eslint . .*js --max-warnings 0",
+			"label": "npm: lint",
+			"problemMatcher": ["$eslint-stylish"],
+			"script": "lint",
+			"type": "npm"
 		}
-	]
+	],
+	"version": "2.0.0"
 }
