@@ -14,7 +14,7 @@ export interface Grouping {
 
 export interface Literal {
 	kind: "literal";
-	value: null | number | string;
+	value: boolean | null | number | string;
 }
 
 export interface Unary {

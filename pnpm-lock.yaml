@@ -50,6 +50,9 @@ devDependencies:
   eslint-plugin-n:
     specifier: ^16.6.1
     version: 16.6.1(eslint@8.56.0)
+  eslint-plugin-no-autofix:
+    specifier: ^1.2.3
+    version: 1.2.3(eslint@8.56.0)
   eslint-plugin-no-only-tests:
     specifier: ^3.1.0
     version: 3.1.0
@@ -3147,6 +3150,17 @@ packages:
       semver: 7.5.4
     dev: true
 
+  /eslint-plugin-no-autofix@1.2.3(eslint@8.56.0):
+    resolution: {integrity: sha512-JFSYe82Da2A8Krh+Gfq7+3X2pchTScKgmrlMKIA4HmV6t5xGBF/kgjiFL3YTWRQXQ0NB9eOqpcxh6SuLtQUFjQ==}
+    engines: {node: '>=8'}
+    peerDependencies:
+      eslint: '>= 5.12.1'
+    dependencies:
+      eslint: 8.56.0
+      eslint-rule-composer: 0.3.0
+      find-up: 5.0.0
+    dev: true
+
   /eslint-plugin-no-only-tests@3.1.0:
     resolution: {integrity: sha512-Lf4YW/bL6Un1R6A76pRZyE1dl1vr31G/ev8UzIc/geCgFWyrKil8hVjYqWVKGB/UIGmb6Slzs9T0wNezdSVegw==}
     engines: {node: '>=5.0.0'}
@@ -3231,6 +3245,11 @@ packages:
       yaml-eslint-parser: 1.2.2
     transitivePeerDependencies:
       - supports-color
+    dev: true
+
+  /eslint-rule-composer@0.3.0:
+    resolution: {integrity: sha512-bt+Sh8CtDmn2OajxvNO+BX7Wn4CIWMpTRm3MaiKPCQcnnlm0CS2mhui6QaoeQugs+3Kj2ESKEEGJUdVafwhiCg==}
+    engines: {node: '>=4.0.0'}
     dev: true
 
   /eslint-scope@7.2.2:

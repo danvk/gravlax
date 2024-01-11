@@ -1,7 +1,11 @@
 import * as fs from "node:fs/promises";
 import { createInterface } from "node:readline";
 
+import { visitExpr } from "./ast.js";
+import { astPrinter } from "./ast-printer.js";
+import { parse } from "./parser.js";
 import { Scanner } from "./scanner.js";
+import { Token } from "./token.js";
 
 export function add(a: number, b: number) {
 	return a + b;
@@ -26,6 +30,13 @@ let hadError = false;
 export function error(line: number, message: string) {
 	report(line, "", message);
 }
+export function errorOnToken(token: Token, message: string) {
+	if (token.type === "eof") {
+		report(token.line, " at end", message);
+	} else {
+		report(token.line, ` at '${token.lexeme}'`, message);
+	}
+}
 
 function report(line: number, where: string, message: string) {
 	console.error(`[line ${line}] Error${where}: ${message}`);
@@ -34,7 +45,12 @@ function report(line: number, where: string, message: string) {
 function run(contents: string): void {
 	const scanner = new Scanner(contents);
 	const tokens = scanner.scanTokens();
-	console.log(tokens);
+	const expr = parse(tokens);
+	if (hadError || !expr) {
+		return;
+	}
+
+	console.log(visitExpr(expr, astPrinter));
 }
 
 export async function main() {
