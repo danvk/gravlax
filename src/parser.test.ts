@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { visitExpr } from "./ast.js";
 import { astPrinter } from "./ast-printer.js";
@@ -7,9 +7,7 @@ import { Scanner } from "./scanner.js";
 
 function parseToLisp(text: string) {
 	const expr = parse(new Scanner(text).scanTokens());
-	expect(expr).toBeTruthy();
-	// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-	return visitExpr(expr!, astPrinter);
+	return expr && visitExpr(expr, astPrinter);
 }
 
 describe("parse", () => {
@@ -44,6 +42,19 @@ describe("parse", () => {
 		expect(parseToLisp("1 + 2 == 3")).toMatchInlineSnapshot(`"(== (+ 1 2) 3)"`);
 		expect(parseToLisp("1 + 3 != 2 * 2")).toMatchInlineSnapshot(
 			`"(!= (+ 1 3) (* 2 2))"`,
+		);
+	});
+
+	it("should error on unbalanced parens", () => {
+		const error = vi
+			.spyOn(console, "error")
+			.mockImplementation(() => undefined);
+		expect(parseToLisp("(1 + 1)")).toMatchInlineSnapshot(`"(group (+ 1 1))"`);
+		expect(error).not.toHaveBeenCalled();
+
+		expect(parseToLisp("(1 + 1")).toMatchInlineSnapshot(`null`);
+		expect(error).toHaveBeenCalledWith(
+			"[line 1] Error at end: Expect ')' after expression.",
 		);
 	});
 });
