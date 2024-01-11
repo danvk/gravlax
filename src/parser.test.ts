@@ -2,18 +2,33 @@ import { describe, expect, it, vi } from "vitest";
 
 import { Scanner } from "./scanner.js";
 import { parse } from "./parser.js";
+import { visitExpr } from "./ast.js";
+import { astPrinter } from "./ast-printer.js";
 
-function parseText(text: string) {
-	return parse(new Scanner(text).scanTokens());
+function parseToLisp(text: string) {
+	const expr = parse(new Scanner(text).scanTokens());
+	expect(expr).toBeTruthy();
+	return visitExpr(expr!, astPrinter);
 }
 
 describe("parse", () => {
 	it("should parse a literal", () => {
-		expect(parseText("123")).toMatchInlineSnapshot(`
-			{
-			  "kind": "literal",
-			  "value": 123,
-			}
-		`);
+		expect(parseToLisp("123")).toMatchInlineSnapshot(`"123"`);
+	});
+
+	it("should parse an arithmetic expression", () => {
+		expect(parseToLisp("1 + 2 * 2")).toMatchInlineSnapshot(`"(+ 1 (* 2 2))"`);
+	});
+
+	it("should parse repeated negations", () => {
+		expect(parseToLisp("!!!false")).toMatchInlineSnapshot(
+			`"(! (! (! false)))"`,
+		);
+	});
+
+	it("should parse other types of literals", () => {
+		expect(
+			parseToLisp('true / false + nil - "str" + -123.456'),
+		).toMatchInlineSnapshot(`"(+ (/ true false) (- nil (+ str (- 123.456))))"`);
 	});
 });

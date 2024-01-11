@@ -129,8 +129,9 @@ export function parse(tokens: Token[]) {
 	// unary          → ( "!" | "-" ) unary | primary ;
 	const unary = (): Expr => {
 		if (match("!", "-")) {
+			const operator = previous();
 			const right = unary();
-			return { kind: "unary", operator: previous(), right };
+			return { kind: "unary", operator, right };
 		}
 		return primary();
 	};
