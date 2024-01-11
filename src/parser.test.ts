@@ -45,6 +45,12 @@ describe("parse", () => {
 		);
 	});
 
+	it("should parse expressions with currency", () => {
+		expect(parseToLisp("$1,123.45 + 2 * $37.48")).toMatchInlineSnapshot(
+			`"(+ 1123.45 (* 2 37.48))"`,
+		);
+	});
+
 	it("should error on unbalanced parens", () => {
 		const error = vi
 			.spyOn(console, "error")

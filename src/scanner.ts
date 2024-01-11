@@ -68,7 +68,10 @@ export class Scanner {
 	}
 
 	#number() {
-		while (isDigit(this.#peek())) {
+		if (this.#peek() === "$") {
+			this.#advance();
+		}
+		while (isDigit(this.#peek()) || this.#peek() === ",") {
 			this.#advance();
 		}
 		if (this.#peek() === "." && isDigit(this.#peekNext())) {
@@ -78,10 +81,10 @@ export class Scanner {
 			}
 		}
 
-		this.#addToken(
-			"number",
-			Number(this.source.slice(this.start, this.current)),
-		);
+		const numText = this.source
+			.slice(this.start, this.current)
+			.replace(/[$,]/g, "");
+		this.#addToken("number", Number(numText));
 	}
 
 	#peek() {
@@ -145,7 +148,7 @@ export class Scanner {
 				break;
 
 			default:
-				if (isDigit(c)) {
+				if (isDigit(c) || c === "$") {
 					this.#number();
 				} else if (isAlpha(c)) {
 					this.#identifier();

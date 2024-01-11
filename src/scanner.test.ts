@@ -146,4 +146,22 @@ describe("Scanner", () => {
 			]
 		`);
 	});
+
+	it("should scan a number with commas", () => {
+		expect(scan(`123,456.789`)).toMatchInlineSnapshot(`
+			[
+			  "'123,456.789': number: 123456.789",
+			  "'': eof",
+			]
+		`);
+	});
+
+	it("should scan a number with commas starting with a dollar sign", () => {
+		expect(scan(`$123,456.79`)).toMatchInlineSnapshot(`
+			[
+			  "'$123,456.79': number: 123456.79",
+			  "'': eof",
+			]
+		`);
+	});
 });
