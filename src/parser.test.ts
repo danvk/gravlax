@@ -57,4 +57,14 @@ describe("parse", () => {
 			"[line 1] Error at end: Expect ')' after expression.",
 		);
 	});
+
+	it("should fail on empty string", () => {
+		const error = vi
+			.spyOn(console, "error")
+			.mockImplementation(() => undefined);
+		expect(parseToLisp("")).toMatchInlineSnapshot(`null`);
+		expect(error).toHaveBeenCalledWith(
+			"[line 1] Error at end: Expect expression.",
+		);
+	});
 });
