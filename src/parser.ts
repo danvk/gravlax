@@ -156,6 +156,7 @@ export function parse(tokens: Token[]) {
 
 	try {
 		return expression();
+		// TODO: verify no trailing tokens?
 	} catch (e) {
 		if (e instanceof ParseError) {
 			return null;
