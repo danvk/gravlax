@@ -121,6 +121,7 @@ module.exports = {
 		"perfectionist",
 		"regexp",
 		"vitest",
+		"disable-autofix",
 	],
 	reportUnusedDisableDirectives: true,
 	root: true,
@@ -136,7 +137,6 @@ module.exports = {
 		"no-mixed-spaces-and-tabs": "off",
 
 		// Stylistic concerns that don't interfere with Prettier
-		"@typescript-eslint/padding-line-between-statements": "off",
 		"no-useless-rename": "error",
 		"object-shorthand": "error",
 		"perfectionist/sort-objects": [
@@ -147,5 +147,9 @@ module.exports = {
 				type: "natural",
 			},
 		],
+
+		// Disable autofixing "let" -> "const" just because I haven't mutated it _yet_.
+		"prefer-const": "off",
+		"disable-autofix/prefer-const": "warn",
 	},
 };
