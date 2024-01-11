@@ -98,7 +98,7 @@ export function parse(tokens: Token[]) {
 		let expr: Expr = term();
 		while (match(">", ">=", "<", "<=")) {
 			const operator = previous();
-			const right = comparison();
+			const right = term();
 			expr = { kind: "binary", left: expr, operator, right: right };
 		}
 		return expr;
@@ -109,7 +109,7 @@ export function parse(tokens: Token[]) {
 		let expr: Expr = factor();
 		while (match("-", "+")) {
 			const operator = previous();
-			const right = comparison();
+			const right = factor();
 			expr = { kind: "binary", left: expr, operator, right: right };
 		}
 		return expr;
