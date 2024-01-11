@@ -1,3 +1,9 @@
+# [0.2.0](https://github.com/danvk/gravlax/compare/0.1.0...0.2.0) (2024-01-11)
+
+### Features
+
+- Implement Chapter 6, Parsing Expressions ([#8](https://github.com/danvk/gravlax/issues/8)) ([e0e164c](https://github.com/danvk/gravlax/commit/e0e164c141d396e2331bee5b7dd49a1b4e0baeac))
+
 # 0.1.0 (2024-01-09)
 
 ### Bug Fixes
