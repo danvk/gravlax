@@ -32,9 +32,15 @@ export class Scanner {
 		this.#addToken(c, null);
 	}
 
-	#addToken(type: TokenType, literal: Token["literal"]) {
-		const text = this.source.slice(this.start, this.current);
-		this.tokens.push({ lexeme: text, line: this.line, literal, type });
+	#addToken(type: TokenType, literal: Token["literal"], isCurrency?: boolean) {
+		const lexeme = this.source.slice(this.start, this.current);
+		this.tokens.push({
+			lexeme,
+			line: this.line,
+			literal,
+			type,
+			...(isCurrency && { isCurrency }),
+		});
 	}
 
 	#advance(): string {
@@ -68,9 +74,7 @@ export class Scanner {
 	}
 
 	#number() {
-		if (this.#peek() === "$") {
-			this.#advance();
-		}
+		const isCurrency = this.source[this.start] === "$";
 		while (isDigit(this.#peek()) || this.#peek() === ",") {
 			this.#advance();
 		}
@@ -84,7 +88,7 @@ export class Scanner {
 		const numText = this.source
 			.slice(this.start, this.current)
 			.replace(/[$,]/g, "");
-		this.#addToken("number", Number(numText));
+		this.#addToken("number", Number(numText), isCurrency);
 	}
 
 	#peek() {
