@@ -1,11 +1,11 @@
 import * as fs from "node:fs/promises";
 import { createInterface } from "node:readline";
 
+import { visitExpr } from "./ast.js";
+import { astPrinter } from "./ast-printer.js";
+import { parse } from "./parser.js";
 import { Scanner } from "./scanner.js";
 import { Token } from "./token.js";
-import { parse } from "./parser.js";
-import { astPrinter } from "./ast-printer.js";
-import { visitExpr } from "./ast.js";
 
 export function add(a: number, b: number) {
 	return a + b;

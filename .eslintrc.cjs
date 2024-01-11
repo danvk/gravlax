@@ -121,7 +121,7 @@ module.exports = {
 		"perfectionist",
 		"regexp",
 		"vitest",
-		"disable-autofix",
+		"no-autofix",
 	],
 	reportUnusedDisableDirectives: true,
 	root: true,
@@ -149,7 +149,7 @@ module.exports = {
 		],
 
 		// Disable autofixing "let" -> "const" just because I haven't mutated it _yet_.
+		"no-autofix/prefer-const": "warn",
 		"prefer-const": "off",
-		"disable-autofix/prefer-const": "warn",
 	},
 };

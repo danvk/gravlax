@@ -11,10 +11,10 @@
 
 import { Expr } from "./ast.js";
 import { errorOnToken } from "./main.js";
-import { TokenType } from "./token-type.js";
 import { Token } from "./token.js";
+import { TokenType } from "./token-type.js";
 
-export class ParseError {}
+export class ParseError extends Error {}
 
 export function parse(tokens: Token[]) {
 	let current = 0;
@@ -54,6 +54,7 @@ export function parse(tokens: Token[]) {
 		errorOnToken(token, message);
 		return new ParseError();
 	};
+	// eslint-disable-next-line @typescript-eslint/no-unused-vars
 	const synchronize = (): void => {
 		advance();
 		while (!isAtEnd()) {
@@ -87,7 +88,7 @@ export function parse(tokens: Token[]) {
 		while (match("!=", "==")) {
 			const operator = previous();
 			const right = comparison();
-			expr = { kind: "binary", left: expr, operator, right: right };
+			expr = { kind: "binary", left: expr, operator, right };
 		}
 		return expr;
 	};
@@ -99,7 +100,7 @@ export function parse(tokens: Token[]) {
 		while (match(">", ">=", "<", "<=")) {
 			const operator = previous();
 			const right = term();
-			expr = { kind: "binary", left: expr, operator, right: right };
+			expr = { kind: "binary", left: expr, operator, right };
 		}
 		return expr;
 	};
@@ -110,7 +111,7 @@ export function parse(tokens: Token[]) {
 		while (match("-", "+")) {
 			const operator = previous();
 			const right = factor();
-			expr = { kind: "binary", left: expr, operator, right: right };
+			expr = { kind: "binary", left: expr, operator, right };
 		}
 		return expr;
 	};
@@ -121,7 +122,7 @@ export function parse(tokens: Token[]) {
 		while (match("/", "*")) {
 			const operator = previous();
 			const right = unary();
-			expr = { kind: "binary", left: expr, operator, right: right };
+			expr = { kind: "binary", left: expr, operator, right };
 		}
 		return expr;
 	};
@@ -149,7 +150,7 @@ export function parse(tokens: Token[]) {
 		} else if (match("(")) {
 			const expr = expression();
 			consume(")", "Expect ')' after expression.");
-			return { kind: "grouping", expr };
+			return { expr, kind: "grouping" };
 		}
 		throw error(peek(), "Expect expression.");
 	};

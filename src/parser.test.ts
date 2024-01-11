@@ -1,13 +1,14 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 
-import { Scanner } from "./scanner.js";
-import { parse } from "./parser.js";
 import { visitExpr } from "./ast.js";
 import { astPrinter } from "./ast-printer.js";
+import { parse } from "./parser.js";
+import { Scanner } from "./scanner.js";
 
 function parseToLisp(text: string) {
 	const expr = parse(new Scanner(text).scanTokens());
 	expect(expr).toBeTruthy();
+	// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
 	return visitExpr(expr!, astPrinter);
 }
 
