@@ -82,51 +82,6 @@ export function parse(tokens: Token[]) {
 	// expression     → equality ;
 	const expression = () => equality();
 
-	// equality       → comparison ( ( "!=" | "==" ) comparison )* ;
-	const equality = (): Expr => {
-		let expr: Expr = comparison();
-		while (match("!=", "==")) {
-			const operator = previous();
-			const right = comparison();
-			expr = { kind: "binary", left: expr, operator, right };
-		}
-		return expr;
-	};
-
-	// TODO: this is very similar to equality()
-	// comparison     → term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
-	const comparison = (): Expr => {
-		let expr: Expr = term();
-		while (match(">", ">=", "<", "<=")) {
-			const operator = previous();
-			const right = term();
-			expr = { kind: "binary", left: expr, operator, right };
-		}
-		return expr;
-	};
-
-	// term           → factor ( ( "-" | "+" ) factor )* ;
-	const term = (): Expr => {
-		let expr: Expr = factor();
-		while (match("-", "+")) {
-			const operator = previous();
-			const right = factor();
-			expr = { kind: "binary", left: expr, operator, right };
-		}
-		return expr;
-	};
-
-	// factor         → unary ( ( "/" | "*" ) unary )* ;
-	const factor = (): Expr => {
-		let expr: Expr = unary();
-		while (match("/", "*")) {
-			const operator = previous();
-			const right = unary();
-			expr = { kind: "binary", left: expr, operator, right };
-		}
-		return expr;
-	};
-
 	// unary          → ( "!" | "-" ) unary | primary ;
 	const unary = (): Expr => {
 		if (match("!", "-")) {
@@ -154,6 +109,27 @@ export function parse(tokens: Token[]) {
 		}
 		throw error(peek(), "Expect expression.");
 	};
+
+	// Creates a parsing function for a rule of this form:
+	// rule → next ( ( any of ops ) next )* ;
+	const parseBinaryOp = (ops: TokenType[], next: () => Expr) => {
+		return (): Expr => {
+			let expr: Expr = next();
+			while (match(...ops)) {
+				const operator = previous();
+				const right = next();
+				expr = { kind: "binary", left: expr, operator, right };
+			}
+			return expr;
+		};
+	};
+
+	// These productions are all of the form:
+	// equality → comparison ( ( "!=" | "==" ) comparison )* ;
+	const factor = parseBinaryOp(["/", "*"], unary);
+	const term = parseBinaryOp(["-", "+"], factor);
+	const comparison = parseBinaryOp([">", ">=", "<", "<="], term);
+	const equality = parseBinaryOp(["!=", "=="], comparison);
 	// #endregion
 
 	try {
