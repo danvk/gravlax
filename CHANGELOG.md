@@ -1,3 +1,9 @@
+# [0.3.0](https://github.com/danvk/gravlax/compare/0.2.0...0.3.0) (2024-01-12)
+
+### Features
+
+- add support for currency ([#10](https://github.com/danvk/gravlax/issues/10)) ([d6db125](https://github.com/danvk/gravlax/commit/d6db125f181129b35bc0179247a94eb2ec7b4e0d))
+
 # [0.2.0](https://github.com/danvk/gravlax/compare/0.1.0...0.2.0) (2024-01-11)
 
 ### Features
