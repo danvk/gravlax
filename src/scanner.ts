@@ -32,9 +32,15 @@ export class Scanner {
 		this.#addToken(c, null);
 	}
 
-	#addToken(type: TokenType, literal: Token["literal"]) {
-		const text = this.source.slice(this.start, this.current);
-		this.tokens.push({ lexeme: text, line: this.line, literal, type });
+	#addToken(type: TokenType, literal: Token["literal"], isCurrency?: boolean) {
+		const lexeme = this.source.slice(this.start, this.current);
+		this.tokens.push({
+			lexeme,
+			line: this.line,
+			literal,
+			type,
+			...(isCurrency && { isCurrency }),
+		});
 	}
 
 	#advance(): string {
@@ -68,7 +74,8 @@ export class Scanner {
 	}
 
 	#number() {
-		while (isDigit(this.#peek())) {
+		const isCurrency = this.source[this.start] === "$";
+		while (isDigit(this.#peek()) || this.#peek() === ",") {
 			this.#advance();
 		}
 		if (this.#peek() === "." && isDigit(this.#peekNext())) {
@@ -78,10 +85,10 @@ export class Scanner {
 			}
 		}
 
-		this.#addToken(
-			"number",
-			Number(this.source.slice(this.start, this.current)),
-		);
+		const numText = this.source
+			.slice(this.start, this.current)
+			.replace(/[$,]/g, "");
+		this.#addToken("number", Number(numText), isCurrency);
 	}
 
 	#peek() {
@@ -145,7 +152,7 @@ export class Scanner {
 				break;
 
 			default:
-				if (isDigit(c)) {
+				if (isDigit(c) || c === "$") {
 					this.#number();
 				} else if (isAlpha(c)) {
 					this.#identifier();
