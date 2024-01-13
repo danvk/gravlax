@@ -1,8 +1,6 @@
 import * as fs from "node:fs/promises";
 import { createInterface } from "node:readline";
 
-import { visitExpr } from "./ast.js";
-import { astPrinter } from "./ast-printer.js";
 import { Interpreter, RuntimeError } from "./interpreter.js";
 import { parse } from "./parser.js";
 import { Scanner } from "./scanner.js";
