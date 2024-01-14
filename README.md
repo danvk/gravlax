@@ -15,16 +15,20 @@
 	<img alt="💪 TypeScript: Strict" src="https://img.shields.io/badge/%F0%9F%92%AA_typescript-strict-21bb42.svg" />
 </p>
 
+This is my implementation of an interpreter for the Lox language from Robert Nystrom's _[Crafting Interpreters]_. I'm building this as part of my Winter 2024 batch at the [Recurse Center].
+
 ## Usage
 
 ```shell
-npm i gravlax
+npx gravlax [file.lox]
 ```
 
-```ts
-import { greet } from "gravlax";
+## Development
 
-greet("Hello, world! 💖");
+```shell
+pnpm install
+pnpm test
+pnpm repl
 ```
 
 ## Contributors
@@ -51,3 +55,6 @@ greet("Hello, world! 💖");
 <!-- You can remove this notice if you don't want it 🙂 no worries! -->
 
 > 💙 This package was templated with [`create-typescript-app`](https://github.com/JoshuaKGoldberg/create-typescript-app).
+
+[Crafting Interpreters]: https://craftinginterpreters.com/contents.html
+[Recurse Center]: https://www.recurse.com/
