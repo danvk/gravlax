@@ -11,7 +11,7 @@ import {
 	vi,
 } from "vitest";
 
-import { main } from "./main.js";
+import { main, resetErrors } from "./main.js";
 
 vi.mock("node:fs/promises");
 const mockFs = vi.mocked(fs);
@@ -34,6 +34,7 @@ describe("main", () => {
 			.mockImplementation(() => undefined as never);
 		error = vi.spyOn(console, "error").mockImplementation(() => undefined);
 		log = vi.spyOn(console, "log").mockImplementation(() => undefined);
+		resetErrors();
 	});
 	afterEach(() => {
 		process.argv = stashedArgv;

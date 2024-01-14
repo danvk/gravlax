@@ -19,11 +19,16 @@ export async function runFile(interpreter: Interpreter, path: string) {
 	}
 }
 
+export function resetErrors() {
+	hadError = false;
+	hadRuntimeError = false;
+}
+
 export async function runPrompt(interpreter: Interpreter) {
 	process.stdout.write("> ");
 	for await (const line of createInterface({ input: process.stdin })) {
 		run(interpreter, line);
-		hadError = false;
+		resetErrors();
 		process.stdout.write("> ");
 	}
 }
