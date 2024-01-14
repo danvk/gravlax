@@ -1,11 +1,15 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { Interpreter } from "./interpreter.js";
+import { Interpreter, stringify } from "./interpreter.js";
 import { parse } from "./parser.js";
 import { Scanner } from "./scanner.js";
 
+function parseText(text: string) {
+	return parse(new Scanner(text).scanTokens());
+}
+
 function evaluate(text: string) {
-	const expr = parse(new Scanner(text).scanTokens());
+	const expr = parseText(text);
 	return expr && new Interpreter().evaluate(expr);
 }
 
@@ -43,5 +47,54 @@ describe("interpreter", () => {
 		expect(() => evaluate(`"12" + 13`)).toThrowError(
 			"Operands must be two numbers or two strings.",
 		);
+	});
+
+	it("should report an error on non-numeric operands", () => {
+		expect(() => evaluate(`"12" / 13`)).toThrowError(
+			"Operand must be a number.",
+		);
+	});
+
+	it("should interpret and stringify output", () => {
+		const log = vi.spyOn(console, "log").mockImplementation(() => undefined);
+		const expr = parseText("1 + 2");
+		expect(expr).not.toBeNull();
+		// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+		new Interpreter().interpret(expr!);
+		expect(log).toHaveBeenCalledWith("3");
+	});
+
+	it("should interpret and report an error", () => {
+		const error = vi
+			.spyOn(console, "error")
+			.mockImplementation(() => undefined);
+		const expr = parseText("1 - nil");
+		expect(expr).not.toBeNull();
+		// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+		new Interpreter().interpret(expr!);
+		expect(error).toHaveBeenCalledWith("Operand must be a number.\n[line 1]");
+	});
+});
+
+describe("stringify", () => {
+	it("should stringify a null value", () => {
+		expect(stringify(null)).toEqual("nil");
+	});
+
+	it("should stringify a numbers", () => {
+		expect(stringify(123)).toEqual("123");
+		expect(stringify(-123)).toEqual("-123");
+		expect(stringify(1.25)).toEqual("1.25");
+		expect(stringify(-0.125)).toEqual("-0.125");
+	});
+
+	it("should stringify booleans", () => {
+		expect(stringify(true)).toEqual("true");
+		expect(stringify(false)).toEqual("false");
+	});
+
+	it("should stringify strings", () => {
+		expect(stringify("")).toEqual(``);
+		expect(stringify("hello")).toEqual(`hello`);
 	});
 });
