@@ -6,10 +6,6 @@ import { parse } from "./parser.js";
 import { Scanner } from "./scanner.js";
 import { Token } from "./token.js";
 
-export function add(a: number, b: number) {
-	return a + b;
-}
-
 export async function runFile(interpreter: Interpreter, path: string) {
 	const contents = await fs.readFile(path, "utf-8");
 	run(interpreter, contents);
@@ -52,6 +48,7 @@ export function runtimeError(error: RuntimeError) {
 
 function report(line: number, where: string, message: string) {
 	console.error(`[line ${line}] Error${where}: ${message}`);
+	hadError = true;
 }
 
 function run(interpreter: Interpreter, contents: string): void {

@@ -1,3 +1,4 @@
+import * as fs from "node:fs/promises";
 import {
 	MockInstance,
 	afterEach,
@@ -8,21 +9,10 @@ import {
 	vi,
 } from "vitest";
 
-import { add, main } from "./main.js";
+import { main } from "./main.js";
 
-describe("add", () => {
-	it("adds two numbers", () => {
-		expect(add(1, 2)).toEqual(3);
-	});
-
-	it("adds negative numbers", () => {
-		expect(add(13, -13)).toEqual(0);
-	});
-
-	it("adds floating point numbers", () => {
-		expect(add(0.25, 0.5)).toEqual(0.75);
-	});
-});
+vi.mock("node:fs/promises");
+const mockFs = vi.mocked(fs);
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type MockType<Fn extends (...args: any[]) => any> = MockInstance<
@@ -49,7 +39,8 @@ describe("main", () => {
 	});
 
 	it("should execute a file", async () => {
-		process.argv = ["node", "gravlax.ts", "examples/expression.lox"];
+		process.argv = ["node", "gravlax.ts", "expression.lox"];
+		mockFs.readFile.mockResolvedValue("1 + 2 * 2");
 		await main();
 		expect(exit).not.toHaveBeenCalled();
 		expect(log).toHaveBeenCalledWith("5");
@@ -60,5 +51,15 @@ describe("main", () => {
 		await main();
 		expect(exit).toHaveBeenCalledWith(64);
 		expect(error).toHaveBeenCalledWith("Usage:", "gravlax.ts", "[script]");
+	});
+
+	it("should report a syntax error", async () => {
+		process.argv = ["node", "gravlax.ts", "file1.lox"];
+		mockFs.readFile.mockResolvedValueOnce("+ - /");
+		await main();
+		expect(exit).toHaveBeenCalledWith(65);
+		expect(error).toHaveBeenCalledWith(
+			"[line 1] Error at '+': Expect expression.",
+		);
 	});
 });
