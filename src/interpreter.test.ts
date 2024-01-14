@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { Interpreter } from "./interpreter.js";
 import { parse } from "./parser.js";
@@ -37,5 +37,11 @@ describe("interpreter", () => {
 
 	it("should concatenate strings", () => {
 		expect(evaluate(`"hello" + " " + "world"`)).toEqual("hello world");
+	});
+
+	it("should report an error on mixed + operands", () => {
+		expect(() => evaluate(`"12" + 13`)).toThrowError(
+			"Operands must be two numbers or two strings.",
+		);
 	});
 });
