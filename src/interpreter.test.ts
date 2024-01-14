@@ -43,6 +43,14 @@ describe("interpreter", () => {
 		expect(evaluate(`"hello" + " " + "world"`)).toEqual("hello world");
 	});
 
+	it("should evaluate truthiness", () => {
+		expect(evaluate("!true")).toEqual(false);
+		expect(evaluate("!12")).toEqual(false);
+		expect(evaluate("!!nil")).toEqual(false);
+		expect(evaluate("!!0")).toEqual(true);
+		expect(evaluate(`!!""`)).toEqual(true);
+	});
+
 	it("should report an error on mixed + operands", () => {
 		expect(() => evaluate(`"12" + 13`)).toThrowError(
 			"Operands must be two numbers or two strings.",
