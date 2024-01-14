@@ -24,17 +24,17 @@ describe("add", () => {
 	});
 });
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type MockType<Fn extends (...args: any[]) => any> = MockInstance<
+	Parameters<Fn>,
+	ReturnType<Fn>
+>;
+
 describe("main", () => {
 	let stashedArgv = process.argv;
-	let exit: MockInstance<[code?: number | undefined], never>;
-	let error: MockInstance<
-		Parameters<(typeof console)["error"]>,
-		ReturnType<(typeof console)["error"]>
-	>;
-	let log: MockInstance<
-		Parameters<(typeof console)["log"]>,
-		ReturnType<(typeof console)["log"]>
-	>;
+	let exit: MockType<typeof process.exit>;
+	let error: MockType<(typeof console)["error"]>;
+	let log: MockType<(typeof console)["log"]>;
 	beforeEach(() => {
 		stashedArgv = process.argv;
 		exit = vi
