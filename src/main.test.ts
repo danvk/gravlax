@@ -1,6 +1,14 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import {
+	MockInstance,
+	afterEach,
+	beforeEach,
+	describe,
+	expect,
+	it,
+	vi,
+} from "vitest";
 
-import { add } from "./main.js";
+import { add, main } from "./main.js";
 
 describe("add", () => {
 	it("adds two numbers", () => {
@@ -18,5 +26,39 @@ describe("add", () => {
 
 describe("main", () => {
 	let stashedArgv = process.argv;
-	beforeEach(() => {});
+	let exit: MockInstance<[code?: number | undefined], never>;
+	let error: MockInstance<
+		Parameters<(typeof console)["error"]>,
+		ReturnType<(typeof console)["error"]>
+	>;
+	let log: MockInstance<
+		Parameters<(typeof console)["log"]>,
+		ReturnType<(typeof console)["log"]>
+	>;
+	beforeEach(() => {
+		stashedArgv = process.argv;
+		exit = vi
+			.spyOn(process, "exit")
+			.mockImplementation(() => undefined as never);
+		error = vi.spyOn(console, "error").mockImplementation(() => undefined);
+		log = vi.spyOn(console, "log").mockImplementation(() => undefined);
+	});
+	afterEach(() => {
+		process.argv = stashedArgv;
+		vi.restoreAllMocks();
+	});
+
+	it("should execute a file", async () => {
+		process.argv = ["node", "gravlax.ts", "examples/expression.lox"];
+		await main();
+		expect(exit).not.toHaveBeenCalled();
+		expect(log).toHaveBeenCalledWith("5");
+	});
+
+	it("should bail with too many arguments", async () => {
+		process.argv = ["node", "gravlax.ts", "file1.lox", "file2.lox"];
+		await main();
+		expect(exit).toHaveBeenCalledWith(64);
+		expect(error).toHaveBeenCalledWith("Usage:", "gravlax.ts", "[script]");
+	});
 });
