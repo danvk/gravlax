@@ -42,6 +42,9 @@ module.exports = {
 				"jsdoc/require-property": "off",
 
 				"jsdoc/require-returns": "off",
+				// Disable autofixing "let" -> "const" just because I haven't mutated it _yet_.
+				"no-autofix/prefer-const": "warn",
+				"prefer-const": "off",
 			},
 		},
 		{
@@ -64,6 +67,7 @@ module.exports = {
 			rules: {
 				// These off-by-default rules work well for this repo and we like them on.
 				"deprecation/deprecation": "error",
+				"prefer-const": "off",
 			},
 		},
 		{
@@ -87,6 +91,7 @@ module.exports = {
 				// These on-by-default rules aren't useful in test files.
 				"@typescript-eslint/no-unsafe-assignment": "off",
 				"@typescript-eslint/no-unsafe-call": "off",
+				"prefer-const": "off",
 			},
 		},
 		{
@@ -147,9 +152,5 @@ module.exports = {
 				type: "natural",
 			},
 		],
-
-		// Disable autofixing "let" -> "const" just because I haven't mutated it _yet_.
-		"no-autofix/prefer-const": "warn",
-		"prefer-const": "off",
 	},
 };

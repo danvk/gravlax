@@ -6,10 +6,6 @@ import { parse } from "./parser.js";
 import { Scanner } from "./scanner.js";
 import { Token } from "./token.js";
 
-export function add(a: number, b: number) {
-	return a + b;
-}
-
 export async function runFile(interpreter: Interpreter, path: string) {
 	const contents = await fs.readFile(path, "utf-8");
 	run(interpreter, contents);
@@ -23,11 +19,16 @@ export async function runFile(interpreter: Interpreter, path: string) {
 	}
 }
 
+export function resetErrors() {
+	hadError = false;
+	hadRuntimeError = false;
+}
+
 export async function runPrompt(interpreter: Interpreter) {
 	process.stdout.write("> ");
 	for await (const line of createInterface({ input: process.stdin })) {
 		run(interpreter, line);
-		hadError = false;
+		resetErrors();
 		process.stdout.write("> ");
 	}
 }
@@ -52,6 +53,7 @@ export function runtimeError(error: RuntimeError) {
 
 function report(line: number, where: string, message: string) {
 	console.error(`[line ${line}] Error${where}: ${message}`);
+	hadError = true;
 }
 
 function run(interpreter: Interpreter, contents: string): void {
@@ -68,7 +70,7 @@ function run(interpreter: Interpreter, contents: string): void {
 export async function main() {
 	const args = process.argv.slice(2);
 	if (args.length > 1) {
-		console.error("Usage:", args[1], "[script]");
+		console.error("Usage:", process.argv[1], "[script]");
 		// eslint-disable-next-line n/no-process-exit
 		process.exit(64);
 	}
