@@ -1,8 +1,8 @@
 {
 	"$schema": "https://unpkg.com/knip@latest/schema.json",
 	"entry": ["src/index.ts!"],
-	"ignoreExportsUsedInFile": true,
 	// See https://github.com/webpro/knip/issues/450
 	"exclude": ["classMembers"],
+	"ignoreExportsUsedInFile": true,
 	"project": ["src/**/*.ts!"]
 }
