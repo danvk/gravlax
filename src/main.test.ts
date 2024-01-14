@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 
 import { add } from "./main.js";
 
@@ -14,4 +14,9 @@ describe("add", () => {
 	it("adds floating point numbers", () => {
 		expect(add(0.25, 0.5)).toEqual(0.75);
 	});
+});
+
+describe("main", () => {
+	let stashedArgv = process.argv;
+	beforeEach(() => {});
 });

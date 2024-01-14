@@ -11,7 +11,7 @@ export function add(a: number, b: number) {
 }
 
 export async function runFile(interpreter: Interpreter, path: string) {
-	const contents = await fs.readFile(path, "utf-8");
+	let contents = await fs.readFile(path, "utf-8");
 	run(interpreter, contents);
 	if (hadError) {
 		// eslint-disable-next-line n/no-process-exit
