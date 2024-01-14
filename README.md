@@ -15,7 +15,8 @@
 	<img alt="💪 TypeScript: Strict" src="https://img.shields.io/badge/%F0%9F%92%AA_typescript-strict-21bb42.svg" />
 </p>
 
-This is my implementation of an interpreter for the Lox language from Robert Nystrom's _[Crafting Interpreters]_. I'm building this as part of my Winter 2024 batch at the [Recurse Center].
+This is my implementation of an interpreter for the Lox language from Robert Nystrom's _[Crafting Interpreters]_.
+I'm building this as part of my Winter 2024 batch at the [Recurse Center].
 
 ## Usage
 
