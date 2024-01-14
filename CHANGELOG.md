@@ -1,3 +1,9 @@
+# [0.4.0](https://github.com/danvk/gravlax/compare/0.3.0...0.4.0) (2024-01-14)
+
+### Features
+
+- Implement Chapter 7 ([#12](https://github.com/danvk/gravlax/issues/12)) ([d39a37d](https://github.com/danvk/gravlax/commit/d39a37d1cafa9063a8bc7d54f19d6f719b268be3))
+
 # [0.3.0](https://github.com/danvk/gravlax/compare/0.2.0...0.3.0) (2024-01-12)
 
 ### Features
