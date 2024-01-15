@@ -23,6 +23,11 @@ export interface Unary {
 	right: Expr;
 }
 
+export interface VarExpr {
+	kind: "var-expr";
+	name: Token;
+}
+
 // Expression Statement
 export interface Expression {
 	expression: Expr;
@@ -34,8 +39,14 @@ export interface Print {
 	kind: "print";
 }
 
-export type Expr = Binary | Grouping | Literal | Unary;
-export type Stmt = Expression | Print;
+export interface VarStmt {
+	initializer: Expr | null;
+	kind: "var-stmt";
+	name: Token;
+}
+
+export type Expr = Binary | Grouping | Literal | Unary | VarExpr;
+export type Stmt = Expression | Print | VarStmt;
 
 export type ExpressionVisitor<R> = {
 	[Kind in Expr["kind"]]: (expr: Extract<Expr, { kind: Kind }>) => R;

@@ -1,5 +1,7 @@
 // Grammar:
-// program        → statement* EOF ;
+// program        → declaration* EOF ;
+// declaration    → varDecl | statement ;
+// varDecl        → "var" IDENTIFIER ( "=" expression )? ";" ;
 // statement      → exprStmt | printStmt ;
 // exprStmt       → expression ";" ;
 // printStmt      → "print" expression ";" ;
@@ -12,8 +14,9 @@
 //                | primary ;
 // primary        → NUMBER | STRING | "true" | "false" | "nil"
 //                | "(" expression ")" ;
+//                | IDENTIFIER ;
 
-import { Expr, Expression, Print, Stmt } from "./ast.js";
+import { Expr, Expression, Print, Stmt, VarStmt } from "./ast.js";
 import { errorOnToken } from "./main.js";
 import { Token } from "./token.js";
 import { TokenType } from "./token-type.js";
@@ -58,7 +61,7 @@ export function parse(tokens: Token[]) {
 		errorOnToken(token, message);
 		return new ParseError();
 	};
-	// eslint-disable-next-line @typescript-eslint/no-unused-vars
+
 	const synchronize = (): void => {
 		advance();
 		while (!isAtEnd()) {
@@ -83,6 +86,32 @@ export function parse(tokens: Token[]) {
 	// #endregion
 
 	// #region The grammar
+	// declaration    → varDecl | statement ;
+	const declaration = () => {
+		try {
+			if (match("var")) {
+				return varDeclaration();
+			}
+			return statement();
+		} catch (e) {
+			if (e instanceof ParseError) {
+				synchronize();
+				return null;
+			}
+		}
+	};
+
+	// varDecl        → "var" IDENTIFIER ( "=" expression )? ";" ;
+	const varDeclaration = (): VarStmt => {
+		const name = consume("identifier", "Expect variable name.");
+		let initializer: Expr | null = null;
+		if (match("=")) {
+			initializer = expression();
+		}
+		consume(";", "Expect ';' after variable declaration.");
+		return { initializer, kind: "var-stmt", name };
+	};
+
 	// statement      → exprStmt | printStmt ;
 	const statement = () => {
 		if (match("print")) {
@@ -132,6 +161,8 @@ export function parse(tokens: Token[]) {
 			const expr = expression();
 			consume(")", "Expect ')' after expression.");
 			return { expr, kind: "grouping" };
+		} else if (match("identifier")) {
+			return { kind: "var-expr", name: previous() };
 		}
 		throw error(peek(), "Expect expression.");
 	};
@@ -162,7 +193,7 @@ export function parse(tokens: Token[]) {
 		// program        → statement* EOF ;
 		const statements: Stmt[] = [];
 		while (!isAtEnd()) {
-			statements.push(statement());
+			statements.push(declaration());
 		}
 		return statements;
 	} catch (e) {
