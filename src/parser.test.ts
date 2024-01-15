@@ -1,52 +1,56 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { visitExpr } from "./ast.js";
+import { visitStmt } from "./ast.js";
 import { astPrinter } from "./ast-printer.js";
 import { parse } from "./parser.js";
 import { Scanner } from "./scanner.js";
 
 function parseToLisp(text: string) {
-	const expr = parse(new Scanner(text).scanTokens());
-	return expr && visitExpr(expr, astPrinter);
+	const stmts = parse(new Scanner(text).scanTokens());
+	return stmts?.map((stmt) => visitStmt(stmt, astPrinter));
 }
 
 describe("parse", () => {
 	it("should parse a literal", () => {
-		expect(parseToLisp("123")).toMatchInlineSnapshot(`"123"`);
+		expect(parseToLisp("123;")).toMatchInlineSnapshot(`"123"`);
 	});
 
 	it("should parse an arithmetic expression", () => {
-		expect(parseToLisp("1 + 2 * 2")).toMatchInlineSnapshot(`"(+ 1 (* 2 2))"`);
+		expect(parseToLisp("1 + 2 * 2;")).toMatchInlineSnapshot(`"(+ 1 (* 2 2))"`);
 	});
 
 	it("should parse repeated negations", () => {
-		expect(parseToLisp("!!!false")).toMatchInlineSnapshot(
+		expect(parseToLisp("!!!false;")).toMatchInlineSnapshot(
 			`"(! (! (! false)))"`,
 		);
 	});
 
 	it("should parse other types of literals", () => {
 		expect(
-			parseToLisp('true / false + nil - "str" + -123.456'),
+			parseToLisp('true / false + nil - "str" + -123.456;'),
 		).toMatchInlineSnapshot(`"(+ (- (+ (/ true false) nil) str) (- 123.456))"`);
 	});
 
 	it("should parse comparison operators", () => {
-		expect(parseToLisp("1 + 2 >= 3")).toMatchInlineSnapshot(`"(>= (+ 1 2) 3)"`);
-		expect(parseToLisp("1 + 2.5 < 4")).toMatchInlineSnapshot(
+		expect(parseToLisp("1 + 2 >= 3;")).toMatchInlineSnapshot(
+			`"(>= (+ 1 2) 3)"`,
+		);
+		expect(parseToLisp("1 + 2.5 < 4;")).toMatchInlineSnapshot(
 			`"(< (+ 1 2.5) 4)"`,
 		);
 	});
 
 	it("should parse equality operators", () => {
-		expect(parseToLisp("1 + 2 == 3")).toMatchInlineSnapshot(`"(== (+ 1 2) 3)"`);
-		expect(parseToLisp("1 + 3 != 2 * 2")).toMatchInlineSnapshot(
+		expect(parseToLisp("1 + 2 == 3;")).toMatchInlineSnapshot(
+			`"(== (+ 1 2) 3)"`,
+		);
+		expect(parseToLisp("1 + 3 != 2 * 2;")).toMatchInlineSnapshot(
 			`"(!= (+ 1 3) (* 2 2))"`,
 		);
 	});
 
 	it("should parse expressions with currency", () => {
-		expect(parseToLisp("$1,123.45 + 2 * $37.48")).toMatchInlineSnapshot(
+		expect(parseToLisp("$1,123.45 + 2 * $37.48;")).toMatchInlineSnapshot(
 			`"(+ 1123.45 (* 2 37.48))"`,
 		);
 	});
@@ -55,10 +59,10 @@ describe("parse", () => {
 		const error = vi
 			.spyOn(console, "error")
 			.mockImplementation(() => undefined);
-		expect(parseToLisp("(1 + 1)")).toMatchInlineSnapshot(`"(group (+ 1 1))"`);
+		expect(parseToLisp("(1 + 1);")).toMatchInlineSnapshot(`"(group (+ 1 1))"`);
 		expect(error).not.toHaveBeenCalled();
 
-		expect(parseToLisp("(1 + 1")).toMatchInlineSnapshot(`null`);
+		expect(parseToLisp("(1 + 1;")).toMatchInlineSnapshot(`null`);
 		expect(error).toHaveBeenCalledWith(
 			"[line 1] Error at end: Expect ')' after expression.",
 		);

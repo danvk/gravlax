@@ -96,7 +96,8 @@ export function parse(tokens: Token[]) {
 		} catch (e) {
 			if (e instanceof ParseError) {
 				synchronize();
-				return null;
+			} else {
+				throw e;
 			}
 		}
 	};
@@ -193,7 +194,10 @@ export function parse(tokens: Token[]) {
 		// program        → statement* EOF ;
 		const statements: Stmt[] = [];
 		while (!isAtEnd()) {
-			statements.push(declaration());
+			const decl = declaration();
+			if (decl) {
+				statements.push(decl);
+			}
 		}
 		return statements;
 	} catch (e) {
