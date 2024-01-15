@@ -1,18 +1,25 @@
 import {
 	Binary,
 	Expr,
+	Expression,
 	ExpressionVisitor,
 	Grouping,
 	Literal,
+	Print,
+	Stmt,
+	StmtVisitor,
 	Unary,
 	visitExpr,
+	visitStmt,
 } from "./ast.js";
 import { runtimeError } from "./main.js";
 import { Token } from "./token.js";
 
 // XXX using eslint quickfix to implement this interface did not work at all.
 
-export class Interpreter implements ExpressionVisitor<unknown> {
+export class Interpreter
+	implements ExpressionVisitor<unknown>, StmtVisitor<void>
+{
 	binary(expr: Binary): unknown {
 		const left = this.evaluate(expr.left);
 		const right = this.evaluate(expr.right);
@@ -71,14 +78,23 @@ export class Interpreter implements ExpressionVisitor<unknown> {
 		return visitExpr(expr, this);
 	}
 
+	execute(stmt: Stmt): void {
+		visitStmt(stmt, this);
+	}
+
+	expr(stmt: Expression): void {
+		this.evaluate(stmt.expression);
+	}
+
 	grouping(expr: Grouping): unknown {
 		return this.evaluate(expr.expr);
 	}
 
-	interpret(expr: Expr): void {
+	interpret(statements: Stmt[]): void {
 		try {
-			const value = this.evaluate(expr);
-			console.log(stringify(value));
+			for (const statement of statements) {
+				this.execute(statement);
+			}
 		} catch (e) {
 			if (e instanceof RuntimeError) {
 				runtimeError(e);
@@ -88,6 +104,11 @@ export class Interpreter implements ExpressionVisitor<unknown> {
 
 	literal(expr: Literal): unknown {
 		return expr.value;
+	}
+
+	print(stmt: Print): void {
+		const value = this.evaluate(stmt.expression);
+		console.log(stringify(value));
 	}
 
 	unary(expr: Unary): unknown {

@@ -1,4 +1,8 @@
 // Grammar:
+// program        → statement* EOF ;
+// statement      → exprStmt | printStmt ;
+// exprStmt       → expression ";" ;
+// printStmt      → "print" expression ";" ;
 // expression     → equality ;
 // equality       → comparison ( ( "!=" | "==" ) comparison )* ;
 // comparison     → term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
@@ -9,7 +13,7 @@
 // primary        → NUMBER | STRING | "true" | "false" | "nil"
 //                | "(" expression ")" ;
 
-import { Expr } from "./ast.js";
+import { Expr, Expression, Print, Stmt } from "./ast.js";
 import { errorOnToken } from "./main.js";
 import { Token } from "./token.js";
 import { TokenType } from "./token-type.js";
@@ -79,6 +83,28 @@ export function parse(tokens: Token[]) {
 	// #endregion
 
 	// #region The grammar
+	// statement      → exprStmt | printStmt ;
+	const statement = () => {
+		if (match("print")) {
+			return printStatement();
+		}
+		return expressionStatement();
+	};
+
+	// exprStmt       → expression ";" ;
+	const expressionStatement = (): Expression => {
+		const expr = expression();
+		consume(";", "Expect ';' after expression.");
+		return { expression: expr, kind: "expr" };
+	};
+
+	// printStmt      → "print" expression ";" ;
+	const printStatement = (): Print => {
+		const expr = expression();
+		consume(";", "Expect ';' after expression.");
+		return { expression: expr, kind: "print" };
+	};
+
 	// expression     → equality ;
 	const expression = () => equality();
 
@@ -133,8 +159,12 @@ export function parse(tokens: Token[]) {
 	// #endregion
 
 	try {
-		return expression();
-		// TODO: verify no trailing tokens?
+		// program        → statement* EOF ;
+		const statements: Stmt[] = [];
+		while (!isAtEnd()) {
+			statements.push(statement());
+		}
+		return statements;
 	} catch (e) {
 		if (e instanceof ParseError) {
 			return null;

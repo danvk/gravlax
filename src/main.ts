@@ -59,12 +59,12 @@ function report(line: number, where: string, message: string) {
 function run(interpreter: Interpreter, contents: string): void {
 	const scanner = new Scanner(contents);
 	const tokens = scanner.scanTokens();
-	const expr = parse(tokens);
-	if (hadError || !expr) {
+	const statements = parse(tokens);
+	if (hadError || !statements) {
 		return;
 	}
 
-	interpreter.interpret(expr);
+	interpreter.interpret(statements);
 }
 
 export async function main() {
