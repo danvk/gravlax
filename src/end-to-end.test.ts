@@ -1,22 +1,8 @@
 // End-to-end tests of the gravlax interpreter.
-import {
-	MockInstance,
-	afterEach,
-	beforeEach,
-	describe,
-	expect,
-	it,
-	vi,
-} from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { main, resetErrors } from "./main.js";
 import { mockError, mockExit } from "./test-utils.js";
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type MockType<Fn extends (...args: any[]) => any> = MockInstance<
-	Parameters<Fn>,
-	ReturnType<Fn>
->;
 
 // Similar to tests in main.test.ts, except that fs isn't mocked.
 describe("end-to-end tests", () => {
