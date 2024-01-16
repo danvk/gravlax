@@ -1,8 +1,6 @@
-import { MockInstance, vi } from "vitest";
+import { vi } from "vitest";
 
-// MockInstance is here to avoid a strange portability error.
-
-export const mockError = (): MockInstance =>
+export const mockError = () =>
 	vi.spyOn(console, "error").mockImplementation(() => undefined);
 
 export const mockLog = () =>
