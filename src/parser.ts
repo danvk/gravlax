@@ -5,7 +5,8 @@
 // statement      → exprStmt | printStmt ;
 // exprStmt       → expression ";" ;
 // printStmt      → "print" expression ";" ;
-// expression     → equality ;
+// expression     → assignment;
+// assignment     → IDENTIFIER "=" assignment | equality;
 // equality       → comparison ( ( "!=" | "==" ) comparison )* ;
 // comparison     → term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
 // term           → factor ( ( "-" | "+" ) factor )* ;
@@ -135,8 +136,15 @@ export function parse(tokens: Token[]) {
 		return { expression: expr, kind: "print" };
 	};
 
-	// expression     → equality ;
-	const expression = () => equality();
+	// expression     → assignment ;
+	const expression = () => {
+		assignment();
+	};
+
+	// assignment     → IDENTIFIER "=" assignment | equality;
+	const assignment = () => {
+		const expr = equality();
+	};
 
 	// unary          → ( "!" | "-" ) unary | primary ;
 	const unary = (): Expr => {

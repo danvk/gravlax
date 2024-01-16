@@ -28,6 +28,12 @@ export interface VarExpr {
 	name: Token;
 }
 
+export interface Assign {
+	kind: "assign";
+	name: Token;
+	value: Expr;
+}
+
 // Expression Statement
 export interface Expression {
 	expression: Expr;
@@ -45,7 +51,7 @@ export interface VarStmt {
 	name: Token;
 }
 
-export type Expr = Binary | Grouping | Literal | Unary | VarExpr;
+export type Expr = Assign | Binary | Grouping | Literal | Unary | VarExpr;
 export type Stmt = Expression | Print | VarStmt;
 
 export type ExpressionVisitor<R> = {
