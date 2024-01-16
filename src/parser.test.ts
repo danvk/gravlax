@@ -13,6 +13,14 @@ function parseExprToLisp(text: string) {
 	return visitStmt(stmts[0], astPrinter);
 }
 
+function parseProgram(text: string) {
+	const stmts = parse(new Scanner(text).scanTokens());
+	if (!stmts) {
+		return null;
+	}
+	return stmts.map((stmt) => visitStmt(stmt, astPrinter));
+}
+
 describe("parsing expressions", () => {
 	it("should parse a literal", () => {
 		expect(parseExprToLisp("123;")).toMatchInlineSnapshot(`"123"`);
@@ -69,19 +77,28 @@ describe("parsing expressions", () => {
 		);
 		expect(error).not.toHaveBeenCalled();
 
-		expect(parseExprToLisp("(1 + 1;")).toMatchInlineSnapshot(`null`);
+		expect(parseExprToLisp("(1 + 1;")).toMatchInlineSnapshot("null");
 		expect(error).toHaveBeenCalledWith(
 			"[line 1] Error at ';': Expect ')' after expression.",
 		);
 	});
 
-	it.skip("should fail on empty string", () => {
+	it("should resynchronize after a parse error", () => {
 		const error = vi
 			.spyOn(console, "error")
 			.mockImplementation(() => undefined);
-		expect(parseExprToLisp("")).toMatchInlineSnapshot(`null`);
+		expect(
+			parseProgram(`
+			var x = + -;
+			print "hello";
+		`),
+		).toMatchInlineSnapshot(`
+			[
+			  "(print hello)",
+			]
+		`);
 		expect(error).toHaveBeenCalledWith(
-			"[line 1] Error at end: Expect expression.",
+			"[line 2] Error at '+': Expect expression.",
 		);
 	});
 });
