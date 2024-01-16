@@ -137,9 +137,7 @@ export function parse(tokens: Token[]) {
 	};
 
 	// expression     → assignment ;
-	const expression = () => {
-		assignment();
-	};
+	const expression = () => assignment();
 
 	// assignment     → IDENTIFIER "=" assignment | equality;
 	const assignment = () => {

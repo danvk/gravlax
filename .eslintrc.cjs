@@ -43,6 +43,9 @@ module.exports = {
 
 				"jsdoc/require-returns": "off",
 				// Disable autofixing "let" -> "const" just because I haven't mutated it _yet_.
+				// Autofixing `() => fn()` -> `() => { fn() }` is a recipe for trouble.
+				"@typescript-eslint/no-confusing-void-expression": "off",
+				"no-autofix/@typescript-eslint/no-confusing-void-expression": "warn",
 				"no-autofix/prefer-const": "warn",
 				"prefer-const": "off",
 			},
@@ -66,6 +69,7 @@ module.exports = {
 			},
 			rules: {
 				// These off-by-default rules work well for this repo and we like them on.
+				"@typescript-eslint/no-confusing-void-expression": "off",
 				"deprecation/deprecation": "error",
 				"prefer-const": "off",
 			},
@@ -89,6 +93,7 @@ module.exports = {
 			files: "**/*.test.ts",
 			rules: {
 				// These on-by-default rules aren't useful in test files.
+				"@typescript-eslint/no-confusing-void-expression": "off",
 				"@typescript-eslint/no-unsafe-assignment": "off",
 				"@typescript-eslint/no-unsafe-call": "off",
 				"prefer-const": "off",
