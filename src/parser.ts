@@ -1,5 +1,13 @@
 // Grammar:
-// expression     → equality ;
+// program        → declaration* EOF ;
+// declaration    → varDecl | statement ;
+// varDecl        → "var" IDENTIFIER ( "=" expression )? ";" ;
+// statement      → exprStmt | printStmt | block;
+// block          → "{" declaration* "}" ;
+// exprStmt       → expression ";" ;
+// printStmt      → "print" expression ";" ;
+// expression     → assignment;
+// assignment     → IDENTIFIER "=" assignment | equality;
 // equality       → comparison ( ( "!=" | "==" ) comparison )* ;
 // comparison     → term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
 // term           → factor ( ( "-" | "+" ) factor )* ;
@@ -8,8 +16,9 @@
 //                | primary ;
 // primary        → NUMBER | STRING | "true" | "false" | "nil"
 //                | "(" expression ")" ;
+//                | IDENTIFIER ;
 
-import { Expr } from "./ast.js";
+import { Expr, Expression, Print, Stmt, VarStmt } from "./ast.js";
 import { errorOnToken } from "./main.js";
 import { Token } from "./token.js";
 import { TokenType } from "./token-type.js";
@@ -54,7 +63,7 @@ export function parse(tokens: Token[]) {
 		errorOnToken(token, message);
 		return new ParseError();
 	};
-	// eslint-disable-next-line @typescript-eslint/no-unused-vars
+
 	const synchronize = (): void => {
 		advance();
 		while (!isAtEnd()) {
@@ -79,8 +88,86 @@ export function parse(tokens: Token[]) {
 	// #endregion
 
 	// #region The grammar
-	// expression     → equality ;
-	const expression = () => equality();
+	// declaration    → varDecl | statement ;
+	const declaration = () => {
+		try {
+			if (match("var")) {
+				return varDeclaration();
+			}
+			return statement();
+		} catch (e) {
+			if (e instanceof ParseError) {
+				synchronize();
+			} else {
+				throw e;
+			}
+		}
+	};
+
+	// varDecl        → "var" IDENTIFIER ( "=" expression )? ";" ;
+	const varDeclaration = (): VarStmt => {
+		const name = consume("identifier", "Expect variable name.");
+		let initializer: Expr | null = null;
+		if (match("=")) {
+			initializer = expression();
+		}
+		consume(";", "Expect ';' after variable declaration.");
+		return { initializer, kind: "var-stmt", name };
+	};
+
+	// statement      → exprStmt | printStmt | block ;
+	const statement = (): Stmt => {
+		if (match("print")) {
+			return printStatement();
+		} else if (match("{")) {
+			return { kind: "block", statements: block() };
+		}
+		return expressionStatement();
+	};
+
+	// exprStmt       → expression ";" ;
+	const expressionStatement = (): Expression => {
+		const expr = expression();
+		consume(";", "Expect ';' after expression.");
+		return { expression: expr, kind: "expr" };
+	};
+
+	// printStmt      → "print" expression ";" ;
+	const printStatement = (): Print => {
+		const expr = expression();
+		consume(";", "Expect ';' after expression.");
+		return { expression: expr, kind: "print" };
+	};
+
+	const block = (): Stmt[] => {
+		const statements = [];
+		while (!check("}") && !isAtEnd()) {
+			const d = declaration();
+			if (d) {
+				statements.push(d);
+			}
+		}
+		consume("}", "Expect '}' after block.");
+		return statements;
+	};
+
+	// expression     → assignment ;
+	const expression = () => assignment();
+
+	// assignment     → IDENTIFIER "=" assignment | equality;
+	const assignment = (): Expr => {
+		const expr = equality();
+		if (match("=")) {
+			const equals = previous();
+			const value = assignment();
+			if (expr.kind == "var-expr") {
+				const name = expr.name;
+				return { kind: "assign", name, value };
+			}
+			error(equals, "Invalid assignment target.");
+		}
+		return expr;
+	};
 
 	// unary          → ( "!" | "-" ) unary | primary ;
 	const unary = (): Expr => {
@@ -106,6 +193,8 @@ export function parse(tokens: Token[]) {
 			const expr = expression();
 			consume(")", "Expect ')' after expression.");
 			return { expr, kind: "grouping" };
+		} else if (match("identifier")) {
+			return { kind: "var-expr", name: previous() };
 		}
 		throw error(peek(), "Expect expression.");
 	};
@@ -133,8 +222,15 @@ export function parse(tokens: Token[]) {
 	// #endregion
 
 	try {
-		return expression();
-		// TODO: verify no trailing tokens?
+		// program        → statement* EOF ;
+		const statements: Stmt[] = [];
+		while (!isAtEnd()) {
+			const decl = declaration();
+			if (decl) {
+				statements.push(decl);
+			}
+		}
+		return statements;
 	} catch (e) {
 		if (e instanceof ParseError) {
 			return null;

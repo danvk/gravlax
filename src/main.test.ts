@@ -1,37 +1,22 @@
 import * as fs from "node:fs/promises";
-import {
-	MockInstance,
-	afterEach,
-	beforeEach,
-	describe,
-	expect,
-	it,
-	vi,
-} from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { main, resetErrors } from "./main.js";
+import { mockError, mockExit, mockLog } from "./test-utils.js";
 
 vi.mock("node:fs/promises");
 const mockFs = vi.mocked(fs);
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type MockType<Fn extends (...args: any[]) => any> = MockInstance<
-	Parameters<Fn>,
-	ReturnType<Fn>
->;
-
 describe("main", () => {
 	let stashedArgv = process.argv;
-	let exit: MockType<typeof process.exit>;
-	let error: MockType<(typeof console)["error"]>;
-	let log: MockType<(typeof console)["log"]>;
+	let exit: ReturnType<typeof mockExit>;
+	let error: ReturnType<typeof mockError>;
+	let log: ReturnType<typeof mockLog>;
 	beforeEach(() => {
 		stashedArgv = process.argv;
-		exit = vi
-			.spyOn(process, "exit")
-			.mockImplementation(() => undefined as never);
-		error = vi.spyOn(console, "error").mockImplementation(() => undefined);
-		log = vi.spyOn(console, "log").mockImplementation(() => undefined);
+		exit = mockExit();
+		error = mockError();
+		log = mockLog();
 		resetErrors();
 	});
 	afterEach(() => {
@@ -41,7 +26,7 @@ describe("main", () => {
 
 	it("should execute a file", async () => {
 		process.argv = ["node", "gravlax.ts", "expression.lox"];
-		mockFs.readFile.mockResolvedValueOnce("1 + 2 * 2");
+		mockFs.readFile.mockResolvedValueOnce("print 1 + 2 * 2;");
 		await main();
 		expect(exit).not.toHaveBeenCalled();
 		expect(log).toHaveBeenCalledWith("5");
@@ -68,7 +53,7 @@ describe("main", () => {
 
 	it("should report a runtime error", async () => {
 		process.argv = ["node", "gravlax.ts", "file1.lox"];
-		mockFs.readFile.mockResolvedValueOnce("1 + nil");
+		mockFs.readFile.mockResolvedValueOnce("1 + nil;");
 		await main();
 		expect(exit).toHaveBeenCalledOnce();
 		expect(exit).toHaveBeenCalledWith(70);
