@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 
 import { Expression } from "./ast.js";
 import { Interpreter, stringify } from "./interpreter.js";
