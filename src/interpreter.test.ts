@@ -92,6 +92,19 @@ describe("interpreter", () => {
 			expect(log).toHaveBeenCalledWith("3");
 		});
 
+		it("should define, reassign and access variables", () => {
+			const log = vi.spyOn(console, "log").mockImplementation(() => undefined);
+			runProgram(`
+				var a = 12;
+				print a;
+				a = 23;
+				print a;
+			`);
+			expect(log).toHaveBeenCalledTimes(2);
+			expect(log).toHaveBeenNthCalledWith(1, "12");
+			expect(log).toHaveBeenNthCalledWith(2, "23");
+		});
+
 		it("should interpret and report an error", () => {
 			const error = vi
 				.spyOn(console, "error")
