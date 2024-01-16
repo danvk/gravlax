@@ -101,4 +101,27 @@ describe("parsing expressions", () => {
 			"[line 2] Error at '+': Expect expression.",
 		);
 	});
+
+	it("should resynchronize without a semicolon", () => {
+		const error = vi
+			.spyOn(console, "error")
+			.mockImplementation(() => undefined);
+
+		// It would be nice if we didn't lose the `print "hello"`.
+		expect(
+			parseProgram(`
+			var x = 12
+			print "hello";
+			print "goodbye";
+			`),
+		).toMatchInlineSnapshot(`
+			[
+			  "(print goodbye)",
+			]
+		`);
+
+		expect(error).toHaveBeenCalledWith(
+			"Error at 'print': Expect ';' after variable declaration.",
+		);
+	});
 });
