@@ -1,3 +1,9 @@
+# [0.5.0](https://github.com/danvk/gravlax/compare/0.4.0...0.5.0) (2024-01-16)
+
+### Features
+
+- Implement Chapter 8 (Statements and State) ([#16](https://github.com/danvk/gravlax/issues/16)) ([5f3cacb](https://github.com/danvk/gravlax/commit/5f3cacb0b718d28447f1c78ff90b12d27da6e7e4)), closes [/github.com/microsoft/TypeScript/issues/47663#issuecomment-1519138189](https://github.com//github.com/microsoft/TypeScript/issues/47663/issues/issuecomment-1519138189)
+
 # [0.4.0](https://github.com/danvk/gravlax/compare/0.3.0...0.4.0) (2024-01-14)
 
 ### Features
