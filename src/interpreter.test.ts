@@ -4,6 +4,7 @@ import { Expression } from "./ast.js";
 import { Interpreter, stringify } from "./interpreter.js";
 import { parse } from "./parser.js";
 import { Scanner } from "./scanner.js";
+import { mockError, mockLog } from "./test-utils.js";
 
 function parseText(text: string) {
 	return parse(new Scanner(text).scanTokens());
@@ -87,13 +88,13 @@ describe("interpreter", () => {
 
 	describe("execution", () => {
 		it("should interpret and stringify output", () => {
-			const log = vi.spyOn(console, "log").mockImplementation(() => undefined);
+			const log = mockLog();
 			runProgram("print 1 + 2;");
 			expect(log).toHaveBeenCalledWith("3");
 		});
 
 		it("should define, reassign and access variables", () => {
-			const log = vi.spyOn(console, "log").mockImplementation(() => undefined);
+			const log = mockLog();
 			runProgram(`
 				var a = 12;
 				print a;
@@ -106,19 +107,21 @@ describe("interpreter", () => {
 		});
 
 		it("should interpret and report an error", () => {
-			const error = vi
-				.spyOn(console, "error")
-				.mockImplementation(() => undefined);
+			const error = mockError();
 			runProgram("1 - nil;");
 			expect(error).toHaveBeenCalledWith("Operand must be a number.\n[line 1]");
 		});
 
 		it("should disallow assignment to undeclared variables", () => {
-			const error = vi
-				.spyOn(console, "error")
-				.mockImplementation(() => undefined);
+			const error = mockError();
 			runProgram(`a = 12;`);
 			expect(error).toHaveBeenCalledWith("Undefined variable 'a'\n[line 1]");
+		});
+
+		it("should report an error on accessing undefined variables", () => {
+			const error = mockError();
+			runProgram(`print 12 + x;`);
+			expect(error).toHaveBeenCalledWith("Undefined variable 'x'.\n[line 1]");
 		});
 	});
 });

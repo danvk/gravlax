@@ -10,6 +10,7 @@ import {
 } from "vitest";
 
 import { main, resetErrors } from "./main.js";
+import { mockError, mockExit } from "./test-utils.js";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type MockType<Fn extends (...args: any[]) => any> = MockInstance<
@@ -20,16 +21,13 @@ type MockType<Fn extends (...args: any[]) => any> = MockInstance<
 // Similar to tests in main.test.ts, except that fs isn't mocked.
 describe("end-to-end tests", () => {
 	let stashedArgv = process.argv;
-	let exit: MockType<typeof process.exit>;
-	let error: MockType<(typeof console)["error"]>;
-	// let log: MockType<(typeof console)["log"]>;
+	let exit: ReturnType<typeof mockExit>;
+	let error: ReturnType<typeof mockError>;
 	let logLines: string[] = [];
 	beforeEach(() => {
 		stashedArgv = process.argv;
-		exit = vi
-			.spyOn(process, "exit")
-			.mockImplementation(() => undefined as never);
-		error = vi.spyOn(console, "error").mockImplementation(() => undefined);
+		exit = mockExit();
+		error = mockError();
 		vi.spyOn(console, "log").mockImplementation((line: string) => {
 			logLines.push(line);
 		});
