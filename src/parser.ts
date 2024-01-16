@@ -140,8 +140,18 @@ export function parse(tokens: Token[]) {
 	const expression = () => assignment();
 
 	// assignment     → IDENTIFIER "=" assignment | equality;
-	const assignment = () => {
+	const assignment = (): Expr => {
 		const expr = equality();
+		if (match("=")) {
+			const equals = previous();
+			const value = assignment();
+			if (expr.kind == "var-expr") {
+				const name = expr.name;
+				return { kind: "assign", name, value };
+			}
+			error(equals, "Invalid assignment target.");
+		}
+		return expr;
 	};
 
 	// unary          → ( "!" | "-" ) unary | primary ;

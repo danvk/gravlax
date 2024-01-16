@@ -1,4 +1,5 @@
 import {
+	Assign,
 	Binary,
 	Expr,
 	Expression,
@@ -36,6 +37,12 @@ export class Interpreter
 		}
 		this.#environment.define(stmt.name.lexeme, value);
 		return null;
+	}
+
+	assign(expr: Assign): unknown {
+		const value = this.evaluate(expr.value);
+		this.#environment.assign(expr.name, value);
+		return value;
 	}
 
 	binary(expr: Binary): unknown {
