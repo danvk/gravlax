@@ -1,7 +1,19 @@
-import { Expr, ExpressionVisitor, StmtVisitor, visitExpr } from "./ast.js";
+import {
+	Expr,
+	ExpressionVisitor,
+	StmtVisitor,
+	visitExpr,
+	visitStmt,
+} from "./ast.js";
 
 export const astPrinter: ExpressionVisitor<string> & StmtVisitor<string> = {
+	assign: (stmt) => parenthesize("assign", stmt.name.lexeme, stmt.value),
 	binary: (expr) => parenthesize(expr.operator.lexeme, expr.left, expr.right),
+	block: (block) =>
+		parenthesizeText(
+			"block",
+			...block.statements.map((stmt) => visitStmt(stmt, astPrinter)),
+		),
 	expr: (stmt) => visitExpr(stmt.expression, astPrinter),
 	grouping: (expr) => parenthesize("group", expr.expr),
 	literal: (expr) => (expr.value === null ? "nil" : String(expr.value)),
@@ -20,10 +32,10 @@ function parenthesizeText(...parts: string[]) {
 	return "(" + parts.join(" ") + ")";
 }
 
-function parenthesize(name: string, ...exprs: Expr[]) {
+function parenthesize(name: string, ...exprs: (Expr | string)[]) {
 	const parts = [name];
 	for (const expr of exprs) {
-		parts.push(visitExpr(expr, astPrinter));
+		parts.push(typeof expr == "string" ? expr : visitExpr(expr, astPrinter));
 	}
 	return parenthesizeText(...parts);
 }

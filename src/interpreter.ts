@@ -1,6 +1,7 @@
 import {
 	Assign,
 	Binary,
+	Block,
 	Expr,
 	Expression,
 	ExpressionVisitor,
@@ -20,6 +21,8 @@ import { runtimeError } from "./main.js";
 import { Token } from "./token.js";
 
 // XXX using eslint quickfix to implement this interface did not work at all.
+
+// TODO: introduce a type for Lox values, rather than using unknown.
 
 export class Interpreter
 	implements ExpressionVisitor<unknown>, StmtVisitor<void>
@@ -99,12 +102,30 @@ export class Interpreter
 		return null;
 	}
 
+	block(block: Block): void {
+		this.executeBlock(block.statements, new Environment(this.#environment));
+	}
+
 	evaluate(expr: Expr): unknown {
 		return visitExpr(expr, this);
 	}
 
 	execute(stmt: Stmt): void {
 		visitStmt(stmt, this);
+	}
+
+	executeBlock(stmts: Stmt[], environment: Environment): void {
+		const prev = this.#environment;
+		try {
+			this.#environment = environment;
+			for (const stmt of stmts) {
+				this.execute(stmt);
+			}
+		} finally {
+			// TODO: try doing this with a using() declaration
+			// https://devblogs.microsoft.com/typescript/announcing-typescript-5-2/#using-declarations-and-explicit-resource-management
+			this.#environment = prev;
+		}
 	}
 
 	expr(stmt: Expression): void {

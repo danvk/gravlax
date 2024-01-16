@@ -2,7 +2,8 @@
 // program        → declaration* EOF ;
 // declaration    → varDecl | statement ;
 // varDecl        → "var" IDENTIFIER ( "=" expression )? ";" ;
-// statement      → exprStmt | printStmt ;
+// statement      → exprStmt | printStmt | block;
+// block          → "{" declaration* "}" ;
 // exprStmt       → expression ";" ;
 // printStmt      → "print" expression ";" ;
 // expression     → assignment;
@@ -114,10 +115,12 @@ export function parse(tokens: Token[]) {
 		return { initializer, kind: "var-stmt", name };
 	};
 
-	// statement      → exprStmt | printStmt ;
-	const statement = () => {
+	// statement      → exprStmt | printStmt | block ;
+	const statement = (): Stmt => {
 		if (match("print")) {
 			return printStatement();
+		} else if (match("{")) {
+			return { kind: "block", statements: block() };
 		}
 		return expressionStatement();
 	};
@@ -134,6 +137,18 @@ export function parse(tokens: Token[]) {
 		const expr = expression();
 		consume(";", "Expect ';' after expression.");
 		return { expression: expr, kind: "print" };
+	};
+
+	const block = (): Stmt[] => {
+		const statements = [];
+		while (!check("}") && !isAtEnd()) {
+			const d = declaration();
+			if (d) {
+				statements.push(d);
+			}
+		}
+		consume("}", "Expect '}' after block.");
+		return statements;
 	};
 
 	// expression     → assignment ;

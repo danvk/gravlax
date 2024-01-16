@@ -51,8 +51,13 @@ export interface VarStmt {
 	name: Token;
 }
 
+export interface Block {
+	kind: "block";
+	statements: Stmt[];
+}
+
 export type Expr = Assign | Binary | Grouping | Literal | Unary | VarExpr;
-export type Stmt = Expression | Print | VarStmt;
+export type Stmt = Block | Expression | Print | VarStmt;
 
 export type ExpressionVisitor<R> = {
 	[Kind in Expr["kind"]]: (expr: Extract<Expr, { kind: Kind }>) => R;
