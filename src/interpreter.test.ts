@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
+import { Expression } from "./ast.js";
 import { Interpreter, stringify } from "./interpreter.js";
 import { parse } from "./parser.js";
 import { Scanner } from "./scanner.js";
@@ -8,57 +9,62 @@ function parseText(text: string) {
 	return parse(new Scanner(text).scanTokens());
 }
 
-function evaluate(text: string) {
-	const expr = parseText(text);
-	return expr && new Interpreter().evaluate(expr);
+function evaluateExpr(text: string) {
+	const stmts = parseText(text + ";");
+	if (!stmts || stmts.length == 0) {
+		return null;
+	}
+	const stmt = stmts[0] as Expression;
+	expect(stmt.kind).toEqual("expr");
+	return new Interpreter().evaluate(stmt.expression);
 }
 
 describe("interpreter", () => {
 	it("should evaluate an arithmetic expression", () => {
-		expect(evaluate("1 + 2 * 3")).toEqual(7);
-		expect(evaluate("3 - 1 / 2")).toEqual(2.5);
+		expect(evaluateExpr("1 + 2 * 3")).toEqual(7);
+		expect(evaluateExpr("3 - 1 / 2")).toEqual(2.5);
 	});
 
 	it("should evaluate comparison operators", () => {
-		expect(evaluate("12 > 6")).toBe(true);
-		expect(evaluate("12 > 12")).toBe(false);
-		expect(evaluate("12 == 12")).toBe(true);
-		expect(evaluate("12 != 12")).toBe(false);
-		expect(evaluate("0 == nil")).toBe(false);
-		expect(evaluate("nil == nil")).toBe(true);
-		expect(evaluate("2 >= 2")).toBe(true);
-		expect(evaluate("2 >= 3")).toBe(false);
-		expect(evaluate("2 <= 3")).toBe(true);
-		expect(evaluate("2 < 3")).toBe(true);
+		expect(evaluateExpr("12 > 6")).toBe(true);
+		expect(evaluateExpr("12 > 12")).toBe(false);
+		expect(evaluateExpr("12 == 12")).toBe(true);
+		expect(evaluateExpr("12 != 12")).toBe(false);
+		expect(evaluateExpr("0 == nil")).toBe(false);
+		expect(evaluateExpr("nil == nil")).toBe(true);
+		expect(evaluateExpr("2 >= 2")).toBe(true);
+		expect(evaluateExpr("2 >= 3")).toBe(false);
+		expect(evaluateExpr("2 <= 3")).toBe(true);
+		expect(evaluateExpr("2 < 3")).toBe(true);
 	});
 
 	it("should evaluate unary operators", () => {
-		expect(evaluate("-12")).toBe(-12);
-		expect(evaluate("-(1 + 2)")).toBe(-3);
-		expect(evaluate("!nil")).toBe(true);
-		expect(evaluate("!!nil")).toBe(false);
+		expect(evaluateExpr("-12")).toBe(-12);
+		expect(evaluateExpr("-(1 + 2)")).toBe(-3);
+		expect(evaluateExpr("!nil")).toBe(true);
+		expect(evaluateExpr("!!nil")).toBe(false);
 	});
 
 	it("should concatenate strings", () => {
-		expect(evaluate(`"hello" + " " + "world"`)).toEqual("hello world");
+		expect(evaluateExpr(`"hello" + " " + "world"`)).toEqual("hello world");
 	});
 
 	it("should evaluate truthiness", () => {
-		expect(evaluate("!true")).toEqual(false);
-		expect(evaluate("!12")).toEqual(false);
-		expect(evaluate("!!nil")).toEqual(false);
-		expect(evaluate("!!0")).toEqual(true);
-		expect(evaluate(`!!""`)).toEqual(true);
+		expect(evaluateExpr("!true")).toEqual(false);
+		expect(evaluateExpr("!12")).toEqual(false);
+		expect(evaluateExpr("!!nil")).toEqual(false);
+		expect(evaluateExpr("!!0")).toEqual(true);
+		expect(evaluateExpr(`!!""`)).toEqual(true);
 	});
 
 	it("should report an error on mixed + operands", () => {
-		expect(() => evaluate(`"12" + 13`)).toThrowError(
+		expect(() => evaluateExpr(`"12" + 13`)).toThrowError(
 			"Operands must be two numbers or two strings.",
 		);
 	});
 
 	it("should report an error on non-numeric operands", () => {
-		expect(() => evaluate(`"12" / 13`)).toThrowError(
+		expect(() => evaluateExpr(`"12" / 13`)).toThrowError(
 			"Operand must be a number.",
 		);
 	});
