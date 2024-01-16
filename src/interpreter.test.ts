@@ -112,6 +112,14 @@ describe("interpreter", () => {
 			runProgram("1 - nil;");
 			expect(error).toHaveBeenCalledWith("Operand must be a number.\n[line 1]");
 		});
+
+		it("should disallow assignment to undeclared variables", () => {
+			const error = vi
+				.spyOn(console, "error")
+				.mockImplementation(() => undefined);
+			runProgram(`a = 12;`);
+			expect(error).toHaveBeenCalledWith("Undefined variable 'a'\n[line 1]");
+		});
 	});
 });
 

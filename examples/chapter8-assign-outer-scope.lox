@@ -1,0 +1,8 @@
+var outer = "outer";
+{
+    print outer;
+    outer = "new outer";
+    var outer = "inner";
+    print outer;
+}
+print outer;

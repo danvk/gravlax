@@ -60,4 +60,34 @@ describe("end-to-end tests", () => {
 			]
 		`);
 	});
+
+	it("should access outer scope in initializer", async () => {
+		process.argv = ["node", "gravlax.ts", "examples/chapter8-challenge3.lox"];
+		await main();
+		expect(exit).not.toHaveBeenCalled();
+		expect(error).not.toHaveBeenCalled();
+		expect(logLines).toMatchInlineSnapshot(`
+			[
+			  "3",
+			]
+		`);
+	});
+
+	it("should assign to outer scope variables and unshadow", async () => {
+		process.argv = [
+			"node",
+			"gravlax.ts",
+			"examples/chapter8-assign-outer-scope.lox",
+		];
+		await main();
+		expect(exit).not.toHaveBeenCalled();
+		expect(error).not.toHaveBeenCalled();
+		expect(logLines).toMatchInlineSnapshot(`
+			[
+			  "outer",
+			  "inner",
+			  "new outer",
+			]
+		`);
+	});
 });
