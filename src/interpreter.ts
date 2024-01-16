@@ -9,9 +9,12 @@ import {
 	Stmt,
 	StmtVisitor,
 	Unary,
+	VarExpr,
+	VarStmt,
 	visitExpr,
 	visitStmt,
 } from "./ast.js";
+import { Environment } from "./environment.js";
 import { runtimeError } from "./main.js";
 import { Token } from "./token.js";
 
@@ -20,6 +23,21 @@ import { Token } from "./token.js";
 export class Interpreter
 	implements ExpressionVisitor<unknown>, StmtVisitor<void>
 {
+	#environment = new Environment();
+
+	"var-expr"(expr: VarExpr): unknown {
+		return this.#environment.get(expr.name);
+	}
+
+	"var-stmt"(stmt: VarStmt): unknown {
+		let value = null;
+		if (stmt.initializer) {
+			value = this.evaluate(stmt.initializer);
+		}
+		this.#environment.define(stmt.name.lexeme, value);
+		return null;
+	}
+
 	binary(expr: Binary): unknown {
 		const left = this.evaluate(expr.left);
 		const right = this.evaluate(expr.right);
