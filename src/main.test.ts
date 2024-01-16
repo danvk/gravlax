@@ -41,7 +41,7 @@ describe("main", () => {
 
 	it("should execute a file", async () => {
 		process.argv = ["node", "gravlax.ts", "expression.lox"];
-		mockFs.readFile.mockResolvedValueOnce("1 + 2 * 2");
+		mockFs.readFile.mockResolvedValueOnce("print 1 + 2 * 2;");
 		await main();
 		expect(exit).not.toHaveBeenCalled();
 		expect(log).toHaveBeenCalledWith("5");
@@ -68,7 +68,7 @@ describe("main", () => {
 
 	it("should report a runtime error", async () => {
 		process.argv = ["node", "gravlax.ts", "file1.lox"];
-		mockFs.readFile.mockResolvedValueOnce("1 + nil");
+		mockFs.readFile.mockResolvedValueOnce("1 + nil;");
 		await main();
 		expect(exit).toHaveBeenCalledOnce();
 		expect(exit).toHaveBeenCalledWith(70);

@@ -9,14 +9,19 @@ function parseText(text: string) {
 	return parse(new Scanner(text).scanTokens());
 }
 
-function evaluateExpr(text: string) {
+function parseExpr(text: string) {
 	const stmts = parseText(text + ";");
 	if (!stmts || stmts.length == 0) {
 		return null;
 	}
 	const stmt = stmts[0] as Expression;
 	expect(stmt.kind).toEqual("expr");
-	return new Interpreter().evaluate(stmt.expression);
+	return stmt.expression;
+}
+
+function evaluateExpr(text: string) {
+	const expr = parseExpr(text);
+	return expr && new Interpreter().evaluate(expr);
 }
 
 describe("interpreter", () => {
@@ -71,10 +76,10 @@ describe("interpreter", () => {
 
 	it("should interpret and stringify output", () => {
 		const log = vi.spyOn(console, "log").mockImplementation(() => undefined);
-		const expr = parseText("1 + 2");
-		expect(expr).not.toBeNull();
+		const stmts = parseText("print 1 + 2;");
+		expect(stmts).not.toBeNull();
 		// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-		new Interpreter().interpret(expr!);
+		new Interpreter().interpret(stmts!);
 		expect(log).toHaveBeenCalledWith("3");
 	});
 
@@ -82,10 +87,10 @@ describe("interpreter", () => {
 		const error = vi
 			.spyOn(console, "error")
 			.mockImplementation(() => undefined);
-		const expr = parseText("1 - nil");
-		expect(expr).not.toBeNull();
+		const stmts = parseText("1 - nil;");
+		expect(stmts).not.toBeNull();
 		// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-		new Interpreter().interpret(expr!);
+		new Interpreter().interpret(stmts!);
 		expect(error).toHaveBeenCalledWith("Operand must be a number.\n[line 1]");
 	});
 });
