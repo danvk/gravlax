@@ -68,6 +68,24 @@ describe("parsing expressions", () => {
 		);
 	});
 
+	it("should parse block expressions and variables", () => {
+		expect(
+			parseProgram(`
+			var x = 12;
+			{
+				var y = 23;
+				x = 34;
+				print x + y;
+			}
+		`),
+		).toMatchInlineSnapshot(`
+			[
+			  "(var x 12)",
+			  "(block (var y 23) (assign x 34) (print (+ x y)))",
+			]
+		`);
+	});
+
 	it("should error on unbalanced parens", () => {
 		const error = vi
 			.spyOn(console, "error")
