@@ -1,3 +1,4 @@
+import { once } from "node:events";
 import * as fs from "node:fs/promises";
 import { createInterface } from "node:readline";
 
@@ -25,7 +26,8 @@ export function resetErrors() {
 	hadRuntimeError = false;
 }
 
-export function runPrompt(interpreter: Interpreter) {
+export async function runPrompt(interpreter: Interpreter) {
+	// https://nodejs.org/api/readline.html#example-tiny-cli
 	const rl = createInterface({
 		input: process.stdin,
 		output: process.stdout,
@@ -42,6 +44,8 @@ export function runPrompt(interpreter: Interpreter) {
 		resetErrors();
 		rl.prompt();
 	});
+
+	await once(rl, "close");
 }
 
 let hadError = false;
@@ -116,6 +120,6 @@ export async function main() {
 	if (args.length == 1) {
 		await runFile(interpreter, args[0]);
 	} else {
-		runPrompt(interpreter);
+		await runPrompt(interpreter);
 	}
 }
