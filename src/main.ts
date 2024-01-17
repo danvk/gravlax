@@ -25,9 +25,14 @@ export function resetErrors() {
 	hadRuntimeError = false;
 }
 
-export async function runPrompt(interpreter: Interpreter) {
-	process.stdout.write("> ");
-	for await (const line of createInterface({ input: process.stdin })) {
+export function runPrompt(interpreter: Interpreter) {
+	const rl = createInterface({
+		input: process.stdin,
+		output: process.stdout,
+		prompt: "> ",
+	});
+	rl.prompt();
+	rl.on("line", (line) => {
 		const expr = maybeParseAsExpression(line);
 		if (expr) {
 			console.log(stringify(interpreter.evaluate(expr)));
@@ -35,8 +40,8 @@ export async function runPrompt(interpreter: Interpreter) {
 			run(interpreter, line);
 		}
 		resetErrors();
-		process.stdout.write("> ");
-	}
+		rl.prompt();
+	});
 }
 
 let hadError = false;
@@ -111,6 +116,6 @@ export async function main() {
 	if (args.length == 1) {
 		await runFile(interpreter, args[0]);
 	} else {
-		await runPrompt(interpreter);
+		runPrompt(interpreter);
 	}
 }
