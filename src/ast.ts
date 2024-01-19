@@ -8,8 +8,8 @@ export interface Binary {
 }
 
 export interface Grouping {
-	expr: Expr;
 	kind: "grouping";
+	expr: Expr;
 }
 
 export interface Literal {
@@ -36,19 +36,26 @@ export interface Assign {
 
 // Expression Statement
 export interface Expression {
-	expression: Expr;
 	kind: "expr";
+	expression: Expr;
 }
 
 export interface Print {
-	expression: Expr;
 	kind: "print";
+	expression: Expr;
 }
 
 export interface VarStmt {
-	initializer: Expr | null;
 	kind: "var-stmt";
+	initializer: Expr | null;
 	name: Token;
+}
+
+export interface IfStmt {
+	kind: "if";
+	condition: Expr;
+	thenBranch: Stmt;
+	elseBranch: Stmt | null;
 }
 
 export interface Block {
