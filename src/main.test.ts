@@ -1,7 +1,7 @@
 import * as fs from "node:fs/promises";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { main, resetErrors } from "./main.js";
+import { main, maybeParseAsExpression, resetErrors } from "./main.js";
 import { mockError, mockExit, mockLog } from "./test-utils.js";
 
 vi.mock("node:fs/promises");
@@ -60,5 +60,56 @@ describe("main", () => {
 		expect(error).toHaveBeenCalledWith(
 			"Operands must be two numbers or two strings.\n[line 1]",
 		);
+	});
+
+	describe("maybeParseAsExpression", () => {
+		it("should parse an expressions", () => {
+			const error = mockError();
+			expect(maybeParseAsExpression("1 + 2*2")).toMatchInlineSnapshot(`
+				{
+				  "kind": "binary",
+				  "left": {
+				    "kind": "literal",
+				    "value": 1,
+				  },
+				  "operator": {
+				    "lexeme": "+",
+				    "line": 1,
+				    "literal": null,
+				    "type": "+",
+				  },
+				  "right": {
+				    "kind": "binary",
+				    "left": {
+				      "kind": "literal",
+				      "value": 2,
+				    },
+				    "operator": {
+				      "lexeme": "*",
+				      "line": 1,
+				      "literal": null,
+				      "type": "*",
+				    },
+				    "right": {
+				      "kind": "literal",
+				      "value": 2,
+				    },
+				  },
+				}
+			`);
+			expect(error).not.toHaveBeenCalled();
+		});
+
+		it("should return null and not log on a statement", () => {
+			const error = mockError();
+			expect(maybeParseAsExpression("1 + 2*2;")).toBeNull();
+			expect(error).not.toHaveBeenCalled();
+		});
+
+		it("should return null and not log on a syntax error", () => {
+			const error = mockError();
+			expect(maybeParseAsExpression("1 + 2*")).toBeNull();
+			expect(error).not.toHaveBeenCalled();
+		});
 	});
 });

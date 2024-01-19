@@ -1,7 +1,9 @@
+import { once } from "node:events";
 import * as fs from "node:fs/promises";
 import { createInterface } from "node:readline";
 
-import { Interpreter, RuntimeError } from "./interpreter.js";
+import { Expr } from "./ast.js";
+import { Interpreter, RuntimeError, stringify } from "./interpreter.js";
 import { parse } from "./parser.js";
 import { Scanner } from "./scanner.js";
 import { Token } from "./token.js";
@@ -25,21 +27,60 @@ export function resetErrors() {
 }
 
 export async function runPrompt(interpreter: Interpreter) {
-	process.stdout.write("> ");
-	for await (const line of createInterface({ input: process.stdin })) {
-		run(interpreter, line);
+	// https://nodejs.org/api/readline.html#example-tiny-cli
+	const rl = createInterface({
+		input: process.stdin,
+		output: process.stdout,
+		prompt: "> ",
+	});
+	rl.prompt();
+	rl.on("line", (line) => {
+		const expr = maybeParseAsExpression(line);
+		if (expr) {
+			console.log(stringify(interpreter.evaluate(expr)));
+		} else {
+			run(interpreter, line);
+		}
 		resetErrors();
-		process.stdout.write("> ");
-	}
+		rl.prompt();
+	});
+
+	await once(rl, "close");
 }
 
 let hadError = false;
 let hadRuntimeError = false;
+/** Throw exceptions on parse errors rather than logging. */
+let throwMode = false;
+
+class ParseError extends Error {}
+
+export function maybeParseAsExpression(line: string): Expr | null {
+	throwMode = true;
+	try {
+		const scanner = new Scanner(line + ";");
+		const tokens = scanner.scanTokens();
+		const statements = parse(tokens);
+		if (statements?.length === 1 && statements[0].kind === "expr") {
+			return statements[0].expression;
+		}
+	} catch (e) {
+		if (!(e instanceof ParseError)) {
+			throw e;
+		}
+	} finally {
+		throwMode = false;
+	}
+	return null;
+}
 
 export function error(line: number, message: string) {
 	report(line, "", message);
 }
 export function errorOnToken(token: Token, message: string) {
+	if (throwMode) {
+		throw new ParseError(message);
+	}
 	if (token.type === "eof") {
 		report(token.line, " at end", message);
 	} else {
