@@ -14,7 +14,14 @@ export const astPrinter: ExpressionVisitor<string> & StmtVisitor<string> = {
 			"block",
 			...block.statements.map((stmt) => visitStmt(stmt, astPrinter)),
 		),
+	call: (expr) => parenthesize(expr.callee, ...expr.args),
 	expr: (stmt) => visitExpr(stmt.expression, astPrinter),
+	func: (stmt) =>
+		parenthesizeText(
+			"func",
+			stmt.name.lexeme,
+			visitStmt({ kind: "block", statements: stmt.body }, astPrinter),
+		),
 	grouping: (expr) => parenthesize("group", expr.expr),
 	if: (stmt) =>
 		parenthesizeText(
@@ -49,8 +56,8 @@ function parenthesizeText(...parts: (null | string)[]) {
 
 // This would be nicer if it could be (Expr | Stmt)… but there's no programmatic
 // way to distinguish those two in order to tell which visit function to call.
-function parenthesize(name: string, ...exprs: (Expr | string)[]) {
-	const parts = [name];
+function parenthesize(...exprs: (Expr | string)[]) {
+	const parts = [];
 	for (const expr of exprs) {
 		parts.push(typeof expr == "string" ? expr : visitExpr(expr, astPrinter));
 	}
