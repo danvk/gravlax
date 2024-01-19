@@ -55,7 +55,7 @@ let throwMode = false;
 
 class ParseError extends Error {}
 
-function maybeParseAsExpression(line: string): Expr | null {
+export function maybeParseAsExpression(line: string): Expr | null {
 	throwMode = true;
 	try {
 		const scanner = new Scanner(line + ";");
