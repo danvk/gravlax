@@ -1,3 +1,9 @@
+# [0.7.0](https://github.com/danvk/gravlax/compare/0.6.0...0.7.0) (2024-01-19)
+
+### Features
+
+- Implement Chapter 9 (Control Flow) ([#20](https://github.com/danvk/gravlax/issues/20)) ([a03ba95](https://github.com/danvk/gravlax/commit/a03ba9570d9b7031a20a91281655bdd99904cbf6))
+
 # [0.6.0](https://github.com/danvk/gravlax/compare/0.5.0...0.6.0) (2024-01-19)
 
 ### Features
