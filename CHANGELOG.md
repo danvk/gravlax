@@ -1,3 +1,9 @@
+# [0.6.0](https://github.com/danvk/gravlax/compare/0.5.0...0.6.0) (2024-01-19)
+
+### Features
+
+- Add expression evaluation back to REPL ([#18](https://github.com/danvk/gravlax/issues/18)) ([c4279f6](https://github.com/danvk/gravlax/commit/c4279f65b43ab765c40bdc977b0565125a572047))
+
 # [0.5.0](https://github.com/danvk/gravlax/compare/0.4.0...0.5.0) (2024-01-16)
 
 ### Features
