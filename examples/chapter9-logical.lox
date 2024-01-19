@@ -2,3 +2,5 @@ print true and "true!";
 print true or "do not print!";
 print false or "should print";
 print false and "should not print!";
+print "hi" or 2; // "hi".
+print nil or "yes"; // "yes".

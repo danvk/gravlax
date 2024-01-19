@@ -70,6 +70,12 @@ export interface Block {
 	statements: Stmt[];
 }
 
+export interface While {
+	kind: "while";
+	condition: Expr;
+	body: Stmt;
+}
+
 export type Expr =
 	| Assign
 	| Binary
@@ -78,7 +84,7 @@ export type Expr =
 	| Logical
 	| Unary
 	| VarExpr;
-export type Stmt = Block | Expression | IfStmt | Print | VarStmt;
+export type Stmt = Block | Expression | IfStmt | Print | VarStmt | While;
 
 export type ExpressionVisitor<R> = {
 	[Kind in Expr["kind"]]: (expr: Extract<Expr, { kind: Kind }>) => R;

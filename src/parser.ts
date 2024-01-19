@@ -2,11 +2,12 @@
 // program        → declaration* EOF ;
 // declaration    → varDecl | statement ;
 // varDecl        → "var" IDENTIFIER ( "=" expression )? ";" ;
-// statement      → exprStmt | ifStmt | printStmt | block;
+// statement      → exprStmt | ifStmt | printStmt | whileStmt | block;
 // block          → "{" declaration* "}" ;
 // exprStmt       → expression ";" ;
 // printStmt      → "print" expression ";" ;
 // ifStmt         → "if" "(" expression ")" statement ( "else" statement )? ;
+// whileStmt      → "while" "(" expression ")" statement ;
 // expression     → assignment;
 // assignment     → IDENTIFIER "=" assignment | logic_or;
 // logic_or       → logic_and ( "or" logic_and )* ;
@@ -124,6 +125,8 @@ export function parse(tokens: Token[]) {
 			return ifStatement();
 		} else if (match("print")) {
 			return printStatement();
+		} else if (match("while")) {
+			return whileStatement();
 		} else if (match("{")) {
 			return { kind: "block", statements: block() };
 		}
@@ -138,6 +141,15 @@ export function parse(tokens: Token[]) {
 		const thenBranch = statement();
 		const elseBranch = match("else") ? statement() : null;
 		return { condition, elseBranch, kind: "if", thenBranch };
+	};
+
+	// whileStmt      → "while" "(" expression ")" statement ;
+	const whileStatement = (): Stmt => {
+		consume("(", "Expect '(' after 'while'.");
+		const condition = expression();
+		consume(")", "Expect ')' after condition.");
+		const body = statement();
+		return { body, condition, kind: "while" };
 	};
 
 	// exprStmt       → expression ";" ;

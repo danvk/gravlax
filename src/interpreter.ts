@@ -15,6 +15,7 @@ import {
 	Unary,
 	VarExpr,
 	VarStmt,
+	While,
 	visitExpr,
 	visitStmt,
 } from "./ast.js";
@@ -192,6 +193,12 @@ export class Interpreter
 				return -right;
 			case "!":
 				return !isTruthy(right);
+		}
+	}
+
+	while(stmt: While): void {
+		while (isTruthy(this.evaluate(stmt.condition))) {
+			this.execute(stmt.body);
 		}
 	}
 }
