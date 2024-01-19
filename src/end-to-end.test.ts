@@ -38,12 +38,12 @@ describe("end-to-end tests", () => {
 	});
 
 	it.each(testFiles.map((file) => [file]))("baseline: %s", async (filename) => {
-		const basename = filename.replace(".lox", ".txt");
-		const expected = await fs.readFile(`baselines/${basename}.txt`, "utf8");
+		const baseline = filename.replace(".lox", ".txt");
+		const expected = await fs.readFile(`baselines/${baseline}`, "utf8");
 		process.argv = ["node", "gravlax.ts", `examples/${filename}`];
 		await main();
 		expect(exit).not.toHaveBeenCalled();
 		expect(error).not.toHaveBeenCalled();
-		expect(logLines).toEqual(expected.split("\n"));
+		expect(logLines).toEqual(expected.trimEnd().split("\n"));
 	});
 });
