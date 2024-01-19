@@ -16,7 +16,15 @@ export const astPrinter: ExpressionVisitor<string> & StmtVisitor<string> = {
 		),
 	expr: (stmt) => visitExpr(stmt.expression, astPrinter),
 	grouping: (expr) => parenthesize("group", expr.expr),
+	if: (stmt) =>
+		parenthesizeText(
+			"if",
+			visitExpr(stmt.condition, astPrinter),
+			visitStmt(stmt.thenBranch, astPrinter),
+			stmt.elseBranch && visitStmt(stmt.elseBranch, astPrinter),
+		),
 	literal: (expr) => (expr.value === null ? "nil" : String(expr.value)),
+	logical: (expr) => parenthesize(expr.operator.lexeme, expr.left, expr.right),
 	print: (stmt) => parenthesize("print", stmt.expression),
 	unary: (expr) => parenthesize(expr.operator.lexeme, expr.right),
 	"var-expr": (expr) => String(expr.name.literal),
@@ -26,10 +34,17 @@ export const astPrinter: ExpressionVisitor<string> & StmtVisitor<string> = {
 			String(stmt.name.literal),
 			...(stmt.initializer ? [visitExpr(stmt.initializer, astPrinter)] : []),
 		),
+
+	while: (stmt) =>
+		parenthesizeText(
+			"while",
+			visitExpr(stmt.condition, astPrinter),
+			visitStmt(stmt.body, astPrinter),
+		),
 };
 
-function parenthesizeText(...parts: string[]) {
-	return "(" + parts.join(" ") + ")";
+function parenthesizeText(...parts: (null | string)[]) {
+	return "(" + parts.filter((part) => part !== null).join(" ") + ")";
 }
 
 function parenthesize(name: string, ...exprs: (Expr | string)[]) {
