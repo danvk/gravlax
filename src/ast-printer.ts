@@ -47,6 +47,8 @@ function parenthesizeText(...parts: (null | string)[]) {
 	return "(" + parts.filter((part) => part !== null).join(" ") + ")";
 }
 
+// This would be nicer if it could be (Expr | Stmt)… but there's no programmatic
+// way to distinguish those two in order to tell which visit function to call.
 function parenthesize(name: string, ...exprs: (Expr | string)[]) {
 	const parts = [name];
 	for (const expr of exprs) {

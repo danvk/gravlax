@@ -68,6 +68,15 @@ describe("parsing expressions", () => {
 		);
 	});
 
+	it("should parse logical and/or", () => {
+		expect(parseExprToLisp("nil or 12;")).toMatchInlineSnapshot(
+			`"(or nil 12)"`,
+		);
+		expect(parseExprToLisp("true and 42;")).toMatchInlineSnapshot(
+			`"(and true 42)"`,
+		);
+	});
+
 	it("should parse block expressions and variables", () => {
 		expect(
 			parseProgram(`
@@ -82,6 +91,45 @@ describe("parsing expressions", () => {
 			[
 			  "(var x 12)",
 			  "(block (var y 23) (assign x 34) (print (+ x y)))",
+			]
+		`);
+	});
+
+	it("should parse an if statement", () => {
+		expect(parseProgram("if (true) x = 12; else x = 13;"))
+			.toMatchInlineSnapshot(`
+			[
+			  "(if true (assign x 12) (assign x 13))",
+			]
+		`);
+	});
+
+	it("should parse a while loop", () => {
+		expect(parseProgram(`while (x < 10) x = x + 1;`)).toMatchInlineSnapshot(`
+			[
+			  "(while (< x 10) (assign x (+ x 1)))",
+			]
+		`);
+	});
+
+	it("should parse a for loop", () => {
+		expect(parseProgram(`for (var i = 0; i < 10; i = i + 1) print i;`))
+			.toMatchInlineSnapshot(`
+			[
+			  "(block (var i 0) (while (< i 10) (block (print i) (assign i (+ i 1)))))",
+			]
+		`);
+
+		expect(parseProgram(`for (; i < 10; i = i + 1) print i;`))
+			.toMatchInlineSnapshot(`
+			[
+			  "(while (< i 10) (block (print i) (assign i (+ i 1))))",
+			]
+		`);
+
+		expect(parseProgram(`for (; i < 10; ) print i;`)).toMatchInlineSnapshot(`
+			[
+			  "(while (< i 10) (print i))",
 			]
 		`);
 	});
