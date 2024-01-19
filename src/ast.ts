@@ -85,6 +85,13 @@ export interface While {
 	body: Stmt;
 }
 
+export interface Func {
+	kind: "func";
+	name: Token;
+	params: Token[];
+	body: Stmt[];
+}
+
 export type Expr =
 	| Assign
 	| Binary
@@ -94,7 +101,7 @@ export type Expr =
 	| Logical
 	| Unary
 	| VarExpr;
-export type Stmt = Block | Expression | IfStmt | Print | VarStmt | While;
+export type Stmt = Block | Expression | Func | IfStmt | Print | VarStmt | While;
 
 export type ExpressionVisitor<R> = {
 	[Kind in Expr["kind"]]: (expr: Extract<Expr, { kind: Kind }>) => R;

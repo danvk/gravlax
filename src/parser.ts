@@ -1,6 +1,8 @@
 // Grammar:
 // program        → declaration* EOF ;
-// declaration    → varDecl | statement ;
+// declaration    → funDecl | varDecl | statement ;
+// funDecl        → "fun" function ;
+// function       → IDENTIFIER "(" parameters? ")" block ;
 // varDecl        → "var" IDENTIFIER ( "=" expression )? ";" ;
 // statement      → exprStmt | forStmt | ifStmt | printStmt | whileStmt | block;
 // block          → "{" declaration* "}" ;
@@ -97,7 +99,9 @@ export function parse(tokens: Token[]) {
 	// declaration    → varDecl | statement ;
 	const declaration = () => {
 		try {
-			if (match("var")) {
+			if (match("fun")) {
+				return func("function");
+			} else if (match("var")) {
 				return varDeclaration();
 			}
 			return statement();
@@ -108,6 +112,26 @@ export function parse(tokens: Token[]) {
 				throw e;
 			}
 		}
+	};
+
+	// funDecl        → "fun" function ;
+	// function       → IDENTIFIER "(" parameters? ")" block ;
+	const func = (kind: string): Stmt => {
+		const name = consume("identifier", `Expect ${kind} name.`);
+		consume("(", "Expect '(' after ${kind} name.");
+		const params = [];
+		if (!check(")")) {
+			do {
+				if (params.length >= 255) {
+					error(peek(), "Can't have more than 255 parameters.");
+				}
+				params.push(consume("identifier", "Expect parameter name."));
+			} while (match(","));
+		}
+		consume(")", "Expect ')' after parameters.");
+		consume("{", `Expect '{' before ${kind} body.`);
+		const body = block();
+		return { body, kind: "func", name, params };
 	};
 
 	// varDecl        → "var" IDENTIFIER ( "=" expression )? ";" ;

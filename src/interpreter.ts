@@ -6,6 +6,7 @@ import {
 	Expr,
 	Expression,
 	ExpressionVisitor,
+	Func,
 	Grouping,
 	IfStmt,
 	Literal,
@@ -22,6 +23,7 @@ import {
 } from "./ast.js";
 import { LoxCallable } from "./callable.js";
 import { Environment } from "./environment.js";
+import { LoxFunction } from "./lox-function.js";
 import { runtimeError } from "./main.js";
 import { Token } from "./token.js";
 
@@ -48,7 +50,6 @@ export class Interpreter
 	implements ExpressionVisitor<unknown>, StmtVisitor<void>
 {
 	globals = new Environment();
-	// XXX file bug: fixing this breaks the program
 	// eslint-disable-next-line perfectionist/sort-classes
 	#environment = this.globals;
 
@@ -175,6 +176,11 @@ export class Interpreter
 
 	expr(stmt: Expression): void {
 		this.evaluate(stmt.expression);
+	}
+
+	func(stmt: Func): void {
+		const func = new LoxFunction(stmt);
+		this.#environment.define(stmt.name.lexeme, func);
 	}
 
 	grouping(expr: Grouping): unknown {
