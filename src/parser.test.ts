@@ -120,6 +120,13 @@ describe("parsing expressions", () => {
 			]
 		`);
 
+		expect(parseProgram(`for (i = 0; i < 10; i = i + 1) print i;`))
+			.toMatchInlineSnapshot(`
+			[
+			  "(block (assign i 0) (while (< i 10) (block (print i) (assign i (+ i 1)))))",
+			]
+		`);
+
 		expect(parseProgram(`for (; i < 10; i = i + 1) print i;`))
 			.toMatchInlineSnapshot(`
 			[
