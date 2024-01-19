@@ -6,6 +6,7 @@ import {
 	Expression,
 	ExpressionVisitor,
 	Grouping,
+	IfStmt,
 	Literal,
 	Print,
 	Stmt,
@@ -24,6 +25,8 @@ import { Token } from "./token.js";
 
 // TODO: introduce a type for Lox values, rather than using unknown.
 
+// TODO: try making this an object instead of a class so that the parameter
+// types are inferred.
 export class Interpreter
 	implements ExpressionVisitor<unknown>, StmtVisitor<void>
 {
@@ -134,6 +137,14 @@ export class Interpreter
 
 	grouping(expr: Grouping): unknown {
 		return this.evaluate(expr.expr);
+	}
+
+	if(stmt: IfStmt): void {
+		if (isTruthy(this.evaluate(stmt.condition))) {
+			this.execute(stmt.thenBranch);
+		} else if (stmt.elseBranch !== null) {
+			this.execute(stmt.elseBranch);
+		}
 	}
 
 	interpret(statements: Stmt[]): void {

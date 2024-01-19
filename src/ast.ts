@@ -64,7 +64,7 @@ export interface Block {
 }
 
 export type Expr = Assign | Binary | Grouping | Literal | Unary | VarExpr;
-export type Stmt = Block | Expression | Print | VarStmt;
+export type Stmt = Block | Expression | IfStmt | Print | VarStmt;
 
 export type ExpressionVisitor<R> = {
 	[Kind in Expr["kind"]]: (expr: Extract<Expr, { kind: Kind }>) => R;

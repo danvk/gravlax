@@ -118,12 +118,24 @@ export function parse(tokens: Token[]) {
 
 	// statement      → exprStmt | printStmt | block ;
 	const statement = (): Stmt => {
-		if (match("print")) {
+		if (match("if")) {
+			return ifStatement();
+		} else if (match("print")) {
 			return printStatement();
 		} else if (match("{")) {
 			return { kind: "block", statements: block() };
 		}
 		return expressionStatement();
+	};
+
+	// ifStmt         → "if" "(" expression ")" statement ( "else" statement )? ;
+	const ifStatement = (): Stmt => {
+		consume("(", "Expect '(' after 'if'.");
+		const condition = expression();
+		consume(")", "Expect ')' after if condition.");
+		const thenBranch = statement();
+		const elseBranch = match("else") ? statement() : null;
+		return { condition, elseBranch, kind: "if", thenBranch };
 	};
 
 	// exprStmt       → expression ";" ;
