@@ -8,8 +8,8 @@ export interface Binary {
 }
 
 export interface Grouping {
-	expr: Expr;
 	kind: "grouping";
+	expr: Expr;
 }
 
 export interface Literal {
@@ -19,6 +19,13 @@ export interface Literal {
 
 export interface Unary {
 	kind: "unary";
+	operator: Token;
+	right: Expr;
+}
+
+export interface Logical {
+	kind: "logical";
+	left: Expr;
 	operator: Token;
 	right: Expr;
 }
@@ -36,19 +43,26 @@ export interface Assign {
 
 // Expression Statement
 export interface Expression {
-	expression: Expr;
 	kind: "expr";
+	expression: Expr;
 }
 
 export interface Print {
-	expression: Expr;
 	kind: "print";
+	expression: Expr;
 }
 
 export interface VarStmt {
-	initializer: Expr | null;
 	kind: "var-stmt";
+	initializer: Expr | null;
 	name: Token;
+}
+
+export interface IfStmt {
+	kind: "if";
+	condition: Expr;
+	thenBranch: Stmt;
+	elseBranch: Stmt | null;
 }
 
 export interface Block {
@@ -56,8 +70,21 @@ export interface Block {
 	statements: Stmt[];
 }
 
-export type Expr = Assign | Binary | Grouping | Literal | Unary | VarExpr;
-export type Stmt = Block | Expression | Print | VarStmt;
+export interface While {
+	kind: "while";
+	condition: Expr;
+	body: Stmt;
+}
+
+export type Expr =
+	| Assign
+	| Binary
+	| Grouping
+	| Literal
+	| Logical
+	| Unary
+	| VarExpr;
+export type Stmt = Block | Expression | IfStmt | Print | VarStmt | While;
 
 export type ExpressionVisitor<R> = {
 	[Kind in Expr["kind"]]: (expr: Extract<Expr, { kind: Kind }>) => R;

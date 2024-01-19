@@ -1,0 +1,15 @@
+if (2 * 2 > 3) {
+    print "4 > 3!";
+} else {
+    print "4 <= 3!?";
+}
+
+if ("foo" == "foo") {
+    print("string equality holds");
+}
+
+if (true)
+    if (false)
+        0;
+    else
+        print "this should print!";

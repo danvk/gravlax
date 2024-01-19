@@ -2,12 +2,17 @@
 // program        → declaration* EOF ;
 // declaration    → varDecl | statement ;
 // varDecl        → "var" IDENTIFIER ( "=" expression )? ";" ;
-// statement      → exprStmt | printStmt | block;
+// statement      → exprStmt | forStmt | ifStmt | printStmt | whileStmt | block;
 // block          → "{" declaration* "}" ;
 // exprStmt       → expression ";" ;
 // printStmt      → "print" expression ";" ;
+// ifStmt         → "if" "(" expression ")" statement ( "else" statement )? ;
+// whileStmt      → "while" "(" expression ")" statement ;
+// forStmt        → "for" "(" ( varDecl | exprStmt | ";" ) expression? ";" expression? ")" statement ;
 // expression     → assignment;
-// assignment     → IDENTIFIER "=" assignment | equality;
+// assignment     → IDENTIFIER "=" assignment | logic_or;
+// logic_or       → logic_and ( "or" logic_and )* ;
+// logic_and      → equality ( "and" equality )* ;
 // equality       → comparison ( ( "!=" | "==" ) comparison )* ;
 // comparison     → term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
 // term           → factor ( ( "-" | "+" ) factor )* ;
@@ -117,12 +122,72 @@ export function parse(tokens: Token[]) {
 
 	// statement      → exprStmt | printStmt | block ;
 	const statement = (): Stmt => {
-		if (match("print")) {
+		if (match("for")) {
+			return forStatement();
+		} else if (match("if")) {
+			return ifStatement();
+		} else if (match("print")) {
 			return printStatement();
+		} else if (match("while")) {
+			return whileStatement();
 		} else if (match("{")) {
 			return { kind: "block", statements: block() };
 		}
 		return expressionStatement();
+	};
+
+	// ifStmt         → "if" "(" expression ")" statement ( "else" statement )? ;
+	const ifStatement = (): Stmt => {
+		consume("(", "Expect '(' after 'if'.");
+		const condition = expression();
+		consume(")", "Expect ')' after if condition.");
+		const thenBranch = statement();
+		const elseBranch = match("else") ? statement() : null;
+		return { condition, elseBranch, kind: "if", thenBranch };
+	};
+
+	// whileStmt      → "while" "(" expression ")" statement ;
+	const whileStatement = (): Stmt => {
+		consume("(", "Expect '(' after 'while'.");
+		const condition = expression();
+		consume(")", "Expect ')' after condition.");
+		const body = statement();
+		return { body, condition, kind: "while" };
+	};
+
+	// forStmt        → "for" "(" ( varDecl | exprStmt | ";" ) expression? ";" expression? ")" statement ;
+	const forStatement = (): Stmt => {
+		consume("(", "Expect '(' after 'for'.");
+		let initializer;
+		if (match(";")) {
+			initializer = null;
+		} else if (match("var")) {
+			initializer = varDeclaration();
+		} else {
+			initializer = expressionStatement();
+		}
+		let condition = check(";") ? null : expression();
+		consume(";", "Expect ';' after loop condition.");
+		const increment = check(")") ? null : expression();
+		consume(")", "Expect ')' after for clauses.");
+		let body = statement();
+
+		// desugaring
+		if (increment) {
+			body = {
+				kind: "block",
+				statements: [body, { expression: increment, kind: "expr" }],
+			};
+		}
+
+		condition ??= { kind: "literal", value: true };
+		body = { body, condition, kind: "while" };
+
+		if (initializer) {
+			body = { kind: "block", statements: [initializer, body] };
+		}
+
+		return body;
 	};
 
 	// exprStmt       → expression ";" ;
@@ -156,7 +221,7 @@ export function parse(tokens: Token[]) {
 
 	// assignment     → IDENTIFIER "=" assignment | equality;
 	const assignment = (): Expr => {
-		const expr = equality();
+		const expr = or();
 		if (match("=")) {
 			const equals = previous();
 			const value = assignment();
@@ -165,6 +230,26 @@ export function parse(tokens: Token[]) {
 				return { kind: "assign", name, value };
 			}
 			error(equals, "Invalid assignment target.");
+		}
+		return expr;
+	};
+
+	const or = (): Expr => {
+		let expr = and();
+		while (match("or")) {
+			const operator = previous();
+			const right = and();
+			expr = { kind: "logical", left: expr, operator, right };
+		}
+		return expr;
+	};
+
+	const and = (): Expr => {
+		let expr = equality();
+		while (match("and")) {
+			const operator = previous();
+			const right = and();
+			expr = { kind: "logical", left: expr, operator, right };
 		}
 		return expr;
 	};

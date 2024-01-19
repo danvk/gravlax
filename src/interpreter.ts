@@ -6,13 +6,16 @@ import {
 	Expression,
 	ExpressionVisitor,
 	Grouping,
+	IfStmt,
 	Literal,
+	Logical,
 	Print,
 	Stmt,
 	StmtVisitor,
 	Unary,
 	VarExpr,
 	VarStmt,
+	While,
 	visitExpr,
 	visitStmt,
 } from "./ast.js";
@@ -24,6 +27,8 @@ import { Token } from "./token.js";
 
 // TODO: introduce a type for Lox values, rather than using unknown.
 
+// TODO: try making this an object instead of a class so that the parameter
+// types are inferred.
 export class Interpreter
 	implements ExpressionVisitor<unknown>, StmtVisitor<void>
 {
@@ -136,6 +141,14 @@ export class Interpreter
 		return this.evaluate(expr.expr);
 	}
 
+	if(stmt: IfStmt): void {
+		if (isTruthy(this.evaluate(stmt.condition))) {
+			this.execute(stmt.thenBranch);
+		} else if (stmt.elseBranch !== null) {
+			this.execute(stmt.elseBranch);
+		}
+	}
+
 	interpret(statements: Stmt[]): void {
 		try {
 			for (const statement of statements) {
@@ -152,6 +165,21 @@ export class Interpreter
 		return expr.value;
 	}
 
+	logical(expr: Logical): unknown {
+		const left = this.evaluate(expr.left);
+		if (expr.operator.type == "or") {
+			if (isTruthy(left)) {
+				return left;
+			}
+		} else {
+			if (!isTruthy(left)) {
+				return left;
+			}
+		}
+
+		return this.evaluate(expr.right);
+	}
+
 	print(stmt: Print): void {
 		const value = this.evaluate(stmt.expression);
 		console.log(stringify(value));
@@ -165,6 +193,12 @@ export class Interpreter
 				return -right;
 			case "!":
 				return !isTruthy(right);
+		}
+	}
+
+	while(stmt: While): void {
+		while (isTruthy(this.evaluate(stmt.condition))) {
+			this.execute(stmt.body);
 		}
 	}
 }

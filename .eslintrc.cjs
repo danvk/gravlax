@@ -47,6 +47,7 @@ module.exports = {
 				"@typescript-eslint/no-confusing-void-expression": "off",
 				"no-autofix/@typescript-eslint/no-confusing-void-expression": "warn",
 				"no-autofix/prefer-const": "warn",
+				"perfectionist/sort-interfaces": "off",
 				"prefer-const": "off",
 			},
 		},
