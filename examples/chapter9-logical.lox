@@ -1,0 +1,4 @@
+print true and "true!";
+print true or "do not print!";
+print false or "should print";
+print false and "should not print!";

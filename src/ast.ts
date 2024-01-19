@@ -23,6 +23,13 @@ export interface Unary {
 	right: Expr;
 }
 
+export interface Logical {
+	kind: "logical";
+	left: Expr;
+	operator: Token;
+	right: Expr;
+}
+
 export interface VarExpr {
 	kind: "var-expr";
 	name: Token;
@@ -63,7 +70,14 @@ export interface Block {
 	statements: Stmt[];
 }
 
-export type Expr = Assign | Binary | Grouping | Literal | Unary | VarExpr;
+export type Expr =
+	| Assign
+	| Binary
+	| Grouping
+	| Literal
+	| Logical
+	| Unary
+	| VarExpr;
 export type Stmt = Block | Expression | IfStmt | Print | VarStmt;
 
 export type ExpressionVisitor<R> = {

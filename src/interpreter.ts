@@ -8,6 +8,7 @@ import {
 	Grouping,
 	IfStmt,
 	Literal,
+	Logical,
 	Print,
 	Stmt,
 	StmtVisitor,
@@ -161,6 +162,21 @@ export class Interpreter
 
 	literal(expr: Literal): unknown {
 		return expr.value;
+	}
+
+	logical(expr: Logical): unknown {
+		const left = this.evaluate(expr.left);
+		if (expr.operator.type == "or") {
+			if (isTruthy(left)) {
+				return left;
+			}
+		} else {
+			if (!isTruthy(left)) {
+				return left;
+			}
+		}
+
+		return this.evaluate(expr.right);
 	}
 
 	print(stmt: Print): void {

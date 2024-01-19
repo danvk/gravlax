@@ -8,7 +8,9 @@
 // printStmt      → "print" expression ";" ;
 // ifStmt         → "if" "(" expression ")" statement ( "else" statement )? ;
 // expression     → assignment;
-// assignment     → IDENTIFIER "=" assignment | equality;
+// assignment     → IDENTIFIER "=" assignment | logic_or;
+// logic_or       → logic_and ( "or" logic_and )* ;
+// logic_and      → equality ( "and" equality )* ;
 // equality       → comparison ( ( "!=" | "==" ) comparison )* ;
 // comparison     → term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
 // term           → factor ( ( "-" | "+" ) factor )* ;
@@ -169,7 +171,7 @@ export function parse(tokens: Token[]) {
 
 	// assignment     → IDENTIFIER "=" assignment | equality;
 	const assignment = (): Expr => {
-		const expr = equality();
+		const expr = or();
 		if (match("=")) {
 			const equals = previous();
 			const value = assignment();
@@ -178,6 +180,26 @@ export function parse(tokens: Token[]) {
 				return { kind: "assign", name, value };
 			}
 			error(equals, "Invalid assignment target.");
+		}
+		return expr;
+	};
+
+	const or = (): Expr => {
+		let expr = and();
+		while (match("or")) {
+			const operator = previous();
+			const right = and();
+			expr = { kind: "logical", left: expr, operator, right };
+		}
+		return expr;
+	};
+
+	const and = (): Expr => {
+		let expr = equality();
+		while (match("and")) {
+			const operator = previous();
+			const right = and();
+			expr = { kind: "logical", left: expr, operator, right };
 		}
 		return expr;
 	};
