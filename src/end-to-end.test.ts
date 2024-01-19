@@ -1,8 +1,20 @@
 // End-to-end tests of the gravlax interpreter.
+import * as fs from "node:fs/promises";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { main, resetErrors } from "./main.js";
 import { mockError, mockExit } from "./test-utils.js";
+
+const testFiles = [
+	"end-of-chapter8.lox",
+	"chapter8-challenge3.lox",
+	"chapter8-assign-outer-scope.lox",
+	"chapter9-fibonacci.lox",
+	"chapter9-for.lox",
+	"chapter9-if-statement.lox",
+	"chapter9-logical.lox",
+	"chapter9-while.lox",
+];
 
 // Similar to tests in main.test.ts, except that fs isn't mocked.
 describe("end-to-end tests", () => {
@@ -25,53 +37,13 @@ describe("end-to-end tests", () => {
 		vi.resetAllMocks();
 	});
 
-	it("should execute a program with nested scopes", async () => {
-		process.argv = ["node", "gravlax.ts", "examples/end-of-chapter8.lox"];
+	it.each(testFiles.map((file) => [file]))("baseline: %s", async (filename) => {
+		const basename = filename.replace(".lox", ".txt");
+		const expected = await fs.readFile(`baselines/${basename}.txt`, "utf8");
+		process.argv = ["node", "gravlax.ts", `examples/${filename}`];
 		await main();
 		expect(exit).not.toHaveBeenCalled();
 		expect(error).not.toHaveBeenCalled();
-		expect(logLines).toMatchInlineSnapshot(`
-			[
-			  "inner a",
-			  "outer b",
-			  "global c",
-			  "outer a",
-			  "outer b",
-			  "global c",
-			  "global a",
-			  "global b",
-			  "global c",
-			]
-		`);
-	});
-
-	it("should access outer scope in initializer", async () => {
-		process.argv = ["node", "gravlax.ts", "examples/chapter8-challenge3.lox"];
-		await main();
-		expect(exit).not.toHaveBeenCalled();
-		expect(error).not.toHaveBeenCalled();
-		expect(logLines).toMatchInlineSnapshot(`
-			[
-			  "3",
-			]
-		`);
-	});
-
-	it("should assign to outer scope variables and unshadow", async () => {
-		process.argv = [
-			"node",
-			"gravlax.ts",
-			"examples/chapter8-assign-outer-scope.lox",
-		];
-		await main();
-		expect(exit).not.toHaveBeenCalled();
-		expect(error).not.toHaveBeenCalled();
-		expect(logLines).toMatchInlineSnapshot(`
-			[
-			  "outer",
-			  "inner",
-			  "new outer",
-			]
-		`);
+		expect(logLines).toEqual(expected.split("\n"));
 	});
 });

@@ -1,0 +1,6 @@
+true!
+true
+should print
+false
+hi
+yes
