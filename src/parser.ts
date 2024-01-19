@@ -17,13 +17,14 @@
 // comparison     → term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
 // term           → factor ( ( "-" | "+" ) factor )* ;
 // factor         → unary ( ( "/" | "*" ) unary )* ;
-// unary          → ( "!" | "-" ) unary
-//                | primary ;
+// unary          → ( "!" | "-" ) unary | call ;
+// call           → primary ( "(" arguments? ")" )* ;
+// arguments      → expression ( "," expression )* ;
 // primary        → NUMBER | STRING | "true" | "false" | "nil"
 //                | "(" expression ")" ;
 //                | IDENTIFIER ;
 
-import { Expr, Expression, Print, Stmt, VarStmt } from "./ast.js";
+import { Call, Expr, Expression, Print, Stmt, VarStmt } from "./ast.js";
 import { errorOnToken } from "./main.js";
 import { Token } from "./token.js";
 import { TokenType } from "./token-type.js";
@@ -261,7 +262,34 @@ export function parse(tokens: Token[]) {
 			const right = unary();
 			return { kind: "unary", operator, right };
 		}
-		return primary();
+		return call();
+	};
+
+	const call = (): Expr => {
+		let expr = primary();
+		while (true) {
+			if (match("(")) {
+				expr = finishCall(expr);
+			} else {
+				break;
+			}
+		}
+		return expr;
+	};
+
+	const finishCall = (callee: Expr): Expr => {
+		const args: Expr[] = [];
+		if (!check(")")) {
+			do {
+				if (args.length >= 255) {
+					// XXX won't this flag _all_ args past 255?
+					error(peek(), "Can't have more than 255 arguments.");
+				}
+				args.push(expression());
+			} while (match(","));
+		}
+		const paren = consume(")", "Expect ')' after arguments.");
+		return { args, callee, kind: "call", paren };
 	};
 
 	// primary        → NUMBER | STRING | "true" | "false" | "nil" | "(" expression ")" ;

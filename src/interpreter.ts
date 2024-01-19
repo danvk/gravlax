@@ -2,6 +2,7 @@ import {
 	Assign,
 	Binary,
 	Block,
+	Call,
 	Expr,
 	Expression,
 	ExpressionVisitor,
@@ -19,9 +20,23 @@ import {
 	visitExpr,
 	visitStmt,
 } from "./ast.js";
+import { LoxCallable } from "./callable.js";
 import { Environment } from "./environment.js";
 import { runtimeError } from "./main.js";
 import { Token } from "./token.js";
+
+// TODO: Crafting Interpreters makes this anonymous, can I do that?
+class ClockFn extends LoxCallable {
+	arity() {
+		return 0;
+	}
+	call(): unknown {
+		return Date.now();
+	}
+	toString() {
+		return "<native fn>";
+	}
+}
 
 // XXX using eslint quickfix to implement this interface did not work at all.
 
@@ -32,7 +47,14 @@ import { Token } from "./token.js";
 export class Interpreter
 	implements ExpressionVisitor<unknown>, StmtVisitor<void>
 {
-	#environment = new Environment();
+	globals = new Environment();
+	// XXX file bug: fixing this breaks the program
+	// eslint-disable-next-line perfectionist/sort-classes
+	#environment = this.globals;
+
+	constructor() {
+		this.globals.define("clock", new ClockFn());
+	}
 
 	"var-expr"(expr: VarExpr): unknown {
 		return this.#environment.get(expr.name);
@@ -109,6 +131,24 @@ export class Interpreter
 
 	block(block: Block): void {
 		this.executeBlock(block.statements, new Environment(this.#environment));
+	}
+
+	call(expr: Call): unknown {
+		const callee = this.evaluate(expr.callee);
+		const args = expr.args.map((arg) => this.evaluate(arg));
+		if (!(callee instanceof LoxCallable)) {
+			throw new RuntimeError(
+				expr.paren,
+				"Can only call functions and classes.",
+			);
+		}
+		if (args.length != callee.arity()) {
+			throw new RuntimeError(
+				expr.paren,
+				`Expected ${callee.arity()} arguments but got ${args.length}.`,
+			);
+		}
+		return callee.call(this, args);
 	}
 
 	evaluate(expr: Expr): unknown {

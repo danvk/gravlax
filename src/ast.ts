@@ -35,6 +35,15 @@ export interface VarExpr {
 	name: Token;
 }
 
+export interface Call {
+	kind: "call";
+	callee: Expr;
+	paren: Token;
+	args: Expr[];
+}
+
+// Statements
+
 export interface Assign {
 	kind: "assign";
 	name: Token;
@@ -79,6 +88,7 @@ export interface While {
 export type Expr =
 	| Assign
 	| Binary
+	| Call
 	| Grouping
 	| Literal
 	| Logical
