@@ -1,3 +1,9 @@
+# [0.8.0](https://github.com/danvk/gravlax/compare/0.7.0...0.8.0) (2024-01-20)
+
+### Features
+
+- Implement Chapter 10 (Functions) ([#21](https://github.com/danvk/gravlax/issues/21)) ([d485b65](https://github.com/danvk/gravlax/commit/d485b65d3f536b00d34759e2cadb0e9b18b0f50f)), closes [#10](https://github.com/danvk/gravlax/issues/10)
+
 # [0.7.0](https://github.com/danvk/gravlax/compare/0.6.0...0.7.0) (2024-01-19)
 
 ### Features
