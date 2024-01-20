@@ -123,6 +123,22 @@ describe("interpreter", () => {
 			runProgram(`print 12 + x;`);
 			expect(error).toHaveBeenCalledWith("Undefined variable 'x'.\n[line 1]");
 		});
+
+		it("should report an error when you call a non-function", () => {
+			const error = mockError();
+			runProgram(`"str"();`);
+			expect(error).toHaveBeenCalledWith(
+				"Can only call functions and classes.\n[line 1]",
+			);
+		});
+
+		it("should report an error when you call a function with too many arguments", () => {
+			const error = mockError();
+			runProgram(`clock(123);`);
+			expect(error).toHaveBeenCalledWith(
+				"Expected 0 arguments but got 1.\n[line 1]",
+			);
+		});
 	});
 });
 
@@ -146,5 +162,11 @@ describe("stringify", () => {
 	it("should stringify strings", () => {
 		expect(stringify("")).toEqual(``);
 		expect(stringify("hello")).toEqual(`hello`);
+	});
+
+	it("should refuse to stringify undefined", () => {
+		expect(() => stringify(undefined)).toThrowError(
+			"undefined is not a valid Lox value",
+		);
 	});
 });
