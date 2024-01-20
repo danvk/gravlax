@@ -194,7 +194,7 @@ export class Interpreter
 	}
 
 	func(stmt: Func): void {
-		const func = new LoxFunction(stmt);
+		const func = new LoxFunction(stmt, this.#environment);
 		this.#environment.define(stmt.name.lexeme, func);
 	}
 
@@ -263,6 +263,7 @@ export class Interpreter
 		}
 	}
 }
+/* eslint-enable perfectionist/sort-classes */
 
 export class RuntimeError extends Error {
 	token: Token;
@@ -309,7 +310,8 @@ export function isEqual(a: unknown, b: unknown): boolean {
 export function stringify(val: unknown): string {
 	if (val === null) {
 		return "nil";
+	} else if (val === undefined) {
+		throw new Error(`undefined is not a valid Lox value`);
 	}
 	return String(val);
 }
-/* eslint-enable perfectionist/sort-classes */

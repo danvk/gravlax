@@ -6,17 +6,20 @@ import { Interpreter, ReturnCall } from "./interpreter.js";
 // XXX interesting that you can change "extends" to "implements" here.
 // This type checks but doens't work at runtime.
 export class LoxFunction extends LoxCallable {
+	closure: Environment;
 	declaration: Func;
-	constructor(declaration: Func) {
+
+	constructor(declaration: Func, closure: Environment) {
 		super();
 		this.declaration = declaration;
+		this.closure = closure;
 	}
 	arity(): number {
 		return this.declaration.params.length;
 	}
 
 	call(interpreter: Interpreter, args: unknown[]): unknown {
-		const env = new Environment(interpreter.globals);
+		const env = new Environment(this.closure);
 		for (const [i, param] of this.declaration.params.entries()) {
 			env.define(param.lexeme, args[i]);
 		}
@@ -28,6 +31,7 @@ export class LoxFunction extends LoxCallable {
 			}
 			throw returnValue;
 		}
+		return null;
 	}
 
 	toString() {
