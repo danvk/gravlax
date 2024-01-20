@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 
 import { visitStmt } from "./ast.js";
 import { astPrinter } from "./ast-printer.js";
