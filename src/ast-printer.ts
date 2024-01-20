@@ -19,7 +19,7 @@ export const astPrinter: ExpressionVisitor<string> & StmtVisitor<string> = {
 	func: (stmt) =>
 		parenthesizeText(
 			"func",
-			stmt.name.lexeme,
+			parenthesizeText(stmt.name.lexeme, ...stmt.params.map((p) => p.lexeme)),
 			visitStmt({ kind: "block", statements: stmt.body }, astPrinter),
 		),
 	grouping: (expr) => parenthesize("group", expr.expr),

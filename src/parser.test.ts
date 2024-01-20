@@ -141,6 +141,19 @@ describe("parsing expressions", () => {
 		`);
 	});
 
+	it("should parse a function call", () => {
+		expect(parseExprToLisp(`f(123);`)).toMatchInlineSnapshot(`"(f 123)"`);
+	});
+
+	it("should parse a function definition", () => {
+		expect(parseProgram(`fun inc(x) { x = x + 1; return x; }`))
+			.toMatchInlineSnapshot(`
+			[
+			  "(func (inc x) (block (assign x (+ x 1)) (return x)))",
+			]
+		`);
+	});
+
 	it("should error on unbalanced parens", () => {
 		const error = vi
 			.spyOn(console, "error")
