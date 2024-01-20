@@ -33,6 +33,7 @@ export const astPrinter: ExpressionVisitor<string> & StmtVisitor<string> = {
 	literal: (expr) => (expr.value === null ? "nil" : String(expr.value)),
 	logical: (expr) => parenthesize(expr.operator.lexeme, expr.left, expr.right),
 	print: (stmt) => parenthesize("print", stmt.expression),
+	return: (stmt) => parenthesize("return", ...(stmt.value ? [stmt.value] : [])),
 	unary: (expr) => parenthesize(expr.operator.lexeme, expr.right),
 	"var-expr": (expr) => String(expr.name.literal),
 	"var-stmt": (stmt) =>
