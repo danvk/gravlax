@@ -1,0 +1,10 @@
+fun compound(amount, rate, years) {
+    var p = 1 + rate / 100;
+    for (var i = 0; i < years; i = i + 1) {
+        amount = amount * p;
+    }
+    return amount;
+}
+
+print "$100,000 at 7% for 10 years:";
+print compound($100,000, 7, 10);

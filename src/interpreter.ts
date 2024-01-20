@@ -2,14 +2,17 @@ import {
 	Assign,
 	Binary,
 	Block,
+	Call,
 	Expr,
 	Expression,
 	ExpressionVisitor,
+	Func,
 	Grouping,
 	IfStmt,
 	Literal,
 	Logical,
 	Print,
+	Return,
 	Stmt,
 	StmtVisitor,
 	Unary,
@@ -19,9 +22,32 @@ import {
 	visitExpr,
 	visitStmt,
 } from "./ast.js";
+import { LoxCallable } from "./callable.js";
 import { Environment } from "./environment.js";
+import { LoxFunction } from "./lox-function.js";
 import { runtimeError } from "./main.js";
 import { Token } from "./token.js";
+
+// TODO: Crafting Interpreters makes this anonymous, can I do that?
+class ClockFn extends LoxCallable {
+	arity() {
+		return 0;
+	}
+	call(): unknown {
+		return Date.now();
+	}
+	toString() {
+		return "<native fn>";
+	}
+}
+
+export class ReturnCall extends Error {
+	value: unknown;
+	constructor(value: unknown) {
+		super();
+		this.value = value;
+	}
+}
 
 // XXX using eslint quickfix to implement this interface did not work at all.
 
@@ -29,10 +55,22 @@ import { Token } from "./token.js";
 
 // TODO: try making this an object instead of a class so that the parameter
 // types are inferred.
+// https://github.com/azat-io/eslint-plugin-perfectionist/issues/102
+/* eslint-disable perfectionist/sort-classes */
 export class Interpreter
 	implements ExpressionVisitor<unknown>, StmtVisitor<void>
 {
-	#environment = new Environment();
+	globals = new Environment();
+	#environment = this.globals;
+
+	constructor() {
+		this.globals.define("clock", new ClockFn());
+	}
+
+	return(stmt: Return) {
+		const value = stmt.value && this.evaluate(stmt.value);
+		throw new ReturnCall(value);
+	}
 
 	"var-expr"(expr: VarExpr): unknown {
 		return this.#environment.get(expr.name);
@@ -111,6 +149,24 @@ export class Interpreter
 		this.executeBlock(block.statements, new Environment(this.#environment));
 	}
 
+	call(expr: Call): unknown {
+		const callee = this.evaluate(expr.callee);
+		const args = expr.args.map((arg) => this.evaluate(arg));
+		if (!(callee instanceof LoxCallable)) {
+			throw new RuntimeError(
+				expr.paren,
+				"Can only call functions and classes.",
+			);
+		}
+		if (args.length != callee.arity()) {
+			throw new RuntimeError(
+				expr.paren,
+				`Expected ${callee.arity()} arguments but got ${args.length}.`,
+			);
+		}
+		return callee.call(this, args);
+	}
+
 	evaluate(expr: Expr): unknown {
 		return visitExpr(expr, this);
 	}
@@ -135,6 +191,11 @@ export class Interpreter
 
 	expr(stmt: Expression): void {
 		this.evaluate(stmt.expression);
+	}
+
+	func(stmt: Func): void {
+		const func = new LoxFunction(stmt, this.#environment);
+		this.#environment.define(stmt.name.lexeme, func);
 	}
 
 	grouping(expr: Grouping): unknown {
@@ -202,6 +263,7 @@ export class Interpreter
 		}
 	}
 }
+/* eslint-enable perfectionist/sort-classes */
 
 export class RuntimeError extends Error {
 	token: Token;
@@ -248,6 +310,8 @@ export function isEqual(a: unknown, b: unknown): boolean {
 export function stringify(val: unknown): string {
 	if (val === null) {
 		return "nil";
+	} else if (val === undefined) {
+		throw new Error(`undefined is not a valid Lox value`);
 	}
 	return String(val);
 }

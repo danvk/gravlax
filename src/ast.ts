@@ -35,6 +35,15 @@ export interface VarExpr {
 	name: Token;
 }
 
+export interface Call {
+	kind: "call";
+	callee: Expr;
+	paren: Token;
+	args: Expr[];
+}
+
+// Statements
+
 export interface Assign {
 	kind: "assign";
 	name: Token;
@@ -76,15 +85,37 @@ export interface While {
 	body: Stmt;
 }
 
+export interface Func {
+	kind: "func";
+	name: Token;
+	params: Token[];
+	body: Stmt[];
+}
+
+export interface Return {
+	kind: "return";
+	keyword: Token;
+	value: Expr | null;
+}
+
 export type Expr =
 	| Assign
 	| Binary
+	| Call
 	| Grouping
 	| Literal
 	| Logical
 	| Unary
 	| VarExpr;
-export type Stmt = Block | Expression | IfStmt | Print | VarStmt | While;
+export type Stmt =
+	| Block
+	| Expression
+	| Func
+	| IfStmt
+	| Print
+	| Return
+	| VarStmt
+	| While;
 
 export type ExpressionVisitor<R> = {
 	[Kind in Expr["kind"]]: (expr: Extract<Expr, { kind: Kind }>) => R;

@@ -1,14 +1,17 @@
 // Grammar:
 // program        → declaration* EOF ;
-// declaration    → varDecl | statement ;
+// declaration    → funDecl | varDecl | statement ;
+// funDecl        → "fun" function ;
+// function       → IDENTIFIER "(" parameters? ")" block ;
 // varDecl        → "var" IDENTIFIER ( "=" expression )? ";" ;
-// statement      → exprStmt | forStmt | ifStmt | printStmt | whileStmt | block;
+// statement      → exprStmt | forStmt | ifStmt | printStmt | whileStmt | returnStmt | block;
 // block          → "{" declaration* "}" ;
 // exprStmt       → expression ";" ;
 // printStmt      → "print" expression ";" ;
 // ifStmt         → "if" "(" expression ")" statement ( "else" statement )? ;
 // whileStmt      → "while" "(" expression ")" statement ;
 // forStmt        → "for" "(" ( varDecl | exprStmt | ";" ) expression? ";" expression? ")" statement ;
+// returnStmt     → "return" expression? ";" ;
 // expression     → assignment;
 // assignment     → IDENTIFIER "=" assignment | logic_or;
 // logic_or       → logic_and ( "or" logic_and )* ;
@@ -17,8 +20,9 @@
 // comparison     → term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
 // term           → factor ( ( "-" | "+" ) factor )* ;
 // factor         → unary ( ( "/" | "*" ) unary )* ;
-// unary          → ( "!" | "-" ) unary
-//                | primary ;
+// unary          → ( "!" | "-" ) unary | call ;
+// call           → primary ( "(" arguments? ")" )* ;
+// arguments      → expression ( "," expression )* ;
 // primary        → NUMBER | STRING | "true" | "false" | "nil"
 //                | "(" expression ")" ;
 //                | IDENTIFIER ;
@@ -96,7 +100,9 @@ export function parse(tokens: Token[]) {
 	// declaration    → varDecl | statement ;
 	const declaration = () => {
 		try {
-			if (match("var")) {
+			if (match("fun")) {
+				return func("function");
+			} else if (match("var")) {
 				return varDeclaration();
 			}
 			return statement();
@@ -107,6 +113,26 @@ export function parse(tokens: Token[]) {
 				throw e;
 			}
 		}
+	};
+
+	// funDecl        → "fun" function ;
+	// function       → IDENTIFIER "(" parameters? ")" block ;
+	const func = (kind: string): Stmt => {
+		const name = consume("identifier", `Expect ${kind} name.`);
+		consume("(", "Expect '(' after ${kind} name.");
+		const params = [];
+		if (!check(")")) {
+			do {
+				if (params.length >= 255) {
+					error(peek(), "Can't have more than 255 parameters.");
+				}
+				params.push(consume("identifier", "Expect parameter name."));
+			} while (match(","));
+		}
+		consume(")", "Expect ')' after parameters.");
+		consume("{", `Expect '{' before ${kind} body.`);
+		const body = block();
+		return { body, kind: "func", name, params };
 	};
 
 	// varDecl        → "var" IDENTIFIER ( "=" expression )? ";" ;
@@ -128,6 +154,8 @@ export function parse(tokens: Token[]) {
 			return ifStatement();
 		} else if (match("print")) {
 			return printStatement();
+		} else if (match("return")) {
+			return returnStatement();
 		} else if (match("while")) {
 			return whileStatement();
 		} else if (match("{")) {
@@ -204,6 +232,17 @@ export function parse(tokens: Token[]) {
 		return { expression: expr, kind: "print" };
 	};
 
+	// returnStmt     → "return" expression? ";" ;
+	const returnStatement = (): Stmt => {
+		const keyword = previous();
+		let value = null;
+		if (!check(";")) {
+			value = expression();
+		}
+		consume(";", "Expect ';' after return value.");
+		return { keyword, kind: "return", value };
+	};
+
 	const block = (): Stmt[] => {
 		const statements = [];
 		while (!check("}") && !isAtEnd()) {
@@ -261,7 +300,34 @@ export function parse(tokens: Token[]) {
 			const right = unary();
 			return { kind: "unary", operator, right };
 		}
-		return primary();
+		return call();
+	};
+
+	const call = (): Expr => {
+		let expr = primary();
+		while (true) {
+			if (match("(")) {
+				expr = finishCall(expr);
+			} else {
+				break;
+			}
+		}
+		return expr;
+	};
+
+	const finishCall = (callee: Expr): Expr => {
+		const args: Expr[] = [];
+		if (!check(")")) {
+			do {
+				if (args.length >= 255) {
+					// XXX won't this flag _all_ args past 255?
+					error(peek(), "Can't have more than 255 arguments.");
+				}
+				args.push(expression());
+			} while (match(","));
+		}
+		const paren = consume(")", "Expect ')' after arguments.");
+		return { args, callee, kind: "call", paren };
 	};
 
 	// primary        → NUMBER | STRING | "true" | "false" | "nil" | "(" expression ")" ;

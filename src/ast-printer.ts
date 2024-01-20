@@ -14,7 +14,14 @@ export const astPrinter: ExpressionVisitor<string> & StmtVisitor<string> = {
 			"block",
 			...block.statements.map((stmt) => visitStmt(stmt, astPrinter)),
 		),
+	call: (expr) => parenthesize(expr.callee, ...expr.args),
 	expr: (stmt) => visitExpr(stmt.expression, astPrinter),
+	func: (stmt) =>
+		parenthesizeText(
+			"func",
+			parenthesizeText(stmt.name.lexeme, ...stmt.params.map((p) => p.lexeme)),
+			visitStmt({ kind: "block", statements: stmt.body }, astPrinter),
+		),
 	grouping: (expr) => parenthesize("group", expr.expr),
 	if: (stmt) =>
 		parenthesizeText(
@@ -26,6 +33,7 @@ export const astPrinter: ExpressionVisitor<string> & StmtVisitor<string> = {
 	literal: (expr) => (expr.value === null ? "nil" : String(expr.value)),
 	logical: (expr) => parenthesize(expr.operator.lexeme, expr.left, expr.right),
 	print: (stmt) => parenthesize("print", stmt.expression),
+	return: (stmt) => parenthesize("return", ...(stmt.value ? [stmt.value] : [])),
 	unary: (expr) => parenthesize(expr.operator.lexeme, expr.right),
 	"var-expr": (expr) => String(expr.name.literal),
 	"var-stmt": (stmt) =>
@@ -49,8 +57,8 @@ function parenthesizeText(...parts: (null | string)[]) {
 
 // This would be nicer if it could be (Expr | Stmt)… but there's no programmatic
 // way to distinguish those two in order to tell which visit function to call.
-function parenthesize(name: string, ...exprs: (Expr | string)[]) {
-	const parts = [name];
+function parenthesize(...exprs: (Expr | string)[]) {
+	const parts = [];
 	for (const expr of exprs) {
 		parts.push(typeof expr == "string" ? expr : visitExpr(expr, astPrinter));
 	}

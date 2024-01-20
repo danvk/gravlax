@@ -28,7 +28,7 @@
 		"lint:package-json": "npmPkgJsonLint .",
 		"lint:packages": "pnpm dedupe --check",
 		"lint:spelling": "cspell \"**\" \".github/**/*\"",
-		"pre-push": "pnpm run '/^lint(?!:packages).*$/'",
+		"pre-push": "pnpm run '/^(tsc|lint(?!:packages).*)$/'",
 		"prepare": "husky install",
 		"repl": "pnpm run:ts src/index.ts",
 		"run:ts": "node --loader ts-node/esm --no-warnings",

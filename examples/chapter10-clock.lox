@@ -1,0 +1,4 @@
+print clock;
+var start = clock();
+var end = clock();
+print end - start;  // hopefully 0!
