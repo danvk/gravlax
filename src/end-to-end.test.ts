@@ -14,6 +14,13 @@ const testFiles = [
 	"chapter9-if-statement.lox",
 	"chapter9-logical.lox",
 	"chapter9-while.lox",
+	"chapter10-add-abc.lox",
+	"chapter10-define-and-call-fun.lox",
+	"chapter10-fibonacci.lox",
+	"chapter10-make-counter.lox",
+	"chapter10-multi-currency.lox",
+	"chapter10-return-in-loop.lox",
+	"chapter10-return-nothing.lox",
 ];
 
 // Similar to tests in main.test.ts, except that fs isn't mocked.
