@@ -1,0 +1,10 @@
+[line 32] Error at 'p255': Can't have more than 255 parameters.
+[line 32] Error at 'p256': Can't have more than 255 parameters.
+[line 32] Error at 'p257': Can't have more than 255 parameters.
+[line 32] Error at 'p258': Can't have more than 255 parameters.
+[line 32] Error at 'p259': Can't have more than 255 parameters.
+[line 64] Error at '255': Can't have more than 255 arguments.
+[line 64] Error at '256': Can't have more than 255 arguments.
+[line 64] Error at '257': Can't have more than 255 arguments.
+[line 64] Error at '258': Can't have more than 255 arguments.
+[line 64] Error at '259': Can't have more than 255 arguments.
