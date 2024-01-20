@@ -22,7 +22,7 @@ const testFiles = [
 	"chapter10-return-in-loop.lox",
 	"chapter10-return-nothing.lox",
 	"chapter10-too-many-params.lox",
-	"examples/chapter10-print-fun.lox",
+	"chapter10-print-fun.lox",
 ];
 
 async function maybeReadFile(path: string): Promise<null | string> {
