@@ -49,7 +49,7 @@ module.exports = {
 					"error",
 					{
 						// why isn't this the default?
-						// https://github.com/typescript-eslint/typescript-eslint/issues/7113
+						// https://github.com/typescript-eslint/typescript-eslint/issues/7047
 						allowConstantLoopConditions: true,
 					},
 				],
