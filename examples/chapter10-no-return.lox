@@ -1,5 +1,0 @@
-fun noReturn() {
-    print "I return nothing (nil)";
-}
-
-print noReturn();
