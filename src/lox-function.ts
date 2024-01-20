@@ -4,7 +4,7 @@ import { Environment } from "./environment.js";
 import { Interpreter, ReturnCall } from "./interpreter.js";
 
 // XXX interesting that you can change "extends" to "implements" here.
-// This type checks but doens't work at runtime.
+// This type checks but doesn't work at runtime.
 export class LoxFunction extends LoxCallable {
 	closure: Environment;
 	declaration: Func;
