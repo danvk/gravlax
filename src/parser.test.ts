@@ -4,6 +4,7 @@ import { visitStmt } from "./ast.js";
 import { astPrinter } from "./ast-printer.js";
 import { parse } from "./parser.js";
 import { Scanner } from "./scanner.js";
+import { mockError } from "./test-utils.js";
 
 function parseExprToLisp(text: string) {
 	const stmts = parse(new Scanner(text).scanTokens());
@@ -154,10 +155,20 @@ describe("parsing expressions", () => {
 		`);
 	});
 
+	it("should error on an invalid assignment target", () => {
+		const error = mockError();
+		expect(parseProgram(`1 + 2 = 3;`)).toMatchInlineSnapshot(`
+			[
+			  "(+ 1 2)",
+			]
+		`);
+		expect(error).toHaveBeenCalledWith(
+			"[line 1] Error at '=': Invalid assignment target.",
+		);
+	});
+
 	it("should error on unbalanced parens", () => {
-		const error = vi
-			.spyOn(console, "error")
-			.mockImplementation(() => undefined);
+		const error = mockError();
 		expect(parseExprToLisp("(1 + 1);")).toMatchInlineSnapshot(
 			`"(group (+ 1 1))"`,
 		);
@@ -170,9 +181,7 @@ describe("parsing expressions", () => {
 	});
 
 	it("should resynchronize after a parse error", () => {
-		const error = vi
-			.spyOn(console, "error")
-			.mockImplementation(() => undefined);
+		const error = mockError();
 		expect(
 			parseProgram(`
 			var x = + -;
@@ -189,9 +198,7 @@ describe("parsing expressions", () => {
 	});
 
 	it("should resynchronize without a semicolon", () => {
-		const error = vi
-			.spyOn(console, "error")
-			.mockImplementation(() => undefined);
+		const error = mockError();
 
 		// It would be nice if we didn't lose the `print "hello"`.
 		expect(
