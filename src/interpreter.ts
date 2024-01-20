@@ -1,5 +1,3 @@
-// TODO: file bug about sort-classes and initialization order
-/* eslint-disable perfectionist/sort-classes */
 import {
 	Assign,
 	Binary,
@@ -57,6 +55,8 @@ export class ReturnCall extends Error {
 
 // TODO: try making this an object instead of a class so that the parameter
 // types are inferred.
+// https://github.com/azat-io/eslint-plugin-perfectionist/issues/102
+/* eslint-disable perfectionist/sort-classes */
 export class Interpreter
 	implements ExpressionVisitor<unknown>, StmtVisitor<void>
 {
