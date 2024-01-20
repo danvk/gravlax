@@ -27,7 +27,7 @@
 //                | "(" expression ")" ;
 //                | IDENTIFIER ;
 
-import { Call, Expr, Expression, Print, Stmt, VarStmt } from "./ast.js";
+import { Expr, Expression, Print, Stmt, VarStmt } from "./ast.js";
 import { errorOnToken } from "./main.js";
 import { Token } from "./token.js";
 import { TokenType } from "./token-type.js";
