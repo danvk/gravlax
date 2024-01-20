@@ -1,3 +1,5 @@
+// TODO: file bug about sort-classes and initialization order
+/* eslint-disable perfectionist/sort-classes */
 import {
 	Assign,
 	Binary,
@@ -12,6 +14,7 @@ import {
 	Literal,
 	Logical,
 	Print,
+	Return,
 	Stmt,
 	StmtVisitor,
 	Unary,
@@ -40,6 +43,14 @@ class ClockFn extends LoxCallable {
 	}
 }
 
+export class ReturnCall extends Error {
+	value: unknown;
+	constructor(value: unknown) {
+		super();
+		this.value = value;
+	}
+}
+
 // XXX using eslint quickfix to implement this interface did not work at all.
 
 // TODO: introduce a type for Lox values, rather than using unknown.
@@ -50,11 +61,15 @@ export class Interpreter
 	implements ExpressionVisitor<unknown>, StmtVisitor<void>
 {
 	globals = new Environment();
-	// eslint-disable-next-line perfectionist/sort-classes
 	#environment = this.globals;
 
 	constructor() {
 		this.globals.define("clock", new ClockFn());
+	}
+
+	return(stmt: Return) {
+		const value = stmt.value && this.evaluate(stmt.value);
+		throw new ReturnCall(value);
 	}
 
 	"var-expr"(expr: VarExpr): unknown {
@@ -297,3 +312,4 @@ export function stringify(val: unknown): string {
 	}
 	return String(val);
 }
+/* eslint-enable perfectionist/sort-classes */

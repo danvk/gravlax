@@ -92,6 +92,12 @@ export interface Func {
 	body: Stmt[];
 }
 
+export interface Return {
+	kind: "return";
+	keyword: Token;
+	value: Expr | null;
+}
+
 export type Expr =
 	| Assign
 	| Binary
@@ -101,7 +107,15 @@ export type Expr =
 	| Logical
 	| Unary
 	| VarExpr;
-export type Stmt = Block | Expression | Func | IfStmt | Print | VarStmt | While;
+export type Stmt =
+	| Block
+	| Expression
+	| Func
+	| IfStmt
+	| Print
+	| Return
+	| VarStmt
+	| While;
 
 export type ExpressionVisitor<R> = {
 	[Kind in Expr["kind"]]: (expr: Extract<Expr, { kind: Kind }>) => R;

@@ -4,13 +4,14 @@
 // funDecl        → "fun" function ;
 // function       → IDENTIFIER "(" parameters? ")" block ;
 // varDecl        → "var" IDENTIFIER ( "=" expression )? ";" ;
-// statement      → exprStmt | forStmt | ifStmt | printStmt | whileStmt | block;
+// statement      → exprStmt | forStmt | ifStmt | printStmt | whileStmt | returnStmt | block;
 // block          → "{" declaration* "}" ;
 // exprStmt       → expression ";" ;
 // printStmt      → "print" expression ";" ;
 // ifStmt         → "if" "(" expression ")" statement ( "else" statement )? ;
 // whileStmt      → "while" "(" expression ")" statement ;
 // forStmt        → "for" "(" ( varDecl | exprStmt | ";" ) expression? ";" expression? ")" statement ;
+// returnStmt     → "return" expression? ";" ;
 // expression     → assignment;
 // assignment     → IDENTIFIER "=" assignment | logic_or;
 // logic_or       → logic_and ( "or" logic_and )* ;
@@ -153,6 +154,8 @@ export function parse(tokens: Token[]) {
 			return ifStatement();
 		} else if (match("print")) {
 			return printStatement();
+		} else if (match("return")) {
+			return returnStatement();
 		} else if (match("while")) {
 			return whileStatement();
 		} else if (match("{")) {
@@ -227,6 +230,17 @@ export function parse(tokens: Token[]) {
 		const expr = expression();
 		consume(";", "Expect ';' after expression.");
 		return { expression: expr, kind: "print" };
+	};
+
+	// returnStmt     → "return" expression? ";" ;
+	const returnStatement = (): Stmt => {
+		const keyword = previous();
+		let value = null;
+		if (!check(";")) {
+			value = expression();
+		}
+		consume(";", "Expect ';' after return value.");
+		return { keyword, kind: "return", value };
 	};
 
 	const block = (): Stmt[] => {
