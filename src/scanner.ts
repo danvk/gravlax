@@ -75,7 +75,11 @@ export class Scanner {
 
 	#number() {
 		const isCurrency = this.source[this.start] === "$";
-		while (isDigit(this.#peek()) || this.#peek() === ",") {
+		while (
+			isDigit(this.#peek()) ||
+			// a trailing comma might be part of an argument list.
+			(this.#peek() === "," && isDigit(this.#peekNext()))
+		) {
 			this.#advance();
 		}
 		if (this.#peek() === "." && isDigit(this.#peekNext())) {

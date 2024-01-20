@@ -164,4 +164,18 @@ describe("Scanner", () => {
 			]
 		`);
 	});
+
+	it("should scan a function call with currency", () => {
+		expect(scan(`f($1,234, 7)`)).toMatchInlineSnapshot(`
+			[
+			  "'f': identifier: f",
+			  "'(': (",
+			  "'$1,234': number: $1234",
+			  "',': ,",
+			  "'7': number: 7",
+			  "')': )",
+			  "'': eof",
+			]
+		`);
+	});
 });
