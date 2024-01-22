@@ -1,0 +1,64 @@
+fun cons(head, tail) {
+    fun get(which) {
+        if (which == "head") {
+            return head;
+        } else if (which == "tail") {
+            return tail;
+        }
+        return which / nil;
+    }
+
+    fun set(which, value) {
+        if (which == "head") {
+            head = value;
+        } else if (which == "tail") {
+            tail = value;
+        }
+        return which / nil;
+    }
+
+    fun dispatch(method) {
+        if (method == "get") {
+            return get;
+        } else if (method == "set") {
+            return set;
+        }
+        return method / nil;
+    }
+
+    return dispatch;
+}
+
+fun printAll(list) {
+    if (list == nil) {
+        return;
+    }
+    print(list("get")("head"));
+    printAll(list("get")("tail"));
+}
+
+fun map(list, fn) {
+    if (list == nil) {
+        return nil;
+    }
+    return cons(
+        fn(list("get")("head")),
+        map(list("get")("tail"), fn)
+    );
+}
+
+fun square(x) {
+    return x * x;
+}
+
+fun abs(x) {
+    if (x < 0) {
+        return -x;
+    }
+    return --x;
+}
+
+var list = cons(1, cons(2, cons(3, nil)));
+printAll(list);
+var squares = map(list, square);
+printAll(squares);
