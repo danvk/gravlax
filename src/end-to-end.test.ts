@@ -5,25 +5,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { main, resetErrors } from "./main.js";
 import { mockError, mockExit, mockLog } from "./test-utils.js";
 
-const testFiles = [
-	"end-of-chapter8.lox",
-	"chapter8-challenge3.lox",
-	"chapter8-assign-outer-scope.lox",
-	"chapter9-fibonacci.lox",
-	"chapter9-for.lox",
-	"chapter9-if-statement.lox",
-	"chapter9-logical.lox",
-	"chapter9-while.lox",
-	"chapter10-add-abc.lox",
-	"chapter10-define-and-call-fun.lox",
-	"chapter10-fibonacci.lox",
-	"chapter10-make-counter.lox",
-	"chapter10-multi-currency.lox",
-	"chapter10-return-in-loop.lox",
-	"chapter10-return-nothing.lox",
-	"chapter10-too-many-params.lox",
-	"chapter10-print-fun.lox",
-];
+const testFiles = (await fs.readdir("examples", { recursive: true })).filter(
+	(path) => path.endsWith(".lox"),
+);
 
 async function maybeReadFile(path: string): Promise<null | string> {
 	try {
