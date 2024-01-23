@@ -1,3 +1,9 @@
+# [0.9.0](https://github.com/danvk/gravlax/compare/0.8.0...0.9.0) (2024-01-23)
+
+### Features
+
+- Implement Chapter 11 (Resolving and Binding) ([#22](https://github.com/danvk/gravlax/issues/22)) ([e93c0b3](https://github.com/danvk/gravlax/commit/e93c0b3942788f462bb3f05d4b6a3b821b621d99))
+
 # [0.8.0](https://github.com/danvk/gravlax/compare/0.7.0...0.8.0) (2024-01-20)
 
 ### Features
