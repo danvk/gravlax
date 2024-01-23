@@ -108,6 +108,11 @@ function run(interpreter: Interpreter, contents: string): void {
 
 	const resolver = makeResolver(interpreter);
 	resolver.resolveStmts(statements);
+	// This is an interesting example of a function call that should invalidate refinements!
+	// eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+	if (hadError) {
+		return;
+	}
 
 	interpreter.interpret(statements);
 }

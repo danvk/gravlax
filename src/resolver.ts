@@ -11,14 +11,25 @@ import { Interpreter } from "./interpreter.js";
 import { errorOnToken } from "./main.js";
 import { Token } from "./token.js";
 
+type FunctionType = "function" | "none";
+
 export function makeResolver(interpreter: Interpreter) {
 	const scopes: Map<string, boolean>[] = [];
+	let currentFunc: FunctionType = "none";
+
 	const beginScope = () => {
 		scopes.push(new Map());
 	};
 	const endScope = () => scopes.pop();
 	const declare = (name: Token) => {
-		scopes.at(-1)?.set(name.lexeme, false);
+		const scope = scopes.at(-1);
+		if (!scope) {
+			return;
+		}
+		if (scope.has(name.lexeme)) {
+			errorOnToken(name, "Already a variable with this name in this scope.");
+		}
+		scope.set(name.lexeme, false);
 	};
 	const define = (name: Token) => {
 		scopes.at(-1)?.set(name.lexeme, true);
@@ -42,7 +53,9 @@ export function makeResolver(interpreter: Interpreter) {
 			}
 		}
 	};
-	const resolveFunction = (func: Func) => {
+	const resolveFunction = (func: Func, funcType: FunctionType) => {
+		const enclosingFuncType = currentFunc;
+		currentFunc = funcType;
 		beginScope();
 		for (const param of func.params) {
 			declare(param);
@@ -50,6 +63,7 @@ export function makeResolver(interpreter: Interpreter) {
 		}
 		resolveStmts(func.body);
 		endScope();
+		currentFunc = enclosingFuncType; // TODO: try a using statement!
 	};
 
 	const resolver: ExpressionVisitor<void> & StmtVisitor<void> = {
@@ -76,7 +90,7 @@ export function makeResolver(interpreter: Interpreter) {
 		func(stmt) {
 			declare(stmt.name);
 			define(stmt.name);
-			resolveFunction(stmt);
+			resolveFunction(stmt, "function");
 		},
 		grouping(expr) {
 			resolveExpr(expr.expr);
@@ -99,6 +113,9 @@ export function makeResolver(interpreter: Interpreter) {
 			resolveExpr(stmt.expression);
 		},
 		return(stmt) {
+			if (currentFunc == "none") {
+				errorOnToken(stmt.keyword, "Can't return from top-level code.");
+			}
 			if (stmt.value) {
 				resolveExpr(stmt.value);
 			}
