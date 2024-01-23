@@ -34,7 +34,8 @@
 		"run:ts": "node --loader ts-node/esm --no-warnings",
 		"should-semantic-release": "should-semantic-release --verbose",
 		"test": "vitest",
-		"tsc": "tsc"
+		"tsc": "tsc",
+		"update-baselines": "pnpm run:ts src/scripts/update-baselines.ts"
 	},
 	"lint-staged": {
 		"*": "prettier --ignore-unknown --write"
@@ -83,7 +84,7 @@
 	},
 	"packageManager": "pnpm@8.14.1",
 	"engines": {
-		"node": ">=18"
+		"node": ">=20"
 	},
 	"publishConfig": {
 		"provenance": true

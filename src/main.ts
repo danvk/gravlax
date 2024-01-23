@@ -5,6 +5,7 @@ import { createInterface } from "node:readline";
 import { Expr } from "./ast.js";
 import { Interpreter, RuntimeError, stringify } from "./interpreter.js";
 import { parse } from "./parser.js";
+import { makeResolver } from "./resolver.js";
 import { Scanner } from "./scanner.js";
 import { Token } from "./token.js";
 
@@ -97,11 +98,19 @@ function report(line: number, where: string, message: string) {
 	hadError = true;
 }
 
-function run(interpreter: Interpreter, contents: string): void {
+export function run(interpreter: Interpreter, contents: string): void {
 	const scanner = new Scanner(contents);
 	const tokens = scanner.scanTokens();
 	const statements = parse(tokens);
 	if (hadError || !statements) {
+		return;
+	}
+
+	const resolver = makeResolver(interpreter);
+	resolver.resolveStmts(statements);
+	// This is an interesting example of a function call that should invalidate refinements!
+	// eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+	if (hadError) {
 		return;
 	}
 

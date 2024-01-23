@@ -10,3 +10,5 @@ coverage:
         target: auto
         threshold: 2% # allow for 2% reduction of coverage without failing
 
+ignore:
+  - src/scripts
