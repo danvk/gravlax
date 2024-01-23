@@ -62,6 +62,7 @@ export class Interpreter
 {
 	globals = new Environment();
 	#environment = this.globals;
+	#locals = new Map<Expr, number>();
 
 	constructor() {
 		this.globals.define("clock", new ClockFn());
@@ -72,8 +73,21 @@ export class Interpreter
 		throw new ReturnCall(value);
 	}
 
+	resolve(expr: Expr, depth: number) {
+		this.#locals.set(expr, depth);
+	}
+
 	"var-expr"(expr: VarExpr): unknown {
-		return this.#environment.get(expr.name);
+		return this.#lookUpVariable(expr.name, expr);
+		// return this.#environment.get(expr.name);
+	}
+
+	#lookUpVariable(name: Token, expr: Expr): unknown {
+		const distance = this.#locals.get(expr);
+		if (distance !== undefined) {
+			return this.#environment.getAt(distance, name.lexeme);
+		}
+		return this.globals.get(name);
 	}
 
 	"var-stmt"(stmt: VarStmt): unknown {
@@ -87,7 +101,12 @@ export class Interpreter
 
 	assign(expr: Assign): unknown {
 		const value = this.evaluate(expr.value);
-		this.#environment.assign(expr.name, value);
+		const distance = this.#locals.get(expr);
+		if (distance !== undefined) {
+			this.#environment.assignAt(distance, expr.name, value);
+		} else {
+			this.globals.assign(expr.name, value);
+		}
 		return value;
 	}
 

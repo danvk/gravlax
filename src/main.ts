@@ -5,6 +5,7 @@ import { createInterface } from "node:readline";
 import { Expr } from "./ast.js";
 import { Interpreter, RuntimeError, stringify } from "./interpreter.js";
 import { parse } from "./parser.js";
+import { makeResolver } from "./resolver.js";
 import { Scanner } from "./scanner.js";
 import { Token } from "./token.js";
 
@@ -104,6 +105,9 @@ function run(interpreter: Interpreter, contents: string): void {
 	if (hadError || !statements) {
 		return;
 	}
+
+	const resolver = makeResolver(interpreter);
+	resolver.resolveStmts(statements);
 
 	interpreter.interpret(statements);
 }
