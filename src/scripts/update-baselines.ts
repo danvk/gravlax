@@ -53,6 +53,7 @@ async function processFile(loxFile: string) {
 }
 
 async function main() {
+	await fs.rm("baselines", { force: true, recursive: true }); // start fresh!
 	await fs.mkdir("baselines", { recursive: true });
 	// Note: recursive requires node 20+
 	const files = await fs.readdir("examples", { recursive: true });
@@ -61,7 +62,6 @@ async function main() {
 			console.log(file);
 			await processFile(file);
 		}
-		break;
 	}
 }
 
