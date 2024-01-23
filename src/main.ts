@@ -98,7 +98,7 @@ function report(line: number, where: string, message: string) {
 	hadError = true;
 }
 
-function run(interpreter: Interpreter, contents: string): void {
+export function run(interpreter: Interpreter, contents: string): void {
 	const scanner = new Scanner(contents);
 	const tokens = scanner.scanTokens();
 	const statements = parse(tokens);
