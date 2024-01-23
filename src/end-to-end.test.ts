@@ -64,12 +64,12 @@ describe("end-to-end tests", () => {
 
 	it.each(testFiles.map((file) => [file]))("baseline: %s", async (filename) => {
 		const baseline = filename.replace(".lox", "");
-		const expected = await fs.readFile(`baselines/${baseline}.txt`, "utf8");
+		const expected = await maybeReadFile(`baselines/${baseline}.txt`);
 		const errors = await maybeReadFile(`baselines/${baseline}.errors.txt`);
 		process.argv = ["node", "gravlax.ts", `examples/${filename}`];
 		await main();
 
-		if (expected !== "") {
+		if (expected && expected !== "") {
 			expect(logLines).toEqual(expected.trimEnd().split("\n"));
 		} else {
 			expect(log).not.toHaveBeenCalled();
