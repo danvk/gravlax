@@ -66,6 +66,7 @@ export function makeResolver(interpreter: Interpreter) {
 		currentFunc = enclosingFuncType; // TODO: try a using statement!
 	};
 
+	// TODO: try to factor out some boilerplate here.
 	const resolver: ExpressionVisitor<void> & StmtVisitor<void> = {
 		assign(expr) {
 			resolveExpr(expr.value);

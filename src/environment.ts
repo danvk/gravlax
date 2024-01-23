@@ -27,10 +27,8 @@ export class Environment {
 		if (this.#values.has(name.lexeme)) {
 			this.#values.set(name.lexeme, value);
 			return;
-		} else if (this.#enclosing) {
-			this.#enclosing.assign(name, value);
-			return;
 		}
+		// resolution pass means that we needn't check #enclosing.
 		throw new RuntimeError(name, `Undefined variable '${name.lexeme}'`);
 	}
 
@@ -48,9 +46,7 @@ export class Environment {
 			// TODO: could check for undefined instead
 			return this.#values.get(lexeme);
 		}
-		if (this.#enclosing) {
-			return this.#enclosing.get(name);
-		}
+		// resolution pass means that we needn't check #enclosing.
 		throw new RuntimeError(name, `Undefined variable '${lexeme}'.`);
 	}
 
