@@ -3,7 +3,7 @@
 import * as fs from "node:fs/promises";
 
 import { Interpreter } from "../interpreter.js";
-import { run } from "../main.js";
+import { resetErrors, run } from "../main.js";
 
 function dirname(path: string) {
 	const idx = path.lastIndexOf("/");
@@ -40,6 +40,7 @@ async function processFile(loxFile: string) {
 	} finally {
 		console.log = trueLog;
 		console.error = trueError;
+		resetErrors();
 	}
 
 	if (logLines.length) {
