@@ -25,7 +25,7 @@ import {
 import { LoxCallable } from "./callable.js";
 import { Environment } from "./environment.js";
 import { LoxFunction } from "./lox-function.js";
-import { LoxValue } from "./lox-value.js";
+import { Currency, CurrencyValue, LoxValue, isCurrency } from "./lox-value.js";
 import { runtimeError } from "./main.js";
 import { Token } from "./token.js";
 
@@ -48,6 +48,36 @@ export class ReturnCall extends Error {
 		super();
 		this.value = value;
 	}
+}
+
+type NumberOrCurrencyPair =
+	| { left: CurrencyValue; right: CurrencyValue }
+	| { left: number; right: number };
+
+function applyOperatorToPair<R extends boolean | number>(
+	pair: NumberOrCurrencyPair,
+	op: (a: number, b: number) => R,
+): LoxValue {
+	if (typeof pair.left === "number") {
+		// XXX why on earth doesn't pair.right get narrowed to number?
+		return op(pair.left, pair.right as number);
+	} else {
+		const value = op(pair.left.value, (pair.right as CurrencyValue).value);
+		if (typeof value === "number") {
+			return { currency: pair.left.currency, value };
+		}
+		return value;
+	}
+}
+
+function applyToNumOrCurrency(
+	val: CurrencyValue | number,
+	fn: (val: number) => number,
+): CurrencyValue | number {
+	if (isCurrency(val)) {
+		return { currency: val.currency, value: fn(val.value) };
+	}
+	return fn(val);
 }
 
 // XXX using eslint quickfix to implement this interface did not work at all.
@@ -112,47 +142,39 @@ export class Interpreter
 		const left = this.evaluate(expr.left);
 		const right = this.evaluate(expr.right);
 		const { operator } = expr;
+		const pair = { left, right };
 		switch (operator.type) {
 			case "-":
-				checkNumberOperand(operator, left);
-				checkNumberOperand(operator, right);
-				return left - right;
+				checkSameNumberOperands(operator, pair);
+				return applyOperatorToPair(pair, (a, b) => a - b);
 			case "/":
-				checkNumberOperand(operator, left);
+				checkNumberOrCurrencyOperand(operator, left);
 				checkNumberOperand(operator, right);
-				return left / right;
+				return applyToNumOrCurrency(left, (v) => v / right);
 			case "*":
-				checkNumberOperand(operator, left);
+				checkNumberOrCurrencyOperand(operator, left);
 				checkNumberOperand(operator, right);
-				return left * right;
+				return applyToNumOrCurrency(left, (v) => v * right);
 			case "+":
 				// This looks kinda funny!
-				if (typeof left === "number" && typeof right === "number") {
+				if (typeof left === "string" && typeof right === "string") {
 					return left + right;
-				} else if (typeof left === "string" && typeof right === "string") {
-					return left + right;
+				} else {
+					checkSameNumberOperands(operator, pair);
+					return applyOperatorToPair(pair, (a, b) => a + b);
 				}
-				throw new RuntimeError(
-					operator,
-					"Operands must be two numbers or two strings.",
-				);
-
 			case ">":
-				checkNumberOperand(operator, left);
-				checkNumberOperand(operator, right);
-				return left > right;
+				checkSameNumberOperands(operator, pair);
+				return applyOperatorToPair(pair, (a, b) => a > b);
 			case ">=":
-				checkNumberOperand(operator, left);
-				checkNumberOperand(operator, right);
-				return left >= right;
+				checkSameNumberOperands(operator, pair);
+				return applyOperatorToPair(pair, (a, b) => a >= b);
 			case "<":
-				checkNumberOperand(operator, left);
-				checkNumberOperand(operator, right);
-				return left < right;
+				checkSameNumberOperands(operator, pair);
+				return applyOperatorToPair(pair, (a, b) => a < b);
 			case "<=":
-				checkNumberOperand(operator, left);
-				checkNumberOperand(operator, right);
-				return left <= right;
+				checkSameNumberOperands(operator, pair);
+				return applyOperatorToPair(pair, (a, b) => a <= b);
 			case "==":
 				return isEqual(left, right);
 			case "!=":
@@ -267,8 +289,8 @@ export class Interpreter
 		const right = this.evaluate(expr.right);
 		switch (expr.operator.type) {
 			case "-":
-				checkNumberOperand(expr.operator, right);
-				return -right;
+				checkNumberOrCurrencyOperand(expr.operator, right);
+				return applyToNumOrCurrency(right, (v) => -v);
 			case "!":
 				return !isTruthy(right);
 		}
@@ -301,6 +323,32 @@ function checkNumberOperand(
 	throw new RuntimeError(operator, "Operand must be a number.");
 }
 
+function checkNumberOrCurrencyOperand(
+	operator: Token,
+	operand: LoxValue,
+): asserts operand is CurrencyValue | number {
+	if (typeof operand === "number" || isCurrency(operand)) {
+		return;
+	}
+	throw new RuntimeError(operator, "Operand must be a number or currency.");
+}
+
+function checkSameNumberOperands(
+	operator: Token,
+	pair: { left: LoxValue; right: LoxValue },
+): asserts pair is NumberOrCurrencyPair {
+	const { left, right } = pair;
+	if (typeof left === "number" && typeof right === "number") {
+		return;
+	} else if (isCurrency(left) && isCurrency(right)) {
+		if (left.currency == right.currency) {
+			return;
+		}
+		throw new RuntimeError(operator, "Operands must be the same currency.");
+	}
+	throw new RuntimeError(operator, "Operands must have matching types");
+}
+
 // TODO: would be nice if this worked!
 // function checkNumberOperands(
 // 	operator: Token,
@@ -322,7 +370,13 @@ export function isTruthy(val: LoxValue): boolean {
 }
 
 export function isEqual(a: LoxValue, b: LoxValue): boolean {
-	return a === b;
+	return (
+		a === b ||
+		(isCurrency(a) &&
+			isCurrency(b) &&
+			a.value === b.value &&
+			a.currency === b.currency)
+	);
 }
 
 export function stringify(val: LoxValue): string {
@@ -332,6 +386,10 @@ export function stringify(val: LoxValue): string {
 	// eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
 	if (val === undefined) {
 		throw new Error(`undefined is not a valid Lox value`);
+	}
+	if (isCurrency(val)) {
+		// XXX this probably wouldn't work in Europe.
+		return `${val.currency}${val.value.toLocaleString()}`;
 	}
 	return String(val);
 }

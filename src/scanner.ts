@@ -91,7 +91,7 @@ export class Scanner {
 
 		const numText = this.source
 			.slice(this.start, this.current)
-			.replace(/[$,]/g, "");
+			.replace(/[$€,]/g, "");
 		const value = Number(numText);
 		this.#addToken("number", currency ? { currency, value } : value);
 	}
