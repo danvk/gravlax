@@ -25,6 +25,7 @@ import {
 import { LoxCallable } from "./callable.js";
 import { Environment } from "./environment.js";
 import { LoxFunction } from "./lox-function.js";
+import { LoxValue } from "./lox-value.js";
 import { runtimeError } from "./main.js";
 import { Token } from "./token.js";
 
@@ -33,7 +34,7 @@ class ClockFn extends LoxCallable {
 	arity() {
 		return 0;
 	}
-	call(): unknown {
+	call() {
 		return Date.now();
 	}
 	toString() {
@@ -42,8 +43,8 @@ class ClockFn extends LoxCallable {
 }
 
 export class ReturnCall extends Error {
-	value: unknown;
-	constructor(value: unknown) {
+	value: LoxValue;
+	constructor(value: LoxValue) {
 		super();
 		this.value = value;
 	}
@@ -51,14 +52,12 @@ export class ReturnCall extends Error {
 
 // XXX using eslint quickfix to implement this interface did not work at all.
 
-// TODO: introduce a type for Lox values, rather than using unknown.
-
 // TODO: try making this an object instead of a class so that the parameter
 // types are inferred.
 // https://github.com/azat-io/eslint-plugin-perfectionist/issues/102
 /* eslint-disable perfectionist/sort-classes */
 export class Interpreter
-	implements ExpressionVisitor<unknown>, StmtVisitor<void>
+	implements ExpressionVisitor<LoxValue>, StmtVisitor<void>
 {
 	globals = new Environment();
 	#environment = this.globals;
@@ -77,12 +76,12 @@ export class Interpreter
 		this.#locals.set(expr, depth);
 	}
 
-	"var-expr"(expr: VarExpr): unknown {
+	"var-expr"(expr: VarExpr): LoxValue {
 		return this.#lookUpVariable(expr.name, expr);
 		// return this.#environment.get(expr.name);
 	}
 
-	#lookUpVariable(name: Token, expr: Expr): unknown {
+	#lookUpVariable(name: Token, expr: Expr): LoxValue {
 		const distance = this.#locals.get(expr);
 		if (distance !== undefined) {
 			return this.#environment.getAt(distance, name.lexeme);
@@ -90,16 +89,15 @@ export class Interpreter
 		return this.globals.get(name);
 	}
 
-	"var-stmt"(stmt: VarStmt): unknown {
+	"var-stmt"(stmt: VarStmt): void {
 		let value = null;
 		if (stmt.initializer) {
 			value = this.evaluate(stmt.initializer);
 		}
 		this.#environment.define(stmt.name.lexeme, value);
-		return null;
 	}
 
-	assign(expr: Assign): unknown {
+	assign(expr: Assign): LoxValue {
 		const value = this.evaluate(expr.value);
 		const distance = this.#locals.get(expr);
 		if (distance !== undefined) {
@@ -110,7 +108,7 @@ export class Interpreter
 		return value;
 	}
 
-	binary(expr: Binary): unknown {
+	binary(expr: Binary): LoxValue {
 		const left = this.evaluate(expr.left);
 		const right = this.evaluate(expr.right);
 		const { operator } = expr;
@@ -168,7 +166,7 @@ export class Interpreter
 		this.executeBlock(block.statements, new Environment(this.#environment));
 	}
 
-	call(expr: Call): unknown {
+	call(expr: Call): LoxValue {
 		const callee = this.evaluate(expr.callee);
 		const args = expr.args.map((arg) => this.evaluate(arg));
 		if (!(callee instanceof LoxCallable)) {
@@ -186,7 +184,7 @@ export class Interpreter
 		return callee.call(this, args);
 	}
 
-	evaluate(expr: Expr): unknown {
+	evaluate(expr: Expr): LoxValue {
 		return visitExpr(expr, this);
 	}
 
@@ -217,7 +215,7 @@ export class Interpreter
 		this.#environment.define(stmt.name.lexeme, func);
 	}
 
-	grouping(expr: Grouping): unknown {
+	grouping(expr: Grouping) {
 		return this.evaluate(expr.expr);
 	}
 
@@ -241,11 +239,11 @@ export class Interpreter
 		}
 	}
 
-	literal(expr: Literal): unknown {
+	literal(expr: Literal) {
 		return expr.value;
 	}
 
-	logical(expr: Logical): unknown {
+	logical(expr: Logical) {
 		const left = this.evaluate(expr.left);
 		if (expr.operator.type == "or") {
 			if (isTruthy(left)) {
@@ -265,7 +263,7 @@ export class Interpreter
 		console.log(stringify(value));
 	}
 
-	unary(expr: Unary): unknown {
+	unary(expr: Unary): LoxValue {
 		const right = this.evaluate(expr.right);
 		switch (expr.operator.type) {
 			case "-":
@@ -274,6 +272,7 @@ export class Interpreter
 			case "!":
 				return !isTruthy(right);
 		}
+		throw new Error(`Unknown unary type ${expr.operator.type}`);
 	}
 
 	while(stmt: While): void {
@@ -294,7 +293,7 @@ export class RuntimeError extends Error {
 
 function checkNumberOperand(
 	operator: Token,
-	operand: unknown,
+	operand: LoxValue,
 ): asserts operand is number {
 	if (typeof operand === "number") {
 		return;
@@ -312,7 +311,7 @@ function checkNumberOperand(
 // 	checkNumberOperand(operator, right);
 // }
 
-export function isTruthy(val: unknown): boolean {
+export function isTruthy(val: LoxValue): boolean {
 	if (val === null) {
 		return false;
 	}
@@ -322,14 +321,16 @@ export function isTruthy(val: unknown): boolean {
 	return true;
 }
 
-export function isEqual(a: unknown, b: unknown): boolean {
+export function isEqual(a: LoxValue, b: LoxValue): boolean {
 	return a === b;
 }
 
-export function stringify(val: unknown): string {
+export function stringify(val: LoxValue): string {
 	if (val === null) {
 		return "nil";
-	} else if (val === undefined) {
+	}
+	// eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+	if (val === undefined) {
 		throw new Error(`undefined is not a valid Lox value`);
 	}
 	return String(val);

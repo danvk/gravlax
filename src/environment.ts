@@ -1,9 +1,10 @@
 import { RuntimeError } from "./interpreter.js";
+import { LoxValue } from "./lox-value.js";
 import { Token } from "./token.js";
 
 export class Environment {
 	#enclosing?: Environment;
-	#values: Map<string, unknown>;
+	#values: Map<string, LoxValue>;
 
 	constructor(enclosing?: Environment) {
 		this.#values = new Map();
@@ -23,7 +24,7 @@ export class Environment {
 		return env;
 	}
 
-	assign(name: Token, value: unknown) {
+	assign(name: Token, value: LoxValue) {
 		if (this.#values.has(name.lexeme)) {
 			this.#values.set(name.lexeme, value);
 			return;
@@ -32,25 +33,29 @@ export class Environment {
 		throw new RuntimeError(name, `Undefined variable '${name.lexeme}'`);
 	}
 
-	assignAt(distance: number, name: Token, value: unknown) {
+	assignAt(distance: number, name: Token, value: LoxValue) {
 		this.ancestor(distance).#values.set(name.lexeme, value);
 	}
 
-	define(name: string, value: unknown) {
+	define(name: string, value: LoxValue) {
 		this.#values.set(name, value);
 	}
 
-	get(name: Token): unknown {
+	get(name: Token): LoxValue {
 		const { lexeme } = name;
-		if (this.#values.has(lexeme)) {
-			// TODO: could check for undefined instead
-			return this.#values.get(lexeme);
+		const value = this.#values.get(lexeme);
+		if (value !== undefined) {
+			return value;
 		}
 		// resolution pass means that we needn't check #enclosing.
 		throw new RuntimeError(name, `Undefined variable '${lexeme}'.`);
 	}
 
-	getAt(distance: number, name: string): unknown {
-		return this.ancestor(distance).#values.get(name);
+	getAt(distance: number, name: string): LoxValue {
+		const value = this.ancestor(distance).#values.get(name);
+		if (value !== undefined) {
+			return value;
+		}
+		throw new Error(`Resolution pass failed for ${name}`);
 	}
 }
