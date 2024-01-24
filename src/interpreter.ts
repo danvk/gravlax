@@ -323,12 +323,7 @@ export class RuntimeError extends Error {
 	}
 }
 
-export class MixedCurrencyError extends RuntimeError {
-	// eslint-disable-next-line @typescript-eslint/no-useless-constructor
-	constructor(token: Token, message: string) {
-		super(token, message);
-	}
-}
+export class MixedCurrencyError extends RuntimeError {}
 
 function checkNumberOperand(
 	operator: Token,
