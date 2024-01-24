@@ -1,3 +1,9 @@
+# [0.10.0](https://github.com/danvk/gravlax/compare/0.9.0...0.10.0) (2024-01-24)
+
+### Features
+
+- Support euros (€) and operations/printing on currencies ([#23](https://github.com/danvk/gravlax/issues/23)) ([2805056](https://github.com/danvk/gravlax/commit/2805056b9886349c6afebd17986dfee57c425e6a))
+
 # [0.9.0](https://github.com/danvk/gravlax/compare/0.8.0...0.9.0) (2024-01-23)
 
 ### Features
