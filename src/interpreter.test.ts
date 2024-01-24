@@ -165,6 +165,7 @@ describe("stringify", () => {
 	});
 
 	it("should refuse to stringify undefined", () => {
+		// @ts-expect-error undefined is not a LoxValue
 		expect(() => stringify(undefined)).toThrowError(
 			"undefined is not a valid Lox value",
 		);
