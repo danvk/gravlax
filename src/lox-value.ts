@@ -15,3 +15,7 @@ export interface CurrencyValue {
 	currency: Currency;
 	value: number;
 }
+
+export function isCurrency(value: LoxValue): value is CurrencyValue {
+	return value !== null && typeof value === "object" && "currency" in value;
+}
