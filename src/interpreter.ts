@@ -60,6 +60,7 @@ function applyOperatorToPair<R extends boolean | number>(
 ): LoxValue {
 	if (typeof pair.left === "number") {
 		// XXX why on earth doesn't pair.right get narrowed to number?
+		// https://github.com/microsoft/TypeScript/issues/32399#issuecomment-639638245
 		return op(pair.left, pair.right as number);
 	} else {
 		const value = op(pair.left.value, (pair.right as CurrencyValue).value);
