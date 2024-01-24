@@ -25,7 +25,7 @@ import {
 import { LoxCallable } from "./callable.js";
 import { Environment } from "./environment.js";
 import { LoxFunction } from "./lox-function.js";
-import { Currency, CurrencyValue, LoxValue, isCurrency } from "./lox-value.js";
+import { CurrencyValue, LoxValue, isCurrency } from "./lox-value.js";
 import { runtimeError } from "./main.js";
 import { Token } from "./token.js";
 
