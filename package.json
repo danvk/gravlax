@@ -21,6 +21,7 @@
 	],
 	"scripts": {
 		"build": "tsup",
+		"coverage": "pnpm test -- --coverage --no-watch",
 		"format": "prettier \"**/*\" --ignore-unknown",
 		"lint": "eslint . .*js --max-warnings 0",
 		"lint:knip": "knip",

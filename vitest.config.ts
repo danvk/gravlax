@@ -5,9 +5,15 @@ export default defineConfig({
 		clearMocks: true,
 		coverage: {
 			all: true,
-			exclude: ["lib"],
+			exclude: ["lib", "src/scripts"],
 			include: ["src"],
-			reporter: ["html", "lcov"],
+			reporter: [
+				[
+					"html-spa",
+					{ metricsToShow: ["branches", "functions", "lines", "statements"] },
+				],
+				"lcov",
+			],
 		},
 		exclude: ["lib", "node_modules"],
 		setupFiles: ["console-fail-test/setup"],
