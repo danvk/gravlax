@@ -32,14 +32,13 @@ export class Scanner {
 		this.#addToken(c, null);
 	}
 
-	#addToken(type: TokenType, literal: Token["literal"], isCurrency?: boolean) {
+	#addToken(type: TokenType, literal: Token["literal"]) {
 		const lexeme = this.source.slice(this.start, this.current);
 		this.tokens.push({
 			lexeme,
 			line: this.line,
 			literal,
 			type,
-			...(isCurrency && { isCurrency }),
 		});
 	}
 
@@ -74,7 +73,8 @@ export class Scanner {
 	}
 
 	#number() {
-		const isCurrency = this.source[this.start] === "$";
+		const char = this.source[this.start];
+		const currency = char === "$" || char === "€" ? char : null;
 		while (
 			isDigit(this.#peek()) ||
 			// a trailing comma might be part of an argument list.
@@ -91,8 +91,9 @@ export class Scanner {
 
 		const numText = this.source
 			.slice(this.start, this.current)
-			.replace(/[$,]/g, "");
-		this.#addToken("number", Number(numText), isCurrency);
+			.replace(/[$€,]/g, "");
+		const value = Number(numText);
+		this.#addToken("number", currency ? { currency, value } : value);
 	}
 
 	#peek() {
@@ -156,7 +157,7 @@ export class Scanner {
 				break;
 
 			default:
-				if (isDigit(c) || c === "$") {
+				if (isDigit(c) || c === "$" || c === "€") {
 					this.#number();
 				} else if (isAlpha(c)) {
 					this.#identifier();

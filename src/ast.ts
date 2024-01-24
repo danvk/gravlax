@@ -1,3 +1,4 @@
+import { CurrencyValue } from "./lox-value.js";
 import { Token } from "./token.js";
 
 export interface Binary {
@@ -14,7 +15,7 @@ export interface Grouping {
 
 export interface Literal {
 	kind: "literal";
-	value: boolean | null | number | string;
+	value: CurrencyValue | boolean | null | number | string;
 }
 
 export interface Unary {

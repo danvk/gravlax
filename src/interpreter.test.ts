@@ -75,13 +75,13 @@ describe("interpreter", () => {
 
 		it("should report an error on mixed + operands", () => {
 			expect(() => evaluateExpr(`"12" + 13`)).toThrowError(
-				"Operands must be two numbers or two strings.",
+				"Operands must be two numbers/currencies or two strings.",
 			);
 		});
 
 		it("should report an error on non-numeric operands", () => {
 			expect(() => evaluateExpr(`"12" / 13`)).toThrowError(
-				"Operand must be a number.",
+				"Operand must be a number or currency.",
 			);
 		});
 	});
@@ -109,7 +109,9 @@ describe("interpreter", () => {
 		it("should interpret and report an error", () => {
 			const error = mockError();
 			runProgram("1 - nil;");
-			expect(error).toHaveBeenCalledWith("Operand must be a number.\n[line 1]");
+			expect(error).toHaveBeenCalledWith(
+				"Operands must both be numbers or currencies.\n[line 1]",
+			);
 		});
 
 		it("should disallow assignment to undeclared variables", () => {
@@ -165,6 +167,7 @@ describe("stringify", () => {
 	});
 
 	it("should refuse to stringify undefined", () => {
+		// @ts-expect-error undefined is not a LoxValue
 		expect(() => stringify(undefined)).toThrowError(
 			"undefined is not a valid Lox value",
 		);
