@@ -20,25 +20,29 @@ async function maybeReadFile(path: string): Promise<null | string> {
 	}
 }
 
+function trimAndSplit(str: string) {
+	return str.trimEnd().split("\n");
+}
+
 // Similar to tests in main.test.ts, except that fs isn't mocked.
 describe("end-to-end tests", () => {
 	let stashedArgv = process.argv;
 	let exit: ReturnType<typeof mockExit>;
 	let log: ReturnType<typeof mockLog>;
 	let error: ReturnType<typeof mockError>;
-	let logLines: string[] = [];
-	let errorLines: string[] = [];
+	let logLines = "";
+	let errorLines = "";
 	beforeEach(() => {
 		stashedArgv = process.argv;
 		exit = mockExit();
 		log = vi.spyOn(console, "log").mockImplementation((line: string) => {
-			logLines.push(line);
+			logLines += line + "\n";
 		});
 		error = vi.spyOn(console, "error").mockImplementation((line: string) => {
-			errorLines.push(line);
+			errorLines += line + "\n";
 		});
-		logLines = [];
-		errorLines = [];
+		logLines = "";
+		errorLines = "";
 		resetErrors();
 	});
 	afterEach(() => {
@@ -54,13 +58,13 @@ describe("end-to-end tests", () => {
 		await main();
 
 		if (expected && expected !== "") {
-			expect(logLines).toEqual(expected.trimEnd().split("\n"));
+			expect(trimAndSplit(logLines)).toEqual(trimAndSplit(expected));
 		} else {
 			expect(log).not.toHaveBeenCalled();
 		}
 
 		if (errors && errors.length > 0) {
-			expect(errorLines).toEqual(errors.trimEnd().split("\n"));
+			expect(trimAndSplit(errorLines)).toEqual(trimAndSplit(errors));
 			expect(exit).toHaveBeenCalledOnce(); // TODO: check exit code
 		} else {
 			expect(error).not.toHaveBeenCalled();

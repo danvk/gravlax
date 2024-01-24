@@ -5,6 +5,7 @@ import {
 	visitExpr,
 	visitStmt,
 } from "./ast.js";
+import { stringify } from "./interpreter.js";
 
 export const astPrinter: ExpressionVisitor<string> & StmtVisitor<string> = {
 	assign: (stmt) => parenthesize("assign", stmt.name.lexeme, stmt.value),
@@ -30,7 +31,7 @@ export const astPrinter: ExpressionVisitor<string> & StmtVisitor<string> = {
 			visitStmt(stmt.thenBranch, astPrinter),
 			stmt.elseBranch && visitStmt(stmt.elseBranch, astPrinter),
 		),
-	literal: (expr) => (expr.value === null ? "nil" : String(expr.value)),
+	literal: (expr) => stringify(expr.value),
 	logical: (expr) => parenthesize(expr.operator.lexeme, expr.left, expr.right),
 	print: (stmt) => parenthesize("print", stmt.expression),
 	return: (stmt) => parenthesize("return", ...(stmt.value ? [stmt.value] : [])),

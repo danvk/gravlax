@@ -160,7 +160,17 @@ export class Interpreter
 				if (typeof left === "string" && typeof right === "string") {
 					return left + right;
 				} else {
-					checkSameNumberOperands(operator, pair);
+					try {
+						checkSameNumberOperands(operator, pair);
+					} catch (e) {
+						if (e instanceof MixedCurrencyError) {
+							throw e;
+						}
+						throw new RuntimeError(
+							operator,
+							`Operands must be two numbers/currencies or two strings.`,
+						);
+					}
 					return applyOperatorToPair(pair, (a, b) => a + b);
 				}
 			case ">":
@@ -313,6 +323,13 @@ export class RuntimeError extends Error {
 	}
 }
 
+export class MixedCurrencyError extends RuntimeError {
+	// eslint-disable-next-line @typescript-eslint/no-useless-constructor
+	constructor(token: Token, message: string) {
+		super(token, message);
+	}
+}
+
 function checkNumberOperand(
 	operator: Token,
 	operand: LoxValue,
@@ -344,9 +361,15 @@ function checkSameNumberOperands(
 		if (left.currency == right.currency) {
 			return;
 		}
-		throw new RuntimeError(operator, "Operands must be the same currency.");
+		throw new MixedCurrencyError(
+			operator,
+			"Operands must be the same currency.",
+		);
 	}
-	throw new RuntimeError(operator, "Operands must have matching types");
+	throw new RuntimeError(
+		operator,
+		"Operands must both be numbers or currencies.",
+	);
 }
 
 // TODO: would be nice if this worked!

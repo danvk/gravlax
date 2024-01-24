@@ -58,7 +58,7 @@ describe("main", () => {
 		expect(exit).toHaveBeenCalledOnce();
 		expect(exit).toHaveBeenCalledWith(70);
 		expect(error).toHaveBeenCalledWith(
-			"Operands must be two numbers or two strings.\n[line 1]",
+			"Operands must be two numbers/currencies or two strings.\n[line 1]",
 		);
 	});
 

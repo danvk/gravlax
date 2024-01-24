@@ -65,7 +65,7 @@ describe("parsing expressions", () => {
 
 	it("should parse expressions with currency", () => {
 		expect(parseExprToLisp("$1,123.45 + 2 * $37.48;")).toMatchInlineSnapshot(
-			`"(+ 1123.45 (* 2 37.48))"`,
+			`"(+ $1,123.45 (* 2 $37.48))"`,
 		);
 	});
 
