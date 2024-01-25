@@ -79,6 +79,7 @@ module.exports = {
 			rules: {
 				// These off-by-default rules work well for this repo and we like them on.
 				"@typescript-eslint/no-confusing-void-expression": "off",
+				// "@typescript-eslint/switch-exhaustiveness-check": "error",
 				"deprecation/deprecation": "error",
 				"prefer-const": "off",
 			},

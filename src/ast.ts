@@ -127,7 +127,8 @@ export type StmtVisitor<R> = {
 
 export function visitExpr<R>(expr: Expr, visitor: ExpressionVisitor<R>): R {
 	// XXX Can you model this without the "as never" in TS?
-	//     -> I think the answer is "yes if TS had dependent types"
+	// https://stackoverflow.com/q/77876338/388951
+	// https://github.com/microsoft/TypeScript/issues/30581
 	return visitor[expr.kind](expr as never);
 }
 
