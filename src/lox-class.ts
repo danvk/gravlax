@@ -10,6 +10,7 @@ import { LoxValue } from "./lox-value.js";
 export class LoxClass extends LoxCallable {
 	#methods: Map<string, LoxFunction>;
 	name: string;
+
 	constructor(name: string, methods: Map<string, LoxFunction>) {
 		super();
 		this.name = name;
@@ -17,13 +18,19 @@ export class LoxClass extends LoxCallable {
 	}
 
 	arity(): number {
-		return 0;
+		const initializer = this.findMethod("init");
+		return initializer?.arity() ?? 0;
 	}
 
 	call(interpreter: Interpreter, args: LoxValue[]): LoxValue {
 		const instance = new LoxInstance(this);
+		const initializer = this.findMethod("init");
+		if (initializer) {
+			initializer.bindThis(instance).call(interpreter, args);
+		}
 		return instance;
 	}
+
 	findMethod(name: string) {
 		return this.#methods.get(name);
 	}

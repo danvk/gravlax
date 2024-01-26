@@ -11,7 +11,7 @@ import { Interpreter } from "./interpreter.js";
 import { errorOnToken } from "./main.js";
 import { Token } from "./token.js";
 
-type FunctionType = "function" | "method" | "none";
+type FunctionType = "function" | "initializer" | "method" | "none";
 type ClassType = "class" | "none";
 
 export function makeResolver(interpreter: Interpreter) {
@@ -96,7 +96,10 @@ export function makeResolver(interpreter: Interpreter) {
 			// TODO: write a peek() to enforce that -1 works.
 			scopes.at(-1)?.set("this", true);
 			for (const method of stmt.methods) {
-				resolveFunction(method, "method");
+				resolveFunction(
+					method,
+					method.name.lexeme === "init" ? "initializer" : "method",
+				);
 			}
 			endScope();
 			currentClass = encClass;
@@ -137,6 +140,12 @@ export function makeResolver(interpreter: Interpreter) {
 				errorOnToken(stmt.keyword, "Can't return from top-level code.");
 			}
 			if (stmt.value) {
+				if (currentFunc === "initializer") {
+					errorOnToken(
+						stmt.keyword,
+						"Can't return a value from an initializer.",
+					);
+				}
 				resolveExpr(stmt.value);
 			}
 		},
