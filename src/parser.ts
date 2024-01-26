@@ -364,6 +364,8 @@ export function parse(tokens: Token[]) {
 			const expr = expression();
 			consume(")", "Expect ')' after expression.");
 			return { expr, kind: "grouping" };
+		} else if (match("this")) {
+			return { keyword: previous(), kind: "this" };
 		} else if (match("identifier")) {
 			return { kind: "var-expr", name: previous() };
 		}

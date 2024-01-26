@@ -18,6 +18,7 @@ import {
 	SetExpr,
 	Stmt,
 	StmtVisitor,
+	This,
 	Unary,
 	VarExpr,
 	VarStmt,
@@ -235,6 +236,10 @@ export class Interpreter
 
 	evaluate(expr: Expr): LoxValue {
 		return visitExpr(expr, this);
+	}
+
+	this(expr: This): LoxValue {
+		return this.#lookUpVariable(expr.keyword, expr);
 	}
 
 	execute(stmt: Stmt): void {

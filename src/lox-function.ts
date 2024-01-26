@@ -2,6 +2,7 @@ import { Func } from "./ast.js";
 import { LoxCallable } from "./callable.js";
 import { Environment } from "./environment.js";
 import { Interpreter, ReturnCall } from "./interpreter.js";
+import { LoxInstance } from "./lox-instance.js";
 import { LoxValue } from "./lox-value.js";
 
 // XXX interesting that you can change "extends" to "implements" here.
@@ -17,6 +18,12 @@ export class LoxFunction extends LoxCallable {
 	}
 	arity(): number {
 		return this.declaration.params.length;
+	}
+
+	bindThis(instance: LoxInstance) {
+		const env = new Environment(this.closure);
+		env.define("this", instance);
+		return new LoxFunction(this.declaration, env);
 	}
 
 	// Why, oh why, do I need type annotations here?

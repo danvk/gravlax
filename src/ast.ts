@@ -49,6 +49,11 @@ export interface Get {
 	name: Token;
 }
 
+export interface This {
+	kind: "this";
+	keyword: Token;
+}
+
 // Statements
 
 export interface Assign {
@@ -127,6 +132,7 @@ export type Expr =
 	| Literal
 	| Logical
 	| SetExpr
+	| This
 	| Unary
 	| VarExpr;
 export type Stmt =

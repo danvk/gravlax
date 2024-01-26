@@ -88,10 +88,13 @@ export function makeResolver(interpreter: Interpreter) {
 		class(stmt) {
 			declare(stmt.name);
 			define(stmt.name);
+			beginScope();
+			// TODO: write a peek() to enforce that -1 works.
+			scopes.at(-1)?.set("this", true);
 			for (const method of stmt.methods) {
-				const declaration: FunctionType = "method";
-				resolveFunction(method, declaration);
+				resolveFunction(method, "method");
 			}
+			endScope();
 		},
 		expr(stmt) {
 			resolveExpr(stmt.expression);
@@ -135,6 +138,9 @@ export function makeResolver(interpreter: Interpreter) {
 		set(expr) {
 			resolveExpr(expr.value);
 			resolveExpr(expr.object);
+		},
+		this(expr) {
+			resolveLocal(expr, expr.keyword);
 		},
 		unary(expr) {
 			resolveExpr(expr.right);
