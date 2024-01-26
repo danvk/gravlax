@@ -85,6 +85,10 @@ export function makeResolver(interpreter: Interpreter) {
 			resolveExpr(expr.callee);
 			expr.args.forEach(resolveExpr);
 		},
+		class(stmt) {
+			declare(stmt.name);
+			define(stmt.name);
+		},
 		expr(stmt) {
 			resolveExpr(stmt.expression);
 		},

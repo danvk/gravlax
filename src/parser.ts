@@ -1,6 +1,7 @@
 // Grammar:
 // program        → declaration* EOF ;
-// declaration    → funDecl | varDecl | statement ;
+// declaration    → classDecl | funDecl | varDecl | statement ;
+// classDecl      → "class" IDENTIFIER "{" function* "}" ;
 // funDecl        → "fun" function ;
 // function       → IDENTIFIER "(" parameters? ")" block ;
 // varDecl        → "var" IDENTIFIER ( "=" expression )? ";" ;
@@ -27,7 +28,7 @@
 //                | "(" expression ")" ;
 //                | IDENTIFIER ;
 
-import { Expr, Expression, Print, Stmt, VarStmt } from "./ast.js";
+import { Expr, Expression, Func, Print, Stmt, VarStmt } from "./ast.js";
 import { errorOnToken } from "./main.js";
 import { Token } from "./token.js";
 import { TokenType } from "./token-type.js";
@@ -100,7 +101,9 @@ export function parse(tokens: Token[]) {
 	// declaration    → varDecl | statement ;
 	const declaration = () => {
 		try {
-			if (match("fun")) {
+			if (match("class")) {
+				return classDecl();
+			} else if (match("fun")) {
 				return func("function");
 			} else if (match("var")) {
 				return varDeclaration();
@@ -115,9 +118,21 @@ export function parse(tokens: Token[]) {
 		}
 	};
 
+	// classDecl      → "class" IDENTIFIER "{" function* "}" ;
+	const classDecl = (): Stmt => {
+		const name = consume("identifier", "Expect class name.");
+		consume("{", "Expect '{' before class body.");
+		const methods = [];
+		while (!check("}") && !isAtEnd()) {
+			methods.push(func("method"));
+		}
+		consume("}", "Expect '}' after class body.");
+		return { kind: "class", methods, name };
+	};
+
 	// funDecl        → "fun" function ;
 	// function       → IDENTIFIER "(" parameters? ")" block ;
-	const func = (kind: string): Stmt => {
+	const func = (kind: string): Func => {
 		const name = consume("identifier", `Expect ${kind} name.`);
 		consume("(", "Expect '(' after ${kind} name.");
 		const params = [];

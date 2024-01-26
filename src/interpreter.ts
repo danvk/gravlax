@@ -3,6 +3,7 @@ import {
 	Binary,
 	Block,
 	Call,
+	Class,
 	Expr,
 	Expression,
 	ExpressionVisitor,
@@ -24,6 +25,7 @@ import {
 } from "./ast.js";
 import { LoxCallable } from "./callable.js";
 import { Environment } from "./environment.js";
+import { LoxClass } from "./lox-class.js";
 import { LoxFunction } from "./lox-function.js";
 import { CurrencyValue, LoxValue, isCurrency } from "./lox-value.js";
 import { runtimeError } from "./main.js";
@@ -215,6 +217,12 @@ export class Interpreter
 			);
 		}
 		return callee.call(this, args);
+	}
+
+	class(stmt: Class): void {
+		this.#environment.define(stmt.name.lexeme, null);
+		const klass = new LoxClass(stmt.name.lexeme);
+		this.#environment.assign(stmt.name, klass);
 	}
 
 	evaluate(expr: Expr): LoxValue {

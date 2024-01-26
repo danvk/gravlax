@@ -99,6 +99,12 @@ export interface Return {
 	value: Expr | null;
 }
 
+export interface Class {
+	kind: "class";
+	name: Token;
+	methods: Func[];
+}
+
 export type Expr =
 	| Assign
 	| Binary
@@ -110,6 +116,7 @@ export type Expr =
 	| VarExpr;
 export type Stmt =
 	| Block
+	| Class
 	| Expression
 	| Func
 	| IfStmt

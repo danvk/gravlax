@@ -1,9 +1,11 @@
 import { LoxCallable } from "./callable.js";
+import { LoxInstance } from "./lox-instance.js";
 
 /** A value in a Lox program */
 export type LoxValue =
 	| CurrencyValue
 	| LoxCallable
+	| LoxInstance
 	| boolean
 	| null
 	| number
