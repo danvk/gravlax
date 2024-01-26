@@ -16,6 +16,7 @@ export const astPrinter: ExpressionVisitor<string> & StmtVisitor<string> = {
 			...block.statements.map((stmt) => visitStmt(stmt, astPrinter)),
 		),
 	call: (expr) => parenthesize(expr.callee, ...expr.args),
+	class: (stmt) => parenthesizeText("class", stmt.name.lexeme, "..."),
 	expr: (stmt) => visitExpr(stmt.expression, astPrinter),
 	func: (stmt) =>
 		parenthesizeText(
@@ -23,6 +24,7 @@ export const astPrinter: ExpressionVisitor<string> & StmtVisitor<string> = {
 			parenthesizeText(stmt.name.lexeme, ...stmt.params.map((p) => p.lexeme)),
 			visitStmt({ kind: "block", statements: stmt.body }, astPrinter),
 		),
+	get: (expr) => parenthesize("get", expr.object, expr.name.lexeme),
 	grouping: (expr) => parenthesize("group", expr.expr),
 	if: (stmt) =>
 		parenthesizeText(
@@ -35,6 +37,8 @@ export const astPrinter: ExpressionVisitor<string> & StmtVisitor<string> = {
 	logical: (expr) => parenthesize(expr.operator.lexeme, expr.left, expr.right),
 	print: (stmt) => parenthesize("print", stmt.expression),
 	return: (stmt) => parenthesize("return", ...(stmt.value ? [stmt.value] : [])),
+	set: (expr) => parenthesize("set", expr.object, expr.name.lexeme, expr.value),
+	this: () => parenthesize("this"),
 	unary: (expr) => parenthesize(expr.operator.lexeme, expr.right),
 	"var-expr": (expr) => String(expr.name.literal),
 	"var-stmt": (stmt) =>
