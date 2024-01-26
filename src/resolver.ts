@@ -12,10 +12,12 @@ import { errorOnToken } from "./main.js";
 import { Token } from "./token.js";
 
 type FunctionType = "function" | "method" | "none";
+type ClassType = "class" | "none";
 
 export function makeResolver(interpreter: Interpreter) {
 	const scopes: Map<string, boolean>[] = [];
 	let currentFunc: FunctionType = "none";
+	let currentClass: ClassType = "none";
 
 	const beginScope = () => {
 		scopes.push(new Map());
@@ -86,6 +88,8 @@ export function makeResolver(interpreter: Interpreter) {
 			expr.args.forEach(resolveExpr);
 		},
 		class(stmt) {
+			const encClass = currentClass;
+			currentClass = "class";
 			declare(stmt.name);
 			define(stmt.name);
 			beginScope();
@@ -95,6 +99,7 @@ export function makeResolver(interpreter: Interpreter) {
 				resolveFunction(method, "method");
 			}
 			endScope();
+			currentClass = encClass;
 		},
 		expr(stmt) {
 			resolveExpr(stmt.expression);
@@ -140,6 +145,10 @@ export function makeResolver(interpreter: Interpreter) {
 			resolveExpr(expr.object);
 		},
 		this(expr) {
+			if (currentClass === "none") {
+				errorOnToken(expr.keyword, "Can't use 'this' outside of a class.");
+				this.return;
+			}
 			resolveLocal(expr, expr.keyword);
 		},
 		unary(expr) {
