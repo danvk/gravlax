@@ -8,12 +8,14 @@ import {
 	Expression,
 	ExpressionVisitor,
 	Func,
+	Get,
 	Grouping,
 	IfStmt,
 	Literal,
 	Logical,
 	Print,
 	Return,
+	SetExpr,
 	Stmt,
 	StmtVisitor,
 	Unary,
@@ -27,6 +29,7 @@ import { LoxCallable } from "./callable.js";
 import { Environment } from "./environment.js";
 import { LoxClass } from "./lox-class.js";
 import { LoxFunction } from "./lox-function.js";
+import { LoxInstance } from "./lox-instance.js";
 import { CurrencyValue, LoxValue, isCurrency } from "./lox-value.js";
 import { runtimeError } from "./main.js";
 import { Token } from "./token.js";
@@ -221,7 +224,12 @@ export class Interpreter
 
 	class(stmt: Class): void {
 		this.#environment.define(stmt.name.lexeme, null);
-		const klass = new LoxClass(stmt.name.lexeme);
+		const methods = new Map<string, LoxFunction>();
+		for (const method of stmt.methods) {
+			const func = new LoxFunction(method, this.#environment);
+			methods.set(method.name.lexeme, func);
+		}
+		const klass = new LoxClass(stmt.name.lexeme, methods);
 		this.#environment.assign(stmt.name, klass);
 	}
 
@@ -254,6 +262,14 @@ export class Interpreter
 	func(stmt: Func): void {
 		const func = new LoxFunction(stmt, this.#environment);
 		this.#environment.define(stmt.name.lexeme, func);
+	}
+
+	get(expr: Get): LoxValue {
+		const obj = this.evaluate(expr.object);
+		if (obj instanceof LoxInstance) {
+			return obj.get(expr.name);
+		}
+		throw new RuntimeError(expr.name, "Only instances have properties.");
 	}
 
 	grouping(expr: Grouping) {
@@ -302,6 +318,16 @@ export class Interpreter
 	print(stmt: Print): void {
 		const value = this.evaluate(stmt.expression);
 		console.log(stringify(value));
+	}
+
+	set(expr: SetExpr): LoxValue {
+		const obj = this.evaluate(expr.object);
+		if (!(obj instanceof LoxInstance)) {
+			throw new RuntimeError(expr.name, "Only instances have fields.");
+		}
+		const value = this.evaluate(expr.value);
+		obj.set(expr.name, value);
+		return value;
 	}
 
 	unary(expr: Unary): LoxValue {

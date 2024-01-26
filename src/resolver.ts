@@ -11,7 +11,7 @@ import { Interpreter } from "./interpreter.js";
 import { errorOnToken } from "./main.js";
 import { Token } from "./token.js";
 
-type FunctionType = "function" | "none";
+type FunctionType = "function" | "method" | "none";
 
 export function makeResolver(interpreter: Interpreter) {
 	const scopes: Map<string, boolean>[] = [];
@@ -88,6 +88,10 @@ export function makeResolver(interpreter: Interpreter) {
 		class(stmt) {
 			declare(stmt.name);
 			define(stmt.name);
+			for (const method of stmt.methods) {
+				const declaration: FunctionType = "method";
+				resolveFunction(method, declaration);
+			}
 		},
 		expr(stmt) {
 			resolveExpr(stmt.expression);
@@ -96,6 +100,9 @@ export function makeResolver(interpreter: Interpreter) {
 			declare(stmt.name);
 			define(stmt.name);
 			resolveFunction(stmt, "function");
+		},
+		get(expr) {
+			resolveExpr(expr.object);
 		},
 		grouping(expr) {
 			resolveExpr(expr.expr);
@@ -124,6 +131,10 @@ export function makeResolver(interpreter: Interpreter) {
 			if (stmt.value) {
 				resolveExpr(stmt.value);
 			}
+		},
+		set(expr) {
+			resolveExpr(expr.value);
+			resolveExpr(expr.object);
 		},
 		unary(expr) {
 			resolveExpr(expr.right);

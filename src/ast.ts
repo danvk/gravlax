@@ -43,6 +43,12 @@ export interface Call {
 	args: Expr[];
 }
 
+export interface Get {
+	kind: "get";
+	object: Expr;
+	name: Token;
+}
+
 // Statements
 
 export interface Assign {
@@ -105,13 +111,22 @@ export interface Class {
 	methods: Func[];
 }
 
+export interface SetExpr {
+	kind: "set";
+	object: Expr;
+	name: Token;
+	value: Expr;
+}
+
 export type Expr =
 	| Assign
 	| Binary
 	| Call
+	| Get
 	| Grouping
 	| Literal
 	| Logical
+	| SetExpr
 	| Unary
 	| VarExpr;
 export type Stmt =

@@ -14,7 +14,7 @@
 // forStmt        → "for" "(" ( varDecl | exprStmt | ";" ) expression? ";" expression? ")" statement ;
 // returnStmt     → "return" expression? ";" ;
 // expression     → assignment;
-// assignment     → IDENTIFIER "=" assignment | logic_or;
+// assignment     → ( call "." )? IDENTIFIER "=" assignment | logic_or;
 // logic_or       → logic_and ( "or" logic_and )* ;
 // logic_and      → equality ( "and" equality )* ;
 // equality       → comparison ( ( "!=" | "==" ) comparison )* ;
@@ -22,7 +22,7 @@
 // term           → factor ( ( "-" | "+" ) factor )* ;
 // factor         → unary ( ( "/" | "*" ) unary )* ;
 // unary          → ( "!" | "-" ) unary | call ;
-// call           → primary ( "(" arguments? ")" )* ;
+// call           → primary ( "(" arguments? ")" | "." IDENTIFIER )* ;
 // arguments      → expression ( "," expression )* ;
 // primary        → NUMBER | STRING | "true" | "false" | "nil"
 //                | "(" expression ")" ;
@@ -273,7 +273,7 @@ export function parse(tokens: Token[]) {
 	// expression     → assignment ;
 	const expression = () => assignment();
 
-	// assignment     → IDENTIFIER "=" assignment | equality;
+	// assignment     → ( call "." )? IDENTIFIER "=" assignment | logic_or;
 	const assignment = (): Expr => {
 		const expr = or();
 		if (match("=")) {
@@ -282,6 +282,8 @@ export function parse(tokens: Token[]) {
 			if (expr.kind == "var-expr") {
 				const name = expr.name;
 				return { kind: "assign", name, value };
+			} else if (expr.kind == "get") {
+				return { ...expr, kind: "set", value }; // cute!
 			}
 			error(equals, "Invalid assignment target.");
 		}
@@ -323,6 +325,9 @@ export function parse(tokens: Token[]) {
 		while (true) {
 			if (match("(")) {
 				expr = finishCall(expr);
+			} else if (match(".")) {
+				const name = consume("identifier", "Expect property name after '.'.");
+				expr = { kind: "get", name, object: expr };
 			} else {
 				break;
 			}
