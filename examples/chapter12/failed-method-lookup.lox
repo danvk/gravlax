@@ -1,0 +1,3 @@
+class Empty {}
+var e = Empty();
+print e.meth();
