@@ -43,6 +43,17 @@ export interface Call {
 	args: Expr[];
 }
 
+export interface Get {
+	kind: "get";
+	object: Expr;
+	name: Token;
+}
+
+export interface This {
+	kind: "this";
+	keyword: Token;
+}
+
 // Statements
 
 export interface Assign {
@@ -99,17 +110,34 @@ export interface Return {
 	value: Expr | null;
 }
 
+export interface Class {
+	kind: "class";
+	name: Token;
+	methods: Func[];
+}
+
+export interface SetExpr {
+	kind: "set";
+	object: Expr;
+	name: Token;
+	value: Expr;
+}
+
 export type Expr =
 	| Assign
 	| Binary
 	| Call
+	| Get
 	| Grouping
 	| Literal
 	| Logical
+	| SetExpr
+	| This
 	| Unary
 	| VarExpr;
 export type Stmt =
 	| Block
+	| Class
 	| Expression
 	| Func
 	| IfStmt
@@ -127,7 +155,8 @@ export type StmtVisitor<R> = {
 
 export function visitExpr<R>(expr: Expr, visitor: ExpressionVisitor<R>): R {
 	// XXX Can you model this without the "as never" in TS?
-	//     -> I think the answer is "yes if TS had dependent types"
+	// https://stackoverflow.com/q/77876338/388951
+	// https://github.com/microsoft/TypeScript/issues/30581
 	return visitor[expr.kind](expr as never);
 }
 

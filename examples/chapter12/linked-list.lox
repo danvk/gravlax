@@ -1,0 +1,17 @@
+class Cons {
+    init(head, tail) {
+        this.head = head;
+        this.tail = tail;
+    }
+
+    length() {
+        if (this.tail) {
+            return 1 + this.tail.length();
+        }
+        return 1;
+    }
+}
+
+var abc = Cons("a", Cons("b", Cons("c", nil)));
+print abc;
+print abc.length();

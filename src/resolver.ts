@@ -11,11 +11,13 @@ import { Interpreter } from "./interpreter.js";
 import { errorOnToken } from "./main.js";
 import { Token } from "./token.js";
 
-type FunctionType = "function" | "none";
+type FunctionType = "function" | "initializer" | "method" | "none";
+type ClassType = "class" | "none";
 
 export function makeResolver(interpreter: Interpreter) {
 	const scopes: Map<string, boolean>[] = [];
 	let currentFunc: FunctionType = "none";
+	let currentClass: ClassType = "none";
 
 	const beginScope = () => {
 		scopes.push(new Map());
@@ -85,6 +87,23 @@ export function makeResolver(interpreter: Interpreter) {
 			resolveExpr(expr.callee);
 			expr.args.forEach(resolveExpr);
 		},
+		class(stmt) {
+			const encClass = currentClass;
+			currentClass = "class";
+			declare(stmt.name);
+			define(stmt.name);
+			beginScope();
+			// TODO: write a peek() to enforce that -1 works.
+			scopes.at(-1)?.set("this", true);
+			for (const method of stmt.methods) {
+				resolveFunction(
+					method,
+					method.name.lexeme === "init" ? "initializer" : "method",
+				);
+			}
+			endScope();
+			currentClass = encClass;
+		},
 		expr(stmt) {
 			resolveExpr(stmt.expression);
 		},
@@ -92,6 +111,9 @@ export function makeResolver(interpreter: Interpreter) {
 			declare(stmt.name);
 			define(stmt.name);
 			resolveFunction(stmt, "function");
+		},
+		get(expr) {
+			resolveExpr(expr.object);
 		},
 		grouping(expr) {
 			resolveExpr(expr.expr);
@@ -118,8 +140,25 @@ export function makeResolver(interpreter: Interpreter) {
 				errorOnToken(stmt.keyword, "Can't return from top-level code.");
 			}
 			if (stmt.value) {
+				if (currentFunc === "initializer") {
+					errorOnToken(
+						stmt.keyword,
+						"Can't return a value from an initializer.",
+					);
+				}
 				resolveExpr(stmt.value);
 			}
+		},
+		set(expr) {
+			resolveExpr(expr.value);
+			resolveExpr(expr.object);
+		},
+		this(expr) {
+			if (currentClass === "none") {
+				errorOnToken(expr.keyword, "Can't use 'this' outside of a class.");
+				this.return;
+			}
+			resolveLocal(expr, expr.keyword);
 		},
 		unary(expr) {
 			resolveExpr(expr.right);

@@ -1,6 +1,7 @@
 // Grammar:
 // program        → declaration* EOF ;
-// declaration    → funDecl | varDecl | statement ;
+// declaration    → classDecl | funDecl | varDecl | statement ;
+// classDecl      → "class" IDENTIFIER "{" function* "}" ;
 // funDecl        → "fun" function ;
 // function       → IDENTIFIER "(" parameters? ")" block ;
 // varDecl        → "var" IDENTIFIER ( "=" expression )? ";" ;
@@ -13,7 +14,7 @@
 // forStmt        → "for" "(" ( varDecl | exprStmt | ";" ) expression? ";" expression? ")" statement ;
 // returnStmt     → "return" expression? ";" ;
 // expression     → assignment;
-// assignment     → IDENTIFIER "=" assignment | logic_or;
+// assignment     → ( call "." )? IDENTIFIER "=" assignment | logic_or;
 // logic_or       → logic_and ( "or" logic_and )* ;
 // logic_and      → equality ( "and" equality )* ;
 // equality       → comparison ( ( "!=" | "==" ) comparison )* ;
@@ -21,13 +22,13 @@
 // term           → factor ( ( "-" | "+" ) factor )* ;
 // factor         → unary ( ( "/" | "*" ) unary )* ;
 // unary          → ( "!" | "-" ) unary | call ;
-// call           → primary ( "(" arguments? ")" )* ;
+// call           → primary ( "(" arguments? ")" | "." IDENTIFIER )* ;
 // arguments      → expression ( "," expression )* ;
 // primary        → NUMBER | STRING | "true" | "false" | "nil"
 //                | "(" expression ")" ;
 //                | IDENTIFIER ;
 
-import { Expr, Expression, Print, Stmt, VarStmt } from "./ast.js";
+import { Expr, Expression, Func, Print, Stmt, VarStmt } from "./ast.js";
 import { errorOnToken } from "./main.js";
 import { Token } from "./token.js";
 import { TokenType } from "./token-type.js";
@@ -100,7 +101,9 @@ export function parse(tokens: Token[]) {
 	// declaration    → varDecl | statement ;
 	const declaration = () => {
 		try {
-			if (match("fun")) {
+			if (match("class")) {
+				return classDecl();
+			} else if (match("fun")) {
 				return func("function");
 			} else if (match("var")) {
 				return varDeclaration();
@@ -115,9 +118,21 @@ export function parse(tokens: Token[]) {
 		}
 	};
 
+	// classDecl      → "class" IDENTIFIER "{" function* "}" ;
+	const classDecl = (): Stmt => {
+		const name = consume("identifier", "Expect class name.");
+		consume("{", "Expect '{' before class body.");
+		const methods = [];
+		while (!check("}") && !isAtEnd()) {
+			methods.push(func("method"));
+		}
+		consume("}", "Expect '}' after class body.");
+		return { kind: "class", methods, name };
+	};
+
 	// funDecl        → "fun" function ;
 	// function       → IDENTIFIER "(" parameters? ")" block ;
-	const func = (kind: string): Stmt => {
+	const func = (kind: string): Func => {
 		const name = consume("identifier", `Expect ${kind} name.`);
 		consume("(", "Expect '(' after ${kind} name.");
 		const params = [];
@@ -258,7 +273,7 @@ export function parse(tokens: Token[]) {
 	// expression     → assignment ;
 	const expression = () => assignment();
 
-	// assignment     → IDENTIFIER "=" assignment | equality;
+	// assignment     → ( call "." )? IDENTIFIER "=" assignment | logic_or;
 	const assignment = (): Expr => {
 		const expr = or();
 		if (match("=")) {
@@ -267,6 +282,8 @@ export function parse(tokens: Token[]) {
 			if (expr.kind == "var-expr") {
 				const name = expr.name;
 				return { kind: "assign", name, value };
+			} else if (expr.kind == "get") {
+				return { ...expr, kind: "set", value }; // cute!
 			}
 			error(equals, "Invalid assignment target.");
 		}
@@ -308,6 +325,9 @@ export function parse(tokens: Token[]) {
 		while (true) {
 			if (match("(")) {
 				expr = finishCall(expr);
+			} else if (match(".")) {
+				const name = consume("identifier", "Expect property name after '.'.");
+				expr = { kind: "get", name, object: expr };
 			} else {
 				break;
 			}
@@ -344,6 +364,8 @@ export function parse(tokens: Token[]) {
 			const expr = expression();
 			consume(")", "Expect ')' after expression.");
 			return { expr, kind: "grouping" };
+		} else if (match("this")) {
+			return { keyword: previous(), kind: "this" };
 		} else if (match("identifier")) {
 			return { kind: "var-expr", name: previous() };
 		}
