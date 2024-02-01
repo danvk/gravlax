@@ -1,29 +1,18 @@
 import {
-	Assign,
 	Binary,
 	Block,
 	Call,
 	Class,
 	Expr,
 	Expression,
-	ExpressionVisitor,
 	Func,
-	Get,
-	Grouping,
 	IfStmt,
-	Literal,
-	Logical,
 	Print,
 	Return,
-	SetExpr,
 	Stmt,
 	StmtVisitor,
-	This,
-	Unary,
-	VarExpr,
 	VarStmt,
 	While,
-	visitExpr,
 	visitStmt,
 } from "./ast.js";
 import { LoxCallable } from "./callable.js";
@@ -87,15 +76,20 @@ function applyToNumOrCurrency(
 	return fn(val);
 }
 
+/*
+function assertUnreachable(x: never): never {
+	// eslint-disable-next-line @typescript-eslint/restrict-template-expressions
+	throw new Error(`Unreachable code reached! ${x}`);
+}
+*/
+
 // XXX using eslint quickfix to implement this interface did not work at all.
 
 // TODO: try making this an object instead of a class so that the parameter
 // types are inferred.
 // https://github.com/azat-io/eslint-plugin-perfectionist/issues/102
 /* eslint-disable perfectionist/sort-classes */
-export class Interpreter
-	implements ExpressionVisitor<LoxValue>, StmtVisitor<void>
-{
+export class Interpreter implements StmtVisitor<void> {
 	globals = new Environment();
 	#environment = this.globals;
 	#locals = new Map<Expr, number>();
@@ -113,11 +107,6 @@ export class Interpreter
 		this.#locals.set(expr, depth);
 	}
 
-	"var-expr"(expr: VarExpr): LoxValue {
-		return this.#lookUpVariable(expr.name, expr);
-		// return this.#environment.get(expr.name);
-	}
-
 	#lookUpVariable(name: Token, expr: Expr): LoxValue {
 		const distance = this.#locals.get(expr);
 		if (distance !== undefined) {
@@ -132,17 +121,6 @@ export class Interpreter
 			value = this.evaluate(stmt.initializer);
 		}
 		this.#environment.define(stmt.name.lexeme, value);
-	}
-
-	assign(expr: Assign): LoxValue {
-		const value = this.evaluate(expr.value);
-		const distance = this.#locals.get(expr);
-		if (distance !== undefined) {
-			this.#environment.assignAt(distance, expr.name, value);
-		} else {
-			this.globals.assign(expr.name, value);
-		}
-		return value;
 	}
 
 	binary(expr: Binary): LoxValue {
@@ -239,11 +217,78 @@ export class Interpreter
 	}
 
 	evaluate(expr: Expr): LoxValue {
-		return visitExpr(expr, this);
-	}
+		switch (expr.kind) {
+			case "assign":
+				const value = this.evaluate(expr.value);
+				const distance = this.#locals.get(expr);
+				if (distance !== undefined) {
+					this.#environment.assignAt(distance, expr.name, value);
+				} else {
+					this.globals.assign(expr.name, value);
+				}
+				return value;
 
-	this(expr: This): LoxValue {
-		return this.#lookUpVariable(expr.keyword, expr);
+			case "binary":
+				return this.binary(expr);
+
+			case "call":
+				return this.call(expr);
+
+			case "get": {
+				const obj = this.evaluate(expr.object);
+				if (obj instanceof LoxInstance) {
+					return obj.get(expr.name);
+				}
+				throw new RuntimeError(expr.name, "Only instances have properties.");
+			}
+
+			case "grouping":
+				return this.evaluate(expr.expr);
+
+			case "literal":
+				return expr.value;
+
+			case "logical":
+				const left = this.evaluate(expr.left);
+				if (expr.operator.type == "or") {
+					if (isTruthy(left)) {
+						return left;
+					}
+				} else {
+					if (!isTruthy(left)) {
+						return left;
+					}
+				}
+
+				return this.evaluate(expr.right);
+
+			case "set": {
+				const obj = this.evaluate(expr.object);
+				if (!(obj instanceof LoxInstance)) {
+					throw new RuntimeError(expr.name, "Only instances have fields.");
+				}
+				const value = this.evaluate(expr.value);
+				obj.set(expr.name, value);
+				return value;
+			}
+
+			case "unary":
+				const right = this.evaluate(expr.right);
+				switch (expr.operator.type) {
+					case "-":
+						checkNumberOrCurrencyOperand(expr.operator, right);
+						return applyToNumOrCurrency(right, (v) => -v);
+					case "!":
+						return !isTruthy(right);
+				}
+				throw new Error(`Unknown unary type ${expr.operator.type}`);
+
+			case "this":
+				return this.#lookUpVariable(expr.keyword, expr);
+
+			case "var-expr":
+				return this.#lookUpVariable(expr.name, expr);
+		}
 	}
 
 	execute(stmt: Stmt): void {
@@ -273,18 +318,6 @@ export class Interpreter
 		this.#environment.define(stmt.name.lexeme, func);
 	}
 
-	get(expr: Get): LoxValue {
-		const obj = this.evaluate(expr.object);
-		if (obj instanceof LoxInstance) {
-			return obj.get(expr.name);
-		}
-		throw new RuntimeError(expr.name, "Only instances have properties.");
-	}
-
-	grouping(expr: Grouping) {
-		return this.evaluate(expr.expr);
-	}
-
 	if(stmt: IfStmt): void {
 		if (isTruthy(this.evaluate(stmt.condition))) {
 			this.execute(stmt.thenBranch);
@@ -305,50 +338,9 @@ export class Interpreter
 		}
 	}
 
-	literal(expr: Literal) {
-		return expr.value;
-	}
-
-	logical(expr: Logical) {
-		const left = this.evaluate(expr.left);
-		if (expr.operator.type == "or") {
-			if (isTruthy(left)) {
-				return left;
-			}
-		} else {
-			if (!isTruthy(left)) {
-				return left;
-			}
-		}
-
-		return this.evaluate(expr.right);
-	}
-
 	print(stmt: Print): void {
 		const value = this.evaluate(stmt.expression);
 		console.log(stringify(value));
-	}
-
-	set(expr: SetExpr): LoxValue {
-		const obj = this.evaluate(expr.object);
-		if (!(obj instanceof LoxInstance)) {
-			throw new RuntimeError(expr.name, "Only instances have fields.");
-		}
-		const value = this.evaluate(expr.value);
-		obj.set(expr.name, value);
-		return value;
-	}
-
-	unary(expr: Unary): LoxValue {
-		const right = this.evaluate(expr.right);
-		switch (expr.operator.type) {
-			case "-":
-				checkNumberOrCurrencyOperand(expr.operator, right);
-				return applyToNumOrCurrency(right, (v) => -v);
-			case "!":
-				return !isTruthy(right);
-		}
-		throw new Error(`Unknown unary type ${expr.operator.type}`);
 	}
 
 	while(stmt: While): void {
