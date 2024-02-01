@@ -6,4 +6,5 @@ fun fib(n) {
 var before = clock();
 print fib(33);
 var after = clock();
+print "Time elapsed (ms):";
 print after - before;
