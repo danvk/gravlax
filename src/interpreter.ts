@@ -48,10 +48,9 @@ class ClockFn extends LoxCallable {
 	}
 }
 
-export class ReturnCall extends Error {
+export class ReturnCall {
 	value: LoxValue;
 	constructor(value: LoxValue) {
-		super();
 		this.value = value;
 	}
 }
