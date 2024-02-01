@@ -1,20 +1,4 @@
-import {
-	Binary,
-	Block,
-	Call,
-	Class,
-	Expr,
-	Expression,
-	Func,
-	IfStmt,
-	Print,
-	Return,
-	Stmt,
-	StmtVisitor,
-	VarStmt,
-	While,
-	visitStmt,
-} from "./ast.js";
+import { Binary, Call, Class, Expr, Stmt } from "./ast.js";
 import { LoxCallable } from "./callable.js";
 import { Environment } from "./environment.js";
 import { LoxClass } from "./lox-class.js";
@@ -76,12 +60,10 @@ function applyToNumOrCurrency(
 	return fn(val);
 }
 
-/*
 function assertUnreachable(x: never): never {
 	// eslint-disable-next-line @typescript-eslint/restrict-template-expressions
 	throw new Error(`Unreachable code reached! ${x}`);
 }
-*/
 
 // XXX using eslint quickfix to implement this interface did not work at all.
 
@@ -89,18 +71,13 @@ function assertUnreachable(x: never): never {
 // types are inferred.
 // https://github.com/azat-io/eslint-plugin-perfectionist/issues/102
 /* eslint-disable perfectionist/sort-classes */
-export class Interpreter implements StmtVisitor<void> {
+export class Interpreter {
 	globals = new Environment();
 	#environment = this.globals;
 	#locals = new Map<Expr, number>();
 
 	constructor() {
 		this.globals.define("clock", new ClockFn());
-	}
-
-	return(stmt: Return) {
-		const value = stmt.value && this.evaluate(stmt.value);
-		throw new ReturnCall(value);
 	}
 
 	resolve(expr: Expr, depth: number) {
@@ -113,14 +90,6 @@ export class Interpreter implements StmtVisitor<void> {
 			return this.#environment.getAt(distance, name.lexeme);
 		}
 		return this.globals.get(name);
-	}
-
-	"var-stmt"(stmt: VarStmt): void {
-		let value = null;
-		if (stmt.initializer) {
-			value = this.evaluate(stmt.initializer);
-		}
-		this.#environment.define(stmt.name.lexeme, value);
 	}
 
 	binary(expr: Binary): LoxValue {
@@ -177,10 +146,6 @@ export class Interpreter implements StmtVisitor<void> {
 		}
 
 		return null;
-	}
-
-	block(block: Block): void {
-		this.executeBlock(block.statements, new Environment(this.#environment));
 	}
 
 	call(expr: Call): LoxValue {
@@ -292,7 +257,61 @@ export class Interpreter implements StmtVisitor<void> {
 	}
 
 	execute(stmt: Stmt): void {
-		visitStmt(stmt, this);
+		switch (stmt.kind) {
+			case "block":
+				this.executeBlock(stmt.statements, new Environment(this.#environment));
+				break;
+
+			case "class":
+				this.class(stmt);
+				break;
+
+			case "expr":
+				this.evaluate(stmt.expression);
+				break;
+
+			case "func":
+				const func = new LoxFunction(stmt, this.#environment, false);
+				this.#environment.define(stmt.name.lexeme, func);
+				break;
+
+			case "if":
+				if (isTruthy(this.evaluate(stmt.condition))) {
+					this.execute(stmt.thenBranch);
+				} else if (stmt.elseBranch !== null) {
+					this.execute(stmt.elseBranch);
+				}
+				break;
+
+			case "print": {
+				const value = this.evaluate(stmt.expression);
+				console.log(stringify(value));
+				break;
+			}
+
+			case "return": {
+				const value = stmt.value && this.evaluate(stmt.value);
+				throw new ReturnCall(value);
+			}
+
+			case "var-stmt": {
+				let value = null;
+				if (stmt.initializer) {
+					value = this.evaluate(stmt.initializer);
+				}
+				this.#environment.define(stmt.name.lexeme, value);
+				break;
+			}
+
+			case "while":
+				while (isTruthy(this.evaluate(stmt.condition))) {
+					this.execute(stmt.body);
+				}
+				break;
+
+			default:
+				assertUnreachable(stmt);
+		}
 	}
 
 	executeBlock(stmts: Stmt[], environment: Environment): void {
@@ -309,23 +328,6 @@ export class Interpreter implements StmtVisitor<void> {
 		}
 	}
 
-	expr(stmt: Expression): void {
-		this.evaluate(stmt.expression);
-	}
-
-	func(stmt: Func): void {
-		const func = new LoxFunction(stmt, this.#environment, false);
-		this.#environment.define(stmt.name.lexeme, func);
-	}
-
-	if(stmt: IfStmt): void {
-		if (isTruthy(this.evaluate(stmt.condition))) {
-			this.execute(stmt.thenBranch);
-		} else if (stmt.elseBranch !== null) {
-			this.execute(stmt.elseBranch);
-		}
-	}
-
 	interpret(statements: Stmt[]): void {
 		try {
 			for (const statement of statements) {
@@ -335,17 +337,6 @@ export class Interpreter implements StmtVisitor<void> {
 			if (e instanceof RuntimeError) {
 				runtimeError(e);
 			}
-		}
-	}
-
-	print(stmt: Print): void {
-		const value = this.evaluate(stmt.expression);
-		console.log(stringify(value));
-	}
-
-	while(stmt: While): void {
-		while (isTruthy(this.evaluate(stmt.condition))) {
-			this.execute(stmt.body);
 		}
 	}
 }
