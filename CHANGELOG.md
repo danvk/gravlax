@@ -1,3 +1,9 @@
+# [0.11.0](https://github.com/danvk/gravlax/compare/0.10.0...0.11.0) (2024-01-27)
+
+### Features
+
+- Implement Chapter 12 (Classes) ([#30](https://github.com/danvk/gravlax/issues/30)) ([04a4dc2](https://github.com/danvk/gravlax/commit/04a4dc27ffb0ed44607d4d91a1b9ff168030dfda)), closes [#25](https://github.com/danvk/gravlax/issues/25)
+
 # [0.10.0](https://github.com/danvk/gravlax/compare/0.9.0...0.10.0) (2024-01-24)
 
 ### Features
