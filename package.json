@@ -20,6 +20,7 @@
 		"README.md"
 	],
 	"scripts": {
+		"benchmark": "pnpm --silent run repl bench/fib33.lox",
 		"build": "tsup",
 		"coverage": "pnpm test -- --coverage --no-watch",
 		"format": "prettier \"**/*\" --ignore-unknown",
