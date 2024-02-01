@@ -8,19 +8,6 @@ import { CurrencyValue, LoxValue, isCurrency } from "./lox-value.js";
 import { runtimeError } from "./main.js";
 import { Token } from "./token.js";
 
-// TODO: Crafting Interpreters makes this anonymous, can I do that?
-class ClockFn extends LoxCallable {
-	arity() {
-		return 0;
-	}
-	call() {
-		return Date.now();
-	}
-	toString() {
-		return "<native fn>";
-	}
-}
-
 export class ReturnCall extends Error {
 	value: LoxValue;
 	constructor(value: LoxValue) {
@@ -77,7 +64,15 @@ export class Interpreter {
 	#locals = new Map<Expr, number>();
 
 	constructor() {
-		this.globals.define("clock", new ClockFn());
+		this.globals.define(
+			"clock",
+			// Can't use an object literal here because it must be instanceof LoxCallable.
+			new (class extends LoxCallable {
+				arity = () => 0;
+				call = () => Date.now();
+				toString = () => "<native fn>";
+			})(),
+		);
 	}
 
 	resolve(expr: Expr, depth: number) {
