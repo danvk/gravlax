@@ -1,0 +1,14 @@
+class Parent {
+    init() {
+        print("Parent init");
+    }
+}
+
+class Child < Parent {
+    init() {
+        super.init();
+        print("Child init");
+    }
+}
+
+var c = Child();
