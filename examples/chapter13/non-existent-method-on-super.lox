@@ -1,0 +1,18 @@
+class Parent {
+    foo() {
+        print "Parent.foo";
+    }
+}
+
+class Child < Parent {
+    foo() {
+        super.foo();
+    }
+    bar() {
+        super.bar();
+    }
+}
+
+var c = Child();
+c.foo();
+c.bar();
