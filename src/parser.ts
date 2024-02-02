@@ -24,9 +24,9 @@
 // unary          → ( "!" | "-" ) unary | call ;
 // call           → primary ( "(" arguments? ")" | "." IDENTIFIER )* ;
 // arguments      → expression ( "," expression )* ;
-// primary        → NUMBER | STRING | "true" | "false" | "nil"
+// primary        → NUMBER | STRING | "true" | "false" | "nil" | "this"
 //                | "(" expression ")" ;
-//                | IDENTIFIER ;
+//                | IDENTIFIER | "super" "." IDENTIFIER;
 
 import {
 	Expr,
@@ -383,6 +383,11 @@ export function parse(tokens: Token[]) {
 			return { keyword: previous(), kind: "this" };
 		} else if (match("identifier")) {
 			return { kind: "var-expr", name: previous() };
+		} else if (match("super")) {
+			const keyword = previous();
+			consume(".", "Expect '.' after 'super'.");
+			const method = consume("identifier", "Expect superclass method name.");
+			return { keyword, kind: "super", method };
 		}
 		throw error(peek(), "Expect expression.");
 	};

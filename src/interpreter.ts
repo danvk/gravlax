@@ -173,6 +173,11 @@ export class Interpreter {
 		}
 
 		this.#environment.define(stmt.name.lexeme, null);
+		if (superclass) {
+			this.#environment = new Environment(this.#environment);
+			this.#environment.define("super", superclass);
+		}
+
 		const methods = new Map<string, LoxFunction>();
 		for (const method of stmt.methods) {
 			const func = new LoxFunction(
@@ -183,6 +188,10 @@ export class Interpreter {
 			methods.set(method.name.lexeme, func);
 		}
 		const klass = new LoxClass(stmt.name.lexeme, superclass, methods);
+		if (superclass) {
+			// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+			this.#environment = this.#environment.enclosing!;
+		}
 		this.#environment.assign(stmt.name, klass);
 	}
 
@@ -240,6 +249,27 @@ export class Interpreter {
 				const value = this.evaluate(expr.value);
 				obj.set(expr.name, value);
 				return value;
+			}
+
+			case "super": {
+				// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+				const distance = this.#locals.get(expr)!;
+				const superclass = this.#environment.getAt(
+					distance,
+					"super",
+				) as LoxClass;
+				const object = this.#environment.getAt(
+					distance - 1,
+					"this",
+				) as LoxInstance;
+				const method = superclass.findMethod(expr.method.lexeme);
+				if (!method) {
+					throw new RuntimeError(
+						expr.method,
+						`Undefined property ${expr.method.lexeme}.`,
+					);
+				}
+				return method.bindThis(object);
 			}
 
 			case "unary":

@@ -124,6 +124,12 @@ export interface SetExpr {
 	value: Expr;
 }
 
+export interface Super {
+	kind: "super";
+	keyword: Token;
+	method: Token;
+}
+
 export type Expr =
 	| Assign
 	| Binary
@@ -133,6 +139,7 @@ export type Expr =
 	| Literal
 	| Logical
 	| SetExpr
+	| Super
 	| This
 	| Unary
 	| VarExpr;
