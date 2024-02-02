@@ -1,0 +1,2 @@
+Parent init
+Child init
