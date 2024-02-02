@@ -1,3 +1,13 @@
+# [0.12.0](https://github.com/danvk/gravlax/compare/0.11.0...0.12.0) (2024-02-02)
+
+### Features
+
+- Implement Chapter 13, Inheritance ([#39](https://github.com/danvk/gravlax/issues/39)) ([7c8883a](https://github.com/danvk/gravlax/commit/7c8883aa72338b8175c3e83d1c6ad645783b9a63)), closes [#26](https://github.com/danvk/gravlax/issues/26)
+
+### Performance Improvements
+
+- Add benchmark and speedup ([#37](https://github.com/danvk/gravlax/issues/37)) ([a9b73bd](https://github.com/danvk/gravlax/commit/a9b73bd4163c499fe10c1184817c1121689c4436)), closes [#36](https://github.com/danvk/gravlax/issues/36)
+
 # [0.11.0](https://github.com/danvk/gravlax/compare/0.10.0...0.11.0) (2024-01-27)
 
 ### Features
