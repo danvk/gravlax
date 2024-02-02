@@ -92,6 +92,16 @@ export function makeResolver(interpreter: Interpreter) {
 			currentClass = "class";
 			declare(stmt.name);
 			define(stmt.name);
+			if (stmt.superclass && stmt.name.lexeme === stmt.superclass.name.lexeme) {
+				// What about circular inheritance?
+				errorOnToken(
+					stmt.superclass.name,
+					"A class can't inherit from itself.",
+				);
+			}
+			if (stmt.superclass) {
+				resolveExpr(stmt.superclass);
+			}
 			beginScope();
 			// TODO: write a peek() to enforce that -1 works.
 			scopes.at(-1)?.set("this", true);

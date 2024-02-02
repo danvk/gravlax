@@ -113,6 +113,7 @@ export interface Return {
 export interface Class {
 	kind: "class";
 	name: Token;
+	superclass: VarExpr | null;
 	methods: Func[];
 }
 
