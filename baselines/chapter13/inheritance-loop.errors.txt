@@ -1,0 +1,2 @@
+Undefined variable 'B'.
+[line 1]

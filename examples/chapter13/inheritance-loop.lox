@@ -1,0 +1,13 @@
+class A < B {
+    foo() {
+        super.foo();
+    }
+}
+class B < A {
+    foo() {
+        super.foo();
+    }
+}
+
+var a = A();
+a.foo();

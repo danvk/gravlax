@@ -1,7 +1,7 @@
 // Grammar:
 // program        → declaration* EOF ;
 // declaration    → classDecl | funDecl | varDecl | statement ;
-// classDecl      → "class" IDENTIFIER "{" function* "}" ;
+// classDecl      → "class" IDENTIFIER ( "<" IDENTIFIER ) "{" function* "}" ;
 // funDecl        → "fun" function ;
 // function       → IDENTIFIER "(" parameters? ")" block ;
 // varDecl        → "var" IDENTIFIER ( "=" expression )? ";" ;
@@ -24,11 +24,19 @@
 // unary          → ( "!" | "-" ) unary | call ;
 // call           → primary ( "(" arguments? ")" | "." IDENTIFIER )* ;
 // arguments      → expression ( "," expression )* ;
-// primary        → NUMBER | STRING | "true" | "false" | "nil"
+// primary        → NUMBER | STRING | "true" | "false" | "nil" | "this"
 //                | "(" expression ")" ;
-//                | IDENTIFIER ;
+//                | IDENTIFIER | "super" "." IDENTIFIER;
 
-import { Expr, Expression, Func, Print, Stmt, VarStmt } from "./ast.js";
+import {
+	Expr,
+	Expression,
+	Func,
+	Print,
+	Stmt,
+	VarExpr,
+	VarStmt,
+} from "./ast.js";
 import { errorOnToken } from "./main.js";
 import { Token } from "./token.js";
 import { TokenType } from "./token-type.js";
@@ -121,13 +129,20 @@ export function parse(tokens: Token[]) {
 	// classDecl      → "class" IDENTIFIER "{" function* "}" ;
 	const classDecl = (): Stmt => {
 		const name = consume("identifier", "Expect class name.");
+
+		let superclass: VarExpr | null = null;
+		if (match("<")) {
+			consume("identifier", "Expect superclass name.");
+			superclass = { kind: "var-expr", name: previous() };
+		}
+
 		consume("{", "Expect '{' before class body.");
 		const methods = [];
 		while (!check("}") && !isAtEnd()) {
 			methods.push(func("method"));
 		}
 		consume("}", "Expect '}' after class body.");
-		return { kind: "class", methods, name };
+		return { kind: "class", methods, name, superclass };
 	};
 
 	// funDecl        → "fun" function ;
@@ -368,6 +383,11 @@ export function parse(tokens: Token[]) {
 			return { keyword: previous(), kind: "this" };
 		} else if (match("identifier")) {
 			return { kind: "var-expr", name: previous() };
+		} else if (match("super")) {
+			const keyword = previous();
+			consume(".", "Expect '.' after 'super'.");
+			const method = consume("identifier", "Expect superclass method name.");
+			return { keyword, kind: "super", method };
 		}
 		throw error(peek(), "Expect expression.");
 	};

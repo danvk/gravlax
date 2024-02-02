@@ -1,0 +1,14 @@
+class Parent {
+    foo() {
+        print "Parent.foo";
+    }
+}
+
+class Child {
+    foo() {
+        super.foo();
+    }
+}
+
+var c = Child();
+c.foo();

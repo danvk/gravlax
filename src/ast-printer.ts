@@ -38,6 +38,7 @@ export const astPrinter: ExpressionVisitor<string> & StmtVisitor<string> = {
 	print: (stmt) => parenthesize("print", stmt.expression),
 	return: (stmt) => parenthesize("return", ...(stmt.value ? [stmt.value] : [])),
 	set: (expr) => parenthesize("set", expr.object, expr.name.lexeme, expr.value),
+	super: () => "super",
 	this: () => parenthesize("this"),
 	unary: (expr) => parenthesize(expr.operator.lexeme, expr.right),
 	"var-expr": (expr) => String(expr.name.literal),

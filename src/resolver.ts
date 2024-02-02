@@ -12,7 +12,7 @@ import { errorOnToken } from "./main.js";
 import { Token } from "./token.js";
 
 type FunctionType = "function" | "initializer" | "method" | "none";
-type ClassType = "class" | "none";
+type ClassType = "class" | "none" | "subclass";
 
 export function makeResolver(interpreter: Interpreter) {
 	const scopes: Map<string, boolean>[] = [];
@@ -92,6 +92,23 @@ export function makeResolver(interpreter: Interpreter) {
 			currentClass = "class";
 			declare(stmt.name);
 			define(stmt.name);
+			if (stmt.superclass && stmt.name.lexeme === stmt.superclass.name.lexeme) {
+				// What about circular inheritance?
+				errorOnToken(
+					stmt.superclass.name,
+					"A class can't inherit from itself.",
+				);
+			}
+			if (stmt.superclass) {
+				currentClass = "subclass";
+				resolveExpr(stmt.superclass);
+			}
+			if (stmt.superclass) {
+				beginScope();
+				// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+				scopes.at(-1)!.set("super", true);
+			}
+
 			beginScope();
 			// TODO: write a peek() to enforce that -1 works.
 			scopes.at(-1)?.set("this", true);
@@ -102,6 +119,9 @@ export function makeResolver(interpreter: Interpreter) {
 				);
 			}
 			endScope();
+			if (stmt.superclass) {
+				endScope();
+			}
 			currentClass = encClass;
 		},
 		expr(stmt) {
@@ -152,6 +172,17 @@ export function makeResolver(interpreter: Interpreter) {
 		set(expr) {
 			resolveExpr(expr.value);
 			resolveExpr(expr.object);
+		},
+		super(expr) {
+			if (currentClass === "none") {
+				errorOnToken(expr.keyword, "Can't use 'super' outside of a class.");
+			} else if (currentClass === "class") {
+				errorOnToken(
+					expr.keyword,
+					"Can't use 'super' in a class with no superclass.",
+				);
+			}
+			resolveLocal(expr, expr.keyword);
 		},
 		this(expr) {
 			if (currentClass === "none") {

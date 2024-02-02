@@ -10,11 +10,17 @@ import { LoxValue } from "./lox-value.js";
 export class LoxClass extends LoxCallable {
 	#methods: Map<string, LoxFunction>;
 	name: string;
+	superclass: LoxClass | null;
 
-	constructor(name: string, methods: Map<string, LoxFunction>) {
+	constructor(
+		name: string,
+		superclass: LoxClass | null,
+		methods: Map<string, LoxFunction>,
+	) {
 		super();
 		this.name = name;
 		this.#methods = methods;
+		this.superclass = superclass;
 	}
 
 	arity(): number {
@@ -31,8 +37,9 @@ export class LoxClass extends LoxCallable {
 		return instance;
 	}
 
-	findMethod(name: string) {
-		return this.#methods.get(name);
+	findMethod(name: string): LoxFunction | undefined {
+		const meth = this.#methods.get(name);
+		return meth ?? this.superclass?.findMethod(name);
 	}
 
 	toString() {
