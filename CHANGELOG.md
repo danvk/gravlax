@@ -1,3 +1,9 @@
+## [0.12.2](https://github.com/danvk/gravlax/compare/0.12.1...0.12.2) (2024-02-03)
+
+### Bug Fixes
+
+- remove shebang line from `index.ts` ([#44](https://github.com/danvk/gravlax/issues/44)) ([057d646](https://github.com/danvk/gravlax/commit/057d64685134ff234e3e340cd68580c1ccb478c8)), closes [#41](https://github.com/danvk/gravlax/issues/41)
+
 ## [0.12.1](https://github.com/danvk/gravlax/compare/0.12.0...0.12.1) (2024-02-03)
 
 ### Bug Fixes
