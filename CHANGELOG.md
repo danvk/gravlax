@@ -1,3 +1,9 @@
+## [0.12.1](https://github.com/danvk/gravlax/compare/0.12.0...0.12.1) (2024-02-03)
+
+### Bug Fixes
+
+- add bin to package.json ([#43](https://github.com/danvk/gravlax/issues/43)) ([7f60cb7](https://github.com/danvk/gravlax/commit/7f60cb7185d40dc57f092d21521122548aee4c6a)), closes [#41](https://github.com/danvk/gravlax/issues/41)
+
 # [0.12.0](https://github.com/danvk/gravlax/compare/0.11.0...0.12.0) (2024-02-02)
 
 ### Features
