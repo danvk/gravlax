@@ -28,7 +28,7 @@ npx gravlax [file.lox]
 
 ### Features not in the book
 
-There's one notable feature I added beyond what's in the text of _Crafting Intepreters_: support for commas as numeric separators and currencies as first-class values.
+There's one notable feature I added beyond what's in the text of _Crafting Interpreters_: support for commas as numeric separators and currencies as first-class values.
 
 You can write `1,234 + 2,456` and gravlax will happily print out `3690`.
 Note that this has the… interesting side effect of making the grammar whitespace-sensitive:

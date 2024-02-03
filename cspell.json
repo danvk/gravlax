@@ -32,6 +32,9 @@
 		"unshadow",
 		"klass",
 		"crème",
-		"pâtissière"
+		"pâtissière",
+		"readline",
+		"jlox",
+		"codegen"
 	]
 }
