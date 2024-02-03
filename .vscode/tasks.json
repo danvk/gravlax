@@ -29,13 +29,6 @@
 			"problemMatcher": ["$markdownlint"],
 			"script": "lint:spelling",
 			"type": "npm"
-		},
-		{
-			"type": "npm",
-			"script": "lint:md",
-			"problemMatcher": ["$eslint-compact"],
-			"label": "npm: lint:md",
-			"detail": "markdownlint \"**/*.md\" \".github/**/*.md\" --rules sentences-per-line"
 		}
 	],
 	"version": "2.0.0"
