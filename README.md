@@ -48,7 +48,8 @@ MixedCurrencyError: Operands must be the same currency.
 Two other niceties:
 
 1. Support for expressions in the REPL ([Chapter 8 Challenge 1]).
-   If you run `npx gravlax` and then `1+2`, it will print `3`. No need to write a `print` statement.
+   If you run `npx gravlax` and then `1+2`, it will print `3`.
+   No need to write a `print` statement.
    This makes it possible to use gravlax as a calculator.
 
 2. The REPL uses readline so you can hit up arrow to get the previous expression and edit it.
@@ -56,17 +57,19 @@ Two other niceties:
 ### Implementation details
 
 Rather than representing AST nodes as classes, I used TypeScript `interface`s and
-a discriminated union for `Expr` and `Stmt`. This means that we don't need a
-codegen step. It also means that we [don't need the visitor pattern]:
+a discriminated union for `Expr` and `Stmt`.
+This means that we don't need a codegen step.
+It also means that we [don't need the visitor pattern]:
 pattern-matching with `switch`/`case` is more idiomatic and less code.
 
-While I used a class for the Scanner (same as the book), I used a closure for
-the parser. Mostly this just means less writing `this` dot whatever.
+While I used a class for the Scanner (same as the book), I used a closure for the parser.
+Mostly this just means less writing `this` dot whatever.
 
 ## Performance
 
 On my machine, gravlax runs the [Fibonacci code] from Chapter 14 in ~3 minutes (174 seconds).
-Compare this with 27s for jlox. So we're ~6x slower than Java.
+Compare this with 27s for jlox.
+So we're ~6x slower than Java.
 
 In jlox and gravlax, returning from a function is implemented by throwing an exception.
 It's critical that this class not derive from `Error`, so that it doesn't carry
@@ -77,8 +80,9 @@ along stack traces:
 + class ReturnCall {
 ```
 
-The latter winds up being ~10x faster than the former. This is the JS equivalent
-of the [weird] `super(null, null, false, false)` call in jlox. See [#37].
+The latter winds up being ~10x faster than the former.
+This is the JS equivalent of the [weird] `super(null, null, false, false)` call in jlox.
+See [#37].
 
 ## Development
 
