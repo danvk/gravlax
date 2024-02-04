@@ -38,7 +38,15 @@ export async function runPrompt(interpreter: Interpreter) {
 	rl.on("line", (line) => {
 		const expr = maybeParseAsExpression(line);
 		if (expr) {
-			console.log(stringify(interpreter.evaluate(expr)));
+			try {
+				console.log(stringify(interpreter.evaluate(expr)));
+			} catch (e) {
+				if (e instanceof RuntimeError) {
+					runtimeError(e);
+				} else {
+					throw e;
+				}
+			}
 		} else {
 			run(interpreter, line);
 		}
