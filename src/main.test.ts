@@ -75,17 +75,13 @@ describe("main", () => {
 	it.only("should run a REPL", async () => {
 		const interpreter = new Interpreter();
 
-		let closeFn: (() => void) | null = null;
-		let lineFn: ((line: string) => void) | null = null;
+		let closeFn: (() => void) | undefined;
+		let lineFn: ((line: string) => void) | undefined;
 
 		mockReadline.createInterface.mockReturnValue({
 			on: (event: string, fn: () => void) => {
 				if (event === "line") {
 					lineFn = fn;
-				} else if (event === "close") {
-					closeFn = fn;
-				} else {
-					throw new Error(`Unexpected event ${event}`);
 				}
 				return this;
 			},
@@ -96,11 +92,16 @@ describe("main", () => {
 				return this;
 			},
 			prompt: () => {},
-		});
+		} as unknown as readline.Interface);
 
 		const p = runPrompt(interpreter);
-		lineFn!("1 + 1");
-		closeFn!();
+
+		if (!lineFn || !closeFn) {
+			throw new Error(`Failed to set line or close`);
+		}
+
+		lineFn("1 + 1");
+		closeFn();
 		await p;
 		expect(log).toHaveBeenCalledWith("2");
 	});
