@@ -24,6 +24,66 @@ I'm building this as part of my Winter 2024 batch at the [Recurse Center].
 npx gravlax [file.lox]
 ```
 
+## Departures from the book
+
+### Features not in the book
+
+There's one notable feature I added beyond what's in the text of _Crafting Interpreters_: support for commas as numeric separators and currencies as first-class values.
+
+You can write `1,234 + 2,456` and gravlax will happily print out `3690`.
+Note that this has the… interesting side effect of making the grammar whitespace-sensitive:
+`f(1,2)` and `f(1, 2)` parse differently (the former is a one-argument call).
+
+You can also write out currency values like `$123` or `€456` and do math on them.
+The operations you'd expect to work will work: adding or subtracting values from the
+same currency is OK, multiply a currency by a scalar is OK, etc:
+
+```text
+> ($1,234 + $2,345) / 10
+$357.9
+> $12 + €23
+MixedCurrencyError: Operands must be the same currency.
+```
+
+Two other niceties:
+
+1. Support for expressions in the REPL ([Chapter 8 Challenge 1]).
+   If you run `npx gravlax` and then `1+2`, it will print `3`.
+   No need to write a `print` statement.
+   This makes it possible to use gravlax as a calculator.
+
+2. The REPL uses readline so you can hit up arrow to get the previous expression and edit it.
+
+### Implementation details
+
+Rather than representing AST nodes as classes, I used TypeScript `interface`s and
+a discriminated union for `Expr` and `Stmt`.
+This means that we don't need a codegen step.
+It also means that we [don't need the visitor pattern]:
+pattern-matching with `switch`/`case` is more idiomatic and less code.
+
+While I used a class for the Scanner (same as the book), I used a closure for the parser.
+Mostly this just means less writing `this` dot whatever.
+
+## Performance
+
+On my machine, gravlax runs the [Fibonacci code] from Chapter 14 in ~3 minutes (174 seconds).
+Compare this with 27s for jlox.
+So we're ~6x slower than Java.
+
+In jlox and gravlax, returning from a function is implemented by throwing an exception.
+It's critical that this class not derive from `Error`, so that it doesn't carry
+along stack traces:
+
+```text
+- class ReturnCall extends Error {
++ class ReturnCall {
+```
+
+The latter winds up being ~10x faster than the former.
+This is the JS equivalent of the [weird] `super(null, null, false, false)` call in jlox.
+See [#37].
+
 ## Development
 
 ```shell
@@ -59,3 +119,8 @@ pnpm repl
 
 [Crafting Interpreters]: https://craftinginterpreters.com/contents.html
 [Recurse Center]: https://www.recurse.com/
+[Chapter 8 Challenge 1]: https://craftinginterpreters.com/statements-and-state.html#challenges
+[don't need the visitor pattern]: https://github.com/danvk/gravlax/pull/35
+[Fibonacci code]: https://craftinginterpreters.com/chunks-of-bytecode.html
+[#37]: https://github.com/danvk/gravlax/pull/37
+[weird]: https://craftinginterpreters.com/functions.html
