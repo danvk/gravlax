@@ -1,11 +1,21 @@
 import * as fs from "node:fs/promises";
+import * as readline from "node:readline";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { main, maybeParseAsExpression, resetErrors } from "./main.js";
+import { Interpreter } from "./interpreter.js";
+import {
+	main,
+	maybeParseAsExpression,
+	resetErrors,
+	runPrompt,
+} from "./main.js";
 import { mockError, mockExit, mockLog } from "./test-utils.js";
 
 vi.mock("node:fs/promises");
 const mockFs = vi.mocked(fs);
+
+vi.mock("node:readline");
+const mockReadline = vi.mocked(readline);
 
 describe("main", () => {
 	let stashedArgv = process.argv;
@@ -60,6 +70,39 @@ describe("main", () => {
 		expect(error).toHaveBeenCalledWith(
 			"Operands must be two numbers/currencies or two strings.\n[line 1]",
 		);
+	});
+
+	it.only("should run a REPL", async () => {
+		const interpreter = new Interpreter();
+
+		let closeFn: (() => void) | null = null;
+		let lineFn: ((line: string) => void) | null = null;
+
+		mockReadline.createInterface.mockReturnValue({
+			on: (event: string, fn: () => void) => {
+				if (event === "line") {
+					lineFn = fn;
+				} else if (event === "close") {
+					closeFn = fn;
+				} else {
+					throw new Error(`Unexpected event ${event}`);
+				}
+				return this;
+			},
+			once: (event: string, fn: () => void) => {
+				if (event === "close") {
+					closeFn = fn;
+				}
+				return this;
+			},
+			prompt: () => {},
+		});
+
+		const p = runPrompt(interpreter);
+		lineFn!("1 + 1");
+		closeFn!();
+		await p;
+		expect(log).toHaveBeenCalledWith("2");
 	});
 
 	describe("maybeParseAsExpression", () => {

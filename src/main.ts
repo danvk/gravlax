@@ -29,11 +29,13 @@ export function resetErrors() {
 
 export async function runPrompt(interpreter: Interpreter) {
 	// https://nodejs.org/api/readline.html#example-tiny-cli
+	console.log("here I am");
 	const rl = createInterface({
 		input: process.stdin,
 		output: process.stdout,
 		prompt: "> ",
 	});
+	console.log(rl);
 	rl.prompt();
 	rl.on("line", (line) => {
 		const expr = maybeParseAsExpression(line);
