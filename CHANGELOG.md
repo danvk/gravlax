@@ -1,3 +1,9 @@
+## [0.12.3](https://github.com/danvk/gravlax/compare/0.12.2...0.12.3) (2024-02-04)
+
+### Bug Fixes
+
+- REPL should not crash on runtime errors ([#47](https://github.com/danvk/gravlax/issues/47)) ([43dd522](https://github.com/danvk/gravlax/commit/43dd5225c02195a3d09c0f6e797a08fe5d37646f)), closes [#45](https://github.com/danvk/gravlax/issues/45)
+
 ## [0.12.2](https://github.com/danvk/gravlax/compare/0.12.1...0.12.2) (2024-02-03)
 
 ### Bug Fixes

@@ -1,6 +1,6 @@
 {
 	"name": "gravlax",
-	"version": "0.12.2",
+	"version": "0.12.3",
 	"description": "A Lox interpreter with tasty TypeScript seasoning",
 	"repository": {
 		"type": "git",
