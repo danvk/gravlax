@@ -1,4 +1,5 @@
 import * as fs from "node:fs/promises";
+import * as readline from "node:readline";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { main, maybeParseAsExpression, resetErrors } from "./main.js";
@@ -6,6 +7,9 @@ import { mockError, mockExit, mockLog } from "./test-utils.js";
 
 vi.mock("node:fs/promises");
 const mockFs = vi.mocked(fs);
+
+vi.mock("node:readline");
+const mockReadline = vi.mocked(readline);
 
 describe("main", () => {
 	let stashedArgv = process.argv;
@@ -60,6 +64,64 @@ describe("main", () => {
 		expect(error).toHaveBeenCalledWith(
 			"Operands must be two numbers/currencies or two strings.\n[line 1]",
 		);
+	});
+
+	describe("REPL", () => {
+		let closeFn: () => void;
+		let lineFn: (line: string) => void;
+		const prompt = vi.fn();
+		beforeEach(() => {
+			mockReadline.createInterface.mockReturnValue({
+				on: (event: string, fn: () => void) => {
+					if (event === "line") {
+						lineFn = fn;
+					}
+					return this;
+				},
+				once: (event: string, fn: () => void) => {
+					if (event === "close") {
+						closeFn = fn;
+					}
+					return this;
+				},
+				prompt,
+			} as unknown as readline.Interface);
+		});
+		afterEach(() => {
+			vi.resetAllMocks();
+		});
+
+		it("should run the REPL when invoked with no arguments", async () => {
+			const p = main();
+			lineFn("1 + 1");
+			closeFn();
+			await p;
+			expect(log).toHaveBeenCalledWith("2");
+			expect(error).not.toHaveBeenCalled();
+		});
+
+		it("should report an error without quitting", async () => {
+			const p = main();
+			lineFn("1 + nil");
+			closeFn();
+			await p;
+			expect(error).toHaveBeenCalledWith(
+				"Operands must be two numbers/currencies or two strings.\n[line 1]",
+			);
+			expect(log).not.toHaveBeenCalled();
+			expect(prompt).toHaveBeenCalledTimes(2);
+		});
+
+		it("should interpret a program", async () => {
+			const p = main();
+			lineFn("var x = $1,234;");
+			lineFn("print x + $2,345;");
+			closeFn();
+			await p;
+			expect(log).toHaveBeenCalledWith("$3,579");
+			expect(error).not.toHaveBeenCalled();
+			expect(prompt).toHaveBeenCalledTimes(3);
+		});
 	});
 
 	describe("maybeParseAsExpression", () => {

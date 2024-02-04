@@ -38,7 +38,15 @@ export async function runPrompt(interpreter: Interpreter) {
 	rl.on("line", (line) => {
 		const expr = maybeParseAsExpression(line);
 		if (expr) {
-			console.log(stringify(interpreter.evaluate(expr)));
+			try {
+				console.log(stringify(interpreter.evaluate(expr)));
+			} catch (e) {
+				if (e instanceof RuntimeError) {
+					runtimeError(e);
+				} else {
+					throw e;
+				}
+			}
 		} else {
 			run(interpreter, line);
 		}
@@ -122,7 +130,7 @@ export async function main() {
 	if (args.length > 1) {
 		console.error("Usage:", process.argv[1], "[script]");
 		// eslint-disable-next-line n/no-process-exit
-		process.exit(64);
+		return process.exit(64);
 	}
 
 	const interpreter = new Interpreter();
