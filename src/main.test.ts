@@ -72,38 +72,39 @@ describe("main", () => {
 		);
 	});
 
-	it.only("should run a REPL", async () => {
-		const interpreter = new Interpreter();
-
+	describe.only("REPL", () => {
+		let interpreter: Interpreter;
 		let closeFn: (() => void) | undefined;
 		let lineFn: ((line: string) => void) | undefined;
+		beforeEach(() => {
+			interpreter = new Interpreter();
+			mockReadline.createInterface.mockReturnValue({
+				on: (event: string, fn: () => void) => {
+					if (event === "line") {
+						lineFn = fn;
+					}
+					return this;
+				},
+				once: (event: string, fn: () => void) => {
+					if (event === "close") {
+						closeFn = fn;
+					}
+					return this;
+				},
+				prompt: vi.fn(),
+			} as unknown as readline.Interface);
+		});
 
-		mockReadline.createInterface.mockReturnValue({
-			on: (event: string, fn: () => void) => {
-				if (event === "line") {
-					lineFn = fn;
-				}
-				return this;
-			},
-			once: (event: string, fn: () => void) => {
-				if (event === "close") {
-					closeFn = fn;
-				}
-				return this;
-			},
-			prompt: () => {},
-		} as unknown as readline.Interface);
-
-		const p = runPrompt(interpreter);
-
-		if (!lineFn || !closeFn) {
-			throw new Error(`Failed to set line or close`);
-		}
-
-		lineFn("1 + 1");
-		closeFn();
-		await p;
-		expect(log).toHaveBeenCalledWith("2");
+		it("should evaluate an expression", async () => {
+			const p = runPrompt(interpreter);
+			if (!lineFn || !closeFn) {
+				throw new Error(`Failed to set line or close`);
+			}
+			lineFn("1 + 1");
+			closeFn();
+			await p;
+			expect(log).toHaveBeenCalledWith("2");
+		});
 	});
 
 	describe("maybeParseAsExpression", () => {
