@@ -76,6 +76,7 @@ describe("main", () => {
 		let interpreter: Interpreter;
 		let closeFn: (() => void) | undefined;
 		let lineFn: ((line: string) => void) | undefined;
+		let prompt = vi.fn();
 		beforeEach(() => {
 			interpreter = new Interpreter();
 			mockReadline.createInterface.mockReturnValue({
@@ -91,7 +92,7 @@ describe("main", () => {
 					}
 					return this;
 				},
-				prompt: vi.fn(),
+				prompt,
 			} as unknown as readline.Interface);
 		});
 
@@ -104,6 +105,33 @@ describe("main", () => {
 			closeFn();
 			await p;
 			expect(log).toHaveBeenCalledWith("2");
+		});
+
+		it("should report an error without quitting", async () => {
+			const p = runPrompt(interpreter);
+			if (!lineFn || !closeFn) {
+				throw new Error(`Failed to set line or close`);
+			}
+			lineFn("1 + nil");
+			closeFn();
+			await p;
+			expect(error).toHaveBeenCalledWith(
+				"Operands must be two numbers/currencies or two strings.\n[line 1]",
+			);
+			expect(prompt).toHaveBeenCalledTimes(2);
+		});
+
+		it("should interpret a program", async () => {
+			const p = runPrompt(interpreter);
+			if (!lineFn || !closeFn) {
+				throw new Error(`Failed to set line or close`);
+			}
+			lineFn("var x = $1,234;");
+			lineFn("print x + $2,345;");
+			closeFn();
+			await p;
+			expect(log).toHaveBeenCalledWith("$3,579");
+			expect(prompt).toHaveBeenCalledTimes(3);
 		});
 	});
 
