@@ -2,13 +2,7 @@ import * as fs from "node:fs/promises";
 import * as readline from "node:readline";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { Interpreter } from "./interpreter.js";
-import {
-	main,
-	maybeParseAsExpression,
-	resetErrors,
-	runPrompt,
-} from "./main.js";
+import { main, maybeParseAsExpression, resetErrors } from "./main.js";
 import { mockError, mockExit, mockLog } from "./test-utils.js";
 
 vi.mock("node:fs/promises");
@@ -73,12 +67,10 @@ describe("main", () => {
 	});
 
 	describe("REPL", () => {
-		let interpreter: Interpreter;
 		let closeFn: () => void;
 		let lineFn: (line: string) => void;
 		const prompt = vi.fn();
 		beforeEach(() => {
-			interpreter = new Interpreter();
 			mockReadline.createInterface.mockReturnValue({
 				on: (event: string, fn: () => void) => {
 					if (event === "line") {
@@ -99,8 +91,8 @@ describe("main", () => {
 			vi.resetAllMocks();
 		});
 
-		it("should evaluate an expression", async () => {
-			const p = runPrompt(interpreter);
+		it("should run the REPL when invoked with no arguments", async () => {
+			const p = main();
 			lineFn("1 + 1");
 			closeFn();
 			await p;
@@ -109,7 +101,7 @@ describe("main", () => {
 		});
 
 		it("should report an error without quitting", async () => {
-			const p = runPrompt(interpreter);
+			const p = main();
 			lineFn("1 + nil");
 			closeFn();
 			await p;
@@ -121,7 +113,7 @@ describe("main", () => {
 		});
 
 		it("should interpret a program", async () => {
-			const p = runPrompt(interpreter);
+			const p = main();
 			lineFn("var x = $1,234;");
 			lineFn("print x + $2,345;");
 			closeFn();
