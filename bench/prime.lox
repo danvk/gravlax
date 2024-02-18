@@ -1,0 +1,34 @@
+var N = 10000;
+
+fun isPrime(n) {
+    for (var i = 2; i <= n / 2; i = i + 1) {
+        for (var j = 2; j <= n / i + 1; j = j + 1) {
+            if (i * j == n) {
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
+var start = clock();
+var sumOfPrimes = 0;
+var numPrimes = 0;
+for (var i = 2; i < N; i = i + 1) {
+    if (isPrime(i)) {
+        // print "Found a prime!";
+        // print i;
+        sumOfPrimes = sumOfPrimes + i;
+        numPrimes = numPrimes + 1;
+    }
+}
+var end = clock();
+
+print "N=";
+print N;
+print "Primes less than N";
+print numPrimes;
+print "Sum=";
+print sumOfPrimes;
+print "Elapsed time (ms)=";
+print end - start;
