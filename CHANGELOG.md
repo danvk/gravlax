@@ -1,3 +1,9 @@
+## [0.12.6](https://github.com/danvk/gravlax/compare/0.12.5...0.12.6) (2024-02-24)
+
+### Bug Fixes
+
+- more complete handling of \* and / combinations for currency ([#63](https://github.com/danvk/gravlax/issues/63)) ([60f0cf6](https://github.com/danvk/gravlax/commit/60f0cf63151dd8dd25f02cb90fdac57e66bca119)), closes [#49](https://github.com/danvk/gravlax/issues/49)
+
 ## [0.12.5](https://github.com/danvk/gravlax/compare/0.12.4...0.12.5) (2024-02-24)
 
 ### Bug Fixes
