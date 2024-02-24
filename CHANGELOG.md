@@ -1,3 +1,9 @@
+## [0.12.4](https://github.com/danvk/gravlax/compare/0.12.3...0.12.4) (2024-02-24)
+
+### Bug Fixes
+
+- clock returns seconds, not milliseconds ([#62](https://github.com/danvk/gravlax/issues/62)) ([bd257e6](https://github.com/danvk/gravlax/commit/bd257e62ff5699c1ce9463110d6b7c7307259b43)), closes [#51](https://github.com/danvk/gravlax/issues/51)
+
 ## [0.12.3](https://github.com/danvk/gravlax/compare/0.12.2...0.12.3) (2024-02-04)
 
 ### Bug Fixes
