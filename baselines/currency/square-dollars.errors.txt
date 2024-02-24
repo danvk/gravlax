@@ -1,2 +1,2 @@
-Operand must be a number.
+Cannot multiply two currencies.
 [line 1]
