@@ -46,6 +46,10 @@ function applyToNumOrCurrency(
 	return fn(val);
 }
 
+function getNumber(val: CurrencyValue | number): number {
+	return isCurrency(val) ? val.value : val;
+}
+
 function assertUnreachable(x: never): never {
 	// eslint-disable-next-line @typescript-eslint/restrict-template-expressions
 	throw new Error(`Unreachable code reached! ${x}`);
@@ -96,13 +100,29 @@ export class Interpreter {
 				checkSameNumberOperands(operator, pair);
 				return applyOperatorToPair(pair, (a, b) => a - b);
 			case "/":
+				// currency/scalar is OK but scalar/currency is not.
 				checkNumberOrCurrencyOperand(operator, left);
 				checkNumberOperand(operator, right);
 				return applyToNumOrCurrency(left, (v) => v / right);
 			case "*":
+				// Everything but currency*currency is OK.
 				checkNumberOrCurrencyOperand(operator, left);
-				checkNumberOperand(operator, right);
-				return applyToNumOrCurrency(left, (v) => v * right);
+				checkNumberOrCurrencyOperand(operator, right);
+				const curR = isCurrency(right);
+				const value = getNumber(left) * getNumber(right);
+				if (isCurrency(left)) {
+					if (curR) {
+						throw new RuntimeError(operator, "Cannot multiply two currencies.");
+					} else {
+						return { currency: left.currency, value };
+					}
+				} else {
+					if (curR) {
+						return { currency: right.currency, value };
+					} else {
+						return value;
+					}
+				}
 			case "+":
 				// This looks kinda funny!
 				if (typeof left === "string" && typeof right === "string") {
