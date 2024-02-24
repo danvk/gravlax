@@ -1,3 +1,9 @@
+## [0.12.5](https://github.com/danvk/gravlax/compare/0.12.4...0.12.5) (2024-02-24)
+
+### Bug Fixes
+
+- make a separate index.js with a shebang to run as global binary ([#61](https://github.com/danvk/gravlax/issues/61)) ([22af571](https://github.com/danvk/gravlax/commit/22af571fc842aebd60b14e5f72a837a4e9d39f4a)), closes [#50](https://github.com/danvk/gravlax/issues/50)
+
 ## [0.12.4](https://github.com/danvk/gravlax/compare/0.12.3...0.12.4) (2024-02-24)
 
 ### Bug Fixes
