@@ -68,7 +68,7 @@ export class Interpreter {
 			// Can't use an object literal here because it must be instanceof LoxCallable.
 			new (class extends LoxCallable {
 				arity = () => 0;
-				call = () => Date.now();
+				call = () => Date.now() / 1000;
 				toString = () => "<native fn>";
 			})(),
 		);
