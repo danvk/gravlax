@@ -8,18 +8,15 @@ export async function main() {
 	const vm = new VM();
 	const chunk = new Chunk();
 	let constant = chunk.addConstant(Value(1.2));
-	chunk.writeOp(OpCode.Constant, Int(123));
-	chunk.writeByte(constant, Int(123));
+	chunk.writeOpAndByte(OpCode.Constant, constant, Int(123));
 
 	constant = chunk.addConstant(Value(3.4));
-	chunk.writeOp(OpCode.Constant, Int(123));
-	chunk.writeByte(constant, Int(123));
+	chunk.writeOpAndByte(OpCode.Constant, constant, Int(123));
 
 	chunk.writeOp(OpCode.Add, Int(123));
 
 	constant = chunk.addConstant(Value(5.6));
-	chunk.writeOp(OpCode.Constant, Int(123));
-	chunk.writeByte(constant, Int(123));
+	chunk.writeOpAndByte(OpCode.Constant, constant, Int(123));
 
 	chunk.writeOp(OpCode.Divide, Int(123));
 	chunk.writeOp(OpCode.Negate, Int(123));

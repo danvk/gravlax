@@ -70,6 +70,11 @@ export class Chunk {
 		this.writeByte(op as Int, line);
 	}
 
+	writeOpAndByte(op: OpCode, byte: Int, line: Int) {
+		this.writeOp(op, line);
+		this.writeByte(byte, line);
+	}
+
 	get length() {
 		return this.#count;
 	}
