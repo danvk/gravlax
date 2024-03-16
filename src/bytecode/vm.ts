@@ -1,6 +1,7 @@
 import util from "node:util";
 
 import { Chunk, OpCode } from "./chunk.js";
+import { compile } from "./compiler.js";
 import { disassembleInstruction } from "./debug.js";
 import { Int } from "./int.js";
 import { assertUnreachable } from "./util.js";
@@ -32,10 +33,17 @@ export class VM {
 	free() {
 		this.#chunk.free();
 	}
-	interpret(chunk: Chunk): InterpretResult {
+	interpret(source: string): InterpretResult {
+		const chunk = compile(source);
+		if (!chunk) {
+			return InterpretResult.COMPILE_ERROR;
+		}
+
 		this.#chunk = chunk;
 		this.#ip = Int(0);
-		return this.run();
+		const result = this.run();
+		chunk.free();
+		return result;
 	}
 	pop(): Value {
 		this.#stackTop--;

@@ -2,6 +2,8 @@ import util from "node:util";
 
 import { Scanner as TreewalkScanner } from "../scanner.js";
 import { Token } from "../token.js";
+import { TokenType } from "../token-type.js";
+import { Chunk } from "./chunk.js";
 
 export class Scanner {
 	index: number;
@@ -19,22 +21,57 @@ export class Scanner {
 	}
 }
 
-export function compile(source: string) {
+export function compile(source: string): Chunk | null {
+	const chunk = new Chunk();
 	const scanner = new Scanner(source);
-	let line = -1;
-	while (true) {
-		const token = scanner.scanToken();
-		let logLine = "";
-		if (token.line !== line) {
-			logLine += util.format(token.line); // %04d
-			line = token.line;
-		} else {
-			logLine += "   | ";
+	advance();
+	let hadError = false;
+	let panicMode = false;
+	let previous = scanner.tokens[0];
+	let current = scanner.tokens[0];
+	expression();
+	consume("eof", "Expect end of expression.");
+	if (hadError) {
+		return null;
+	} else {
+		return chunk;
+	}
+
+	function expression() {}
+
+	function advance() {
+		previous = current;
+		current = scanner.scanToken();
+		// Book does error handling on error tokens here.
+	}
+
+	function consume(type: TokenType, message: string) {
+		if (current.type === type) {
+			advance();
+			return;
 		}
-		logLine += util.format("%s '%s'", token.type, token.lexeme);
-		console.log(logLine);
+		errorAtCurrent(message);
+	}
+
+	function errorAt(token: Token, message: string) {
+		if (panicMode) {
+			return;
+		}
+		let logLine = util.format("[line %d] Error", token.line);
 		if (token.type === "eof") {
-			break;
+			logLine += " at end";
+			// book implementation introduces an error token
+		} else {
+			logLine += util.format(" at %s", token.lexeme);
 		}
+		console.error(logLine + ": " + message);
+		hadError = true;
+		panicMode = true;
+	}
+	function error(message: string) {
+		errorAt(previous, message);
+	}
+	function errorAtCurrent(message: string) {
+		errorAt(current, message);
 	}
 }
