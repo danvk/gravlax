@@ -2,6 +2,7 @@ import * as util from "util";
 
 import { Chunk, OpCode } from "./chunk.js";
 import { Int } from "./int.js";
+import { assertUnreachable } from "./util.js";
 
 export function disassembleChunk(chunk: Chunk, name: string) {
 	console.log(`== ${name} ==`);
@@ -19,15 +20,26 @@ export function disassembleInstruction(chunk: Chunk, offset: Int): Int {
 		logLine += util.format("%4d ", chunk.lines[offset]);
 	}
 	console.log(logLine);
-	const instruction = chunk.getByteAt(offset);
+	const instruction = chunk.getByteAt(offset) as OpCode;
 	switch (instruction) {
 		case OpCode.Return:
 			return simpleInstruction("OP_RETURN", offset);
 		case OpCode.Constant:
 			return constantInstruction("OP_CONSTANT", chunk, offset);
+		case OpCode.Negate:
+			return simpleInstruction("OP_NEGATE", offset);
+		case OpCode.Add:
+			return simpleInstruction("OP_ADD", offset);
+		case OpCode.Subtract:
+			return simpleInstruction("OP_SUBTRACT", offset);
+		case OpCode.Multiply:
+			return simpleInstruction("OP_MULTIPLY", offset);
+		case OpCode.Divide:
+			return simpleInstruction("OP_DIVIDE", offset);
 		default:
 			console.log("Unknown opcode", instruction);
-			return (offset + 1) as Int;
+			assertUnreachable(instruction);
+		// return (offset + 1) as Int;
 	}
 }
 
@@ -38,6 +50,7 @@ export function simpleInstruction(name: string, offset: Int) {
 
 export function constantInstruction(name: string, chunk: Chunk, offset: Int) {
 	const constant = chunk.getByteAt((offset + 1) as Int);
-	console.log("%-16s %4d '%g'", name, constant, chunk.getValueAt(constant));
+	// console.log("%-16s %4d '%g'", name, constant, chunk.getValueAt(constant));
+	console.log(name, constant, chunk.getValueAt(constant));
 	return (offset + 2) as Int;
 }
