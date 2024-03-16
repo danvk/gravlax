@@ -9,7 +9,7 @@ export function assertU8(byte: number): asserts byte is Int {
 	}
 }
 
-export function asInt(byte: number): Int {
+export function Int(byte: number): Int {
 	assertU8(byte);
 	return byte;
 }
