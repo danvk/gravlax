@@ -3,6 +3,7 @@ import util from "node:util";
 import { Chunk, OpCode } from "./chunk.js";
 import { disassembleInstruction } from "./debug.js";
 import { Int } from "./int.js";
+import { assertUnreachable } from "./util.js";
 import { Value } from "./value.js";
 
 export enum InterpretResult {
@@ -59,7 +60,7 @@ export class VM {
 				console.log(stack);
 				disassembleInstruction(chunk, ip);
 			}
-			const instruction = readByte();
+			const instruction = readByte() as OpCode;
 			switch (instruction) {
 				case OpCode.Return:
 					console.log(this.pop());
@@ -72,6 +73,30 @@ export class VM {
 				case OpCode.Negate:
 					this.push(Value(-this.pop()));
 					break;
+
+				// The book consolidates these and warns that they'll grow.
+				case OpCode.Add: {
+					const [b, a] = [this.pop(), this.pop()];
+					this.push(Value(a + b));
+					break;
+				}
+				case OpCode.Subtract: {
+					const [b, a] = [this.pop(), this.pop()];
+					this.push(Value(a - b));
+					break;
+				}
+				case OpCode.Multiply: {
+					const [b, a] = [this.pop(), this.pop()];
+					this.push(Value(a * b));
+					break;
+				}
+				case OpCode.Divide: {
+					const [b, a] = [this.pop(), this.pop()];
+					this.push(Value(a / b));
+					break;
+				}
+				default:
+					assertUnreachable(instruction);
 			}
 		}
 
