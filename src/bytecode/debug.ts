@@ -25,6 +25,8 @@ export function disassembleInstruction(chunk: Chunk, offset: Int): Int {
 			return simpleInstruction("OP_RETURN", offset);
 		case OpCode.Constant:
 			return constantInstruction("OP_CONSTANT", chunk, offset);
+		case OpCode.Negate:
+			return simpleInstruction("OP_NEGATE", offset);
 		default:
 			console.log("Unknown opcode", instruction);
 			return (offset + 1) as Int;
@@ -38,6 +40,7 @@ export function simpleInstruction(name: string, offset: Int) {
 
 export function constantInstruction(name: string, chunk: Chunk, offset: Int) {
 	const constant = chunk.getByteAt((offset + 1) as Int);
-	console.log("%-16s %4d '%g'", name, constant, chunk.getValueAt(constant));
+	// console.log("%-16s %4d '%g'", name, constant, chunk.getValueAt(constant));
+	console.log(name, constant, chunk.getValueAt(constant));
 	return (offset + 2) as Int;
 }

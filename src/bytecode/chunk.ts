@@ -2,8 +2,9 @@ import { Int, assertU8 } from "./int.js";
 import { Value } from "./value.js";
 
 export enum OpCode {
-	Constant = 1,
-	Return = 0,
+	Return,
+	Constant,
+	Negate,
 }
 
 // XXX is there a more idiomatic way to do dynamic arrays?
