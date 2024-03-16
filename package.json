@@ -24,6 +24,7 @@
 	"scripts": {
 		"benchmark": "pnpm --silent run repl bench/fib33.lox",
 		"build": "tsup",
+		"byte-repl": "pnpm run:ts src/bytecode/index.ts",
 		"coverage": "pnpm test -- --coverage --no-watch",
 		"format": "prettier \"**/*\" --ignore-unknown",
 		"lint": "eslint . .*js --max-warnings 0",
