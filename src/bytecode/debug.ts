@@ -3,6 +3,7 @@ import { sprintf } from "sprintf-js";
 import { Chunk, OpCode } from "./chunk.js";
 import { Int } from "./int.js";
 import { assertUnreachable } from "./util.js";
+import { formatValue } from "./value.js";
 
 export function disassembleChunk(chunk: Chunk, name: string) {
 	console.log(`== ${name} ==`);
@@ -10,6 +11,18 @@ export function disassembleChunk(chunk: Chunk, name: string) {
 		offset = disassembleInstruction(chunk, offset);
 	}
 }
+
+const simpleInstructions = {
+	[OpCode.Return]: "OP_RETURN",
+	[OpCode.Negate]: "OP_NEGATE",
+	[OpCode.Add]: "OP_ADD",
+	[OpCode.Subtract]: "OP_SUBTRACT",
+	[OpCode.Multiply]: "OP_MULTIPLY",
+	[OpCode.Divide]: "OP_DIVIDE",
+	[OpCode.False]: "OP_FALSE",
+	[OpCode.True]: "OP_TRUE",
+	[OpCode.Nil]: "OP_NIL",
+} satisfies Partial<Record<OpCode, string>>;
 
 export function disassembleInstruction(chunk: Chunk, offset: Int): Int {
 	let logLine = sprintf("%04d", offset);
@@ -22,19 +35,17 @@ export function disassembleInstruction(chunk: Chunk, offset: Int): Int {
 	const instruction = chunk.getByteAt(offset) as OpCode;
 	switch (instruction) {
 		case OpCode.Return:
-			return simpleInstruction("OP_RETURN", offset);
+		case OpCode.Negate:
+		case OpCode.Add:
+		case OpCode.Subtract:
+		case OpCode.Multiply:
+		case OpCode.Divide:
+		case OpCode.False:
+		case OpCode.True:
+		case OpCode.Nil:
+			return simpleInstruction(simpleInstructions[instruction], offset);
 		case OpCode.Constant:
 			return constantInstruction("OP_CONSTANT", chunk, offset);
-		case OpCode.Negate:
-			return simpleInstruction("OP_NEGATE", offset);
-		case OpCode.Add:
-			return simpleInstruction("OP_ADD", offset);
-		case OpCode.Subtract:
-			return simpleInstruction("OP_SUBTRACT", offset);
-		case OpCode.Multiply:
-			return simpleInstruction("OP_MULTIPLY", offset);
-		case OpCode.Divide:
-			return simpleInstruction("OP_DIVIDE", offset);
 		default:
 			console.log("Unknown opcode", instruction);
 			assertUnreachable(instruction);
@@ -52,7 +63,12 @@ export function constantInstruction(name: string, chunk: Chunk, offset: Int) {
 	const constant = chunk.getByteAt((offset + 1) as Int);
 	// console.log("%-16s %4d '%g'", name, constant, chunk.getValueAt(constant));
 	console.log(
-		sprintf("%-16s %4d '%g'", name, constant, chunk.getValueAt(constant)),
+		sprintf(
+			"%-16s %4d '%s'",
+			name,
+			constant,
+			formatValue(chunk.getValueAt(constant)),
+		),
 	);
 	return (offset + 2) as Int;
 }

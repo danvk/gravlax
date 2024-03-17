@@ -1,3 +1,6 @@
+import util from "node:util";
+import { assertUnreachable } from "./util.js";
+
 export enum ValueType {
 	Bool,
 	Nil,
@@ -26,6 +29,22 @@ export function boolValue(value: boolean): BoolValue {
 export const nilValue: NilValue = { type: ValueType.Nil };
 export function numberValue(value: number): NumberValue {
 	return { as: value, type: ValueType.Number };
+}
+
+export function formatValue(value: Value) {
+	switch (value.type) {
+		case ValueType.Bool:
+		case ValueType.Number:
+			return util.format(value.as);
+		case ValueType.Nil:
+			return "nil";
+		default:
+			assertUnreachable(value);
+	}
+}
+
+export function printValue(value: Value) {
+	console.log(formatValue(value));
 }
 
 // No need to implement ValueArray; it's just Value[].

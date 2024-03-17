@@ -6,7 +6,16 @@ import { compile } from "./compiler.js";
 import { disassembleInstruction } from "./debug.js";
 import { Int } from "./int.js";
 import { assertUnreachable } from "./util.js";
-import { NumberValue, Value, ValueType, numberValue } from "./value.js";
+import {
+	NumberValue,
+	Value,
+	ValueType,
+	boolValue,
+	formatValue,
+	nilValue,
+	numberValue,
+	printValue,
+} from "./value.js";
 
 export enum InterpretResult {
 	OK,
@@ -64,10 +73,7 @@ export class VM {
 			if (DEBUG_TRACE_EXECUTION) {
 				let stack = "          ";
 				for (const value of this.#stack.slice(0, this.#stackTop)) {
-					stack += sprintf(
-						"[ %s ]",
-						value.type === ValueType.Number ? value.as : "???",
-					);
+					stack += "[ " + formatValue(value) + " ]";
 				}
 				console.log(stack);
 				disassembleInstruction(chunk, ip);
@@ -75,7 +81,7 @@ export class VM {
 			const instruction = readByte() as OpCode;
 			switch (instruction) {
 				case OpCode.Return:
-					console.log(this.pop());
+					printValue(this.pop());
 					return InterpretResult.OK;
 
 				case OpCode.Constant: {
@@ -90,6 +96,16 @@ export class VM {
 						return InterpretResult.RuntimeError;
 					}
 					this.push(numberValue(-(this.pop() as NumberValue).as));
+					break;
+
+				case OpCode.Nil:
+					this.push(nilValue);
+					break;
+				case OpCode.True:
+					this.push(boolValue(true));
+					break;
+				case OpCode.False:
+					this.push(boolValue(false));
 					break;
 
 				case OpCode.Add:

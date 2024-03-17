@@ -8,6 +8,7 @@ import { DEBUG_PRINT_CODE } from "./common.js";
 import { disassembleChunk } from "./debug.js";
 import { Int } from "./int.js";
 import { Value, numberValue } from "./value.js";
+import { assertUnreachable } from "./util.js";
 
 const UINT8_MAX = 255;
 
@@ -73,6 +74,9 @@ export function compile(source: string): Chunk | null {
 		"/": { infix: binary, precedence: Precedence.Factor },
 		"*": { infix: binary, precedence: Precedence.Factor },
 		number: { prefix: number, precedence: Precedence.None },
+		false: { prefix: emitLiteral(OpCode.False), precedence: Precedence.None },
+		true: { prefix: emitLiteral(OpCode.True), precedence: Precedence.None },
+		nil: { prefix: emitLiteral(OpCode.Nil), precedence: Precedence.None },
 		// ... to be filled in ...
 	};
 	/* eslint-enable perfectionist/sort-objects */
@@ -144,6 +148,12 @@ export function compile(source: string): Chunk | null {
 		if (opCode) {
 			emitOpCode(opCode);
 		}
+	}
+
+	function emitLiteral(code: OpCode) {
+		return () => {
+			emitOpCode(code);
+		};
 	}
 
 	function expression() {

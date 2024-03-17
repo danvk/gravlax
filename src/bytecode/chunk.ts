@@ -9,6 +9,9 @@ export enum OpCode {
 	Subtract,
 	Multiply,
 	Divide,
+	False,
+	True,
+	Nil,
 }
 
 // XXX is there a more idiomatic way to do dynamic arrays?
