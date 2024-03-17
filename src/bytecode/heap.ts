@@ -34,3 +34,17 @@ export function free(pointer: Pointer) {
 	}
 	entry.isLive = false;
 }
+
+export function freeObjects() {
+	for (const [i, entry] of heap.entries()) {
+		if (!entry) {
+			continue;
+		}
+		if (entry.isLive) {
+			console.log(`  freed ${i} (live)`, entry.contents);
+		} else {
+			console.log(`  collected ${i}`);
+		}
+		heap[i] = null;
+	}
+}

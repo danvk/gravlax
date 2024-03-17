@@ -18,6 +18,7 @@ import {
 	valuesEqual,
 } from "./value.js";
 import { ObjType, copyString, getIfObjOfType } from "./object.js";
+import { freeObjects } from "./heap.js";
 
 export enum InterpretResult {
 	OK,
@@ -47,6 +48,7 @@ export class VM {
 	}
 	free() {
 		this.#chunk.free();
+		freeObjects();
 	}
 	interpret(source: string): InterpretResult {
 		const chunk = compile(source);
