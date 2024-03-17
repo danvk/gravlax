@@ -1,6 +1,7 @@
 import util from "node:util";
 
 import { Chunk, OpCode } from "./chunk.js";
+import { DEBUG_TRACE_EXECUTION } from "./common.js";
 import { compile } from "./compiler.js";
 import { disassembleInstruction } from "./debug.js";
 import { Int } from "./int.js";
@@ -9,12 +10,9 @@ import { Value } from "./value.js";
 
 export enum InterpretResult {
 	OK,
-	COMPILE_ERROR,
-	RUNTIME_ERROR,
+	CompileError,
+	RuntimeError,
 }
-
-// eslint-disable-next-line @typescript-eslint/no-inferrable-types
-const DEBUG_TRACE_EXECUTION: boolean = true;
 
 const STACK_MAX = 256;
 
@@ -36,7 +34,7 @@ export class VM {
 	interpret(source: string): InterpretResult {
 		const chunk = compile(source);
 		if (!chunk) {
-			return InterpretResult.COMPILE_ERROR;
+			return InterpretResult.CompileError;
 		}
 
 		this.#chunk = chunk;
@@ -73,36 +71,43 @@ export class VM {
 				case OpCode.Return:
 					console.log(this.pop());
 					return InterpretResult.OK;
+
 				case OpCode.Constant: {
 					const constant = readConstant();
 					this.push(constant);
 					break;
 				}
+
 				case OpCode.Negate:
 					this.push(Value(-this.pop()));
 					break;
 
-				// The book consolidates these and warns that they'll grow.
-				case OpCode.Add: {
-					const [b, a] = [this.pop(), this.pop()];
-					this.push(Value(a + b));
-					break;
-				}
-				case OpCode.Subtract: {
-					const [b, a] = [this.pop(), this.pop()];
-					this.push(Value(a - b));
-					break;
-				}
-				case OpCode.Multiply: {
-					const [b, a] = [this.pop(), this.pop()];
-					this.push(Value(a * b));
-					break;
-				}
+				case OpCode.Add:
+				case OpCode.Subtract:
+				case OpCode.Multiply:
 				case OpCode.Divide: {
 					const [b, a] = [this.pop(), this.pop()];
-					this.push(Value(a / b));
+					let v;
+					switch (instruction) {
+						case OpCode.Add:
+							v = a + b;
+							break;
+						case OpCode.Subtract:
+							v = a - b;
+							break;
+						case OpCode.Multiply:
+							v = a * b;
+							break;
+						case OpCode.Divide:
+							v = a / b;
+							break;
+						default:
+							assertUnreachable(instruction);
+					}
+					this.push(Value(v));
 					break;
 				}
+
 				default:
 					assertUnreachable(instruction);
 			}
@@ -113,6 +118,7 @@ export class VM {
 			ip++; // interesting that this is OK!
 			return byte;
 		}
+
 		function readConstant() {
 			return chunk.getValueAt(readByte());
 		}

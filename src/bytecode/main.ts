@@ -22,11 +22,11 @@ async function repl(vm: VM) {
 export async function runFile(vm: VM, path: string) {
 	const source = await fs.readFile(path, "utf-8");
 	const result = vm.interpret(source);
-	if (result === InterpretResult.COMPILE_ERROR) {
+	if (result === InterpretResult.CompileError) {
 		// eslint-disable-next-line n/no-process-exit
 		process.exit(65);
 	}
-	if (result === InterpretResult.RUNTIME_ERROR) {
+	if (result === InterpretResult.RuntimeError) {
 		// eslint-disable-next-line n/no-process-exit
 		process.exit(70);
 	}

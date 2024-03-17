@@ -4,13 +4,12 @@ import { Scanner as TreewalkScanner } from "../scanner.js";
 import { Token } from "../token.js";
 import { TokenType } from "../token-type.js";
 import { Chunk, OpCode } from "./chunk.js";
+import { DEBUG_PRINT_CODE } from "./common.js";
 import { disassembleChunk } from "./debug.js";
 import { Int } from "./int.js";
 import { Value } from "./value.js";
 
 const UINT8_MAX = 255;
-// eslint-disable-next-line @typescript-eslint/no-inferrable-types
-const DEBUG_PRINT_CODE: boolean = true;
 
 enum Precedence {
 	None,
@@ -58,6 +57,13 @@ export class Scanner {
 	}
 }
 
+const BIN_OP_CODES = {
+	"*": OpCode.Multiply,
+	"+": OpCode.Add,
+	"/": OpCode.Divide,
+	"-": OpCode.Subtract,
+};
+
 export function compile(source: string): Chunk | null {
 	/* eslint-disable perfectionist/sort-objects */
 	const rules: Partial<Record<TokenType, ParseRule>> = {
@@ -94,11 +100,6 @@ export function compile(source: string): Chunk | null {
 
 	function emitByte(byte: Int) {
 		currentChunk().writeByte(byte, Int(previous.line));
-	}
-	function emitBytes(...bytes: Int[]) {
-		for (const byte of bytes) {
-			currentChunk().writeByte(byte, Int(previous.line));
-		}
 	}
 	function emitOpCode(code: OpCode) {
 		currentChunk().writeOp(code, Int(previous.line));
@@ -139,13 +140,7 @@ export function compile(source: string): Chunk | null {
 		const rule = getRule(operatorType);
 		parsePrecedence(rule.precedence + 1); // +1 = left assoc, +0 = right assoc
 
-		const binOpCodes = {
-			"*": OpCode.Multiply,
-			"+": OpCode.Add,
-			"/": OpCode.Divide,
-			"-": OpCode.Subtract,
-		};
-		const opCode = binOpCodes[operatorType as keyof typeof binOpCodes];
+		const opCode = BIN_OP_CODES[operatorType as keyof typeof BIN_OP_CODES];
 		if (opCode) {
 			emitOpCode(opCode);
 		}
