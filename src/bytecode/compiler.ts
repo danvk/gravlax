@@ -4,11 +4,13 @@ import { Scanner as TreewalkScanner } from "../scanner.js";
 import { Token } from "../token.js";
 import { TokenType } from "../token-type.js";
 import { Chunk, OpCode } from "./chunk.js";
+import { disassembleChunk } from "./debug.js";
 import { Int } from "./int.js";
-import { noop } from "./util.js";
 import { Value } from "./value.js";
 
 const UINT8_MAX = 255;
+// eslint-disable-next-line @typescript-eslint/no-inferrable-types
+const DEBUG_PRINT_CODE: boolean = true;
 
 enum Precedence {
 	None,
@@ -125,6 +127,11 @@ export function compile(source: string): Chunk | null {
 
 	function endCompiler() {
 		emitReturn();
+		if (DEBUG_PRINT_CODE) {
+			if (!hadError) {
+				disassembleChunk(currentChunk(), "code");
+			}
+		}
 	}
 
 	function binary() {
