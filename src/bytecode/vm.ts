@@ -1,4 +1,4 @@
-import util from "node:util";
+import { sprintf } from "sprintf-js";
 
 import { Chunk, OpCode } from "./chunk.js";
 import { DEBUG_TRACE_EXECUTION } from "./common.js";
@@ -61,7 +61,7 @@ export class VM {
 			if (DEBUG_TRACE_EXECUTION) {
 				let stack = "          ";
 				for (const value of this.#stack.slice(0, this.#stackTop)) {
-					stack += util.format("[ %s ]", value);
+					stack += sprintf("[ %s ]", value);
 				}
 				console.log(stack);
 				disassembleInstruction(chunk, ip);

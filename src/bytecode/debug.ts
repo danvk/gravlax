@@ -1,4 +1,4 @@
-import * as util from "util";
+import { sprintf } from "sprintf-js";
 
 import { Chunk, OpCode } from "./chunk.js";
 import { Int } from "./int.js";
@@ -12,14 +12,13 @@ export function disassembleChunk(chunk: Chunk, name: string) {
 }
 
 export function disassembleInstruction(chunk: Chunk, offset: Int): Int {
-	// TODO: switch to sprintf-js
-	let logLine = util.format("%04d", offset);
+	let logLine = sprintf("%04d", offset);
 	if (offset > 0 && chunk.lines[offset] == chunk.lines[offset - 1]) {
 		logLine += "   | ";
 	} else {
-		logLine += util.format("%4d ", chunk.lines[offset]);
+		logLine += sprintf("%4d ", chunk.lines[offset]);
 	}
-	console.log(logLine);
+	process.stderr.write(logLine);
 	const instruction = chunk.getByteAt(offset) as OpCode;
 	switch (instruction) {
 		case OpCode.Return:
@@ -44,13 +43,16 @@ export function disassembleInstruction(chunk: Chunk, offset: Int): Int {
 }
 
 export function simpleInstruction(name: string, offset: Int) {
-	console.log(name);
+	process.stderr.write(name);
+	process.stderr.write("\n");
 	return (offset + 1) as Int;
 }
 
 export function constantInstruction(name: string, chunk: Chunk, offset: Int) {
 	const constant = chunk.getByteAt((offset + 1) as Int);
 	// console.log("%-16s %4d '%g'", name, constant, chunk.getValueAt(constant));
-	console.log(name, constant, chunk.getValueAt(constant));
+	console.log(
+		sprintf("%-16s %4d '%g'", name, constant, chunk.getValueAt(constant)),
+	);
 	return (offset + 2) as Int;
 }
