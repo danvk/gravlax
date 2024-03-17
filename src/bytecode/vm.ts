@@ -7,7 +7,6 @@ import { disassembleInstruction } from "./debug.js";
 import { Int } from "./int.js";
 import { assertUnreachable } from "./util.js";
 import {
-	NilValue,
 	NumberValue,
 	Value,
 	ValueType,
@@ -16,7 +15,10 @@ import {
 	nilValue,
 	numberValue,
 	printValue,
+	valuesEqual,
 } from "./value.js";
+import { ObjType, copyString, getIfObjOfType } from "./object.js";
+import { freeObjects } from "./heap.js";
 
 export enum InterpretResult {
 	OK,
@@ -30,17 +32,6 @@ function isFalsey(value: Value): boolean {
 	return (
 		value.type === ValueType.Nil || (value.type === ValueType.Bool && !value.as)
 	);
-}
-
-function valuesEqual(a: Value, b: Value) {
-	if (a.type !== b.type) {
-		return false;
-	}
-	if (a.type == ValueType.Nil) {
-		return true;
-	}
-	const bnn = b as Exclude<Value, NilValue>;
-	return a.as === bnn.as;
 }
 
 export class VM {
@@ -57,6 +48,7 @@ export class VM {
 	}
 	free() {
 		this.#chunk.free();
+		freeObjects();
 	}
 	interpret(source: string): InterpretResult {
 		const chunk = compile(source);
@@ -71,7 +63,7 @@ export class VM {
 		return result;
 	}
 	peek(distance: number): Value {
-		return this.#stack[this.#stackTop - distance];
+		return this.#stack[this.#stackTop - distance - 1];
 	}
 	pop(): Value {
 		this.#stackTop--;
@@ -133,9 +125,32 @@ export class VM {
 					break;
 				}
 
+				case OpCode.Add: {
+					if (
+						this.peek(0).type === ValueType.Number &&
+						this.peek(1).type === ValueType.Number
+					) {
+						const b = this.pop() as NumberValue;
+						const a = this.pop() as NumberValue;
+						this.push(numberValue(a.as + b.as));
+					} else {
+						const bString = getIfObjOfType(this.peek(0), ObjType.String);
+						const aString = getIfObjOfType(this.peek(1), ObjType.String);
+
+						if (aString && bString) {
+							this.pop();
+							this.pop();
+							this.push(copyString(aString.chars + bString.chars));
+						} else {
+							runtimeError("Operands must be two numbers or two strings.");
+							return InterpretResult.RuntimeError;
+						}
+					}
+					break;
+				}
+
 				case OpCode.Greater:
 				case OpCode.Less:
-				case OpCode.Add:
 				case OpCode.Subtract:
 				case OpCode.Multiply:
 				case OpCode.Divide: {
@@ -147,9 +162,6 @@ export class VM {
 					const [a, b] = [av.as, bv.as];
 					let v;
 					switch (instruction) {
-						case OpCode.Add:
-							v = numberValue(a + b);
-							break;
 						case OpCode.Subtract:
 							v = numberValue(a - b);
 							break;
