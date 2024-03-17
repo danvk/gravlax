@@ -8,6 +8,7 @@ import { DEBUG_PRINT_CODE } from "./common.js";
 import { disassembleChunk } from "./debug.js";
 import { Int } from "./int.js";
 import { Value, numberValue } from "./value.js";
+import { copyString } from "./object.js";
 
 const UINT8_MAX = 255;
 
@@ -89,6 +90,7 @@ export function compile(source: string): Chunk | null {
 		false: { prefix: emitLiteral(OpCode.False), precedence: Precedence.None },
 		true: { prefix: emitLiteral(OpCode.True), precedence: Precedence.None },
 		nil: { prefix: emitLiteral(OpCode.Nil), precedence: Precedence.None },
+		string: { prefix: string, precedence: Precedence.None },
 		// ... to be filled in ...
 	};
 	/* eslint-enable perfectionist/sort-objects */
@@ -175,6 +177,9 @@ export function compile(source: string): Chunk | null {
 	function number() {
 		const value = Number(previous.lexeme);
 		emitConstant(numberValue(value));
+	}
+	function string() {
+		emitConstant(copyString(previous.lexeme.slice(1, -1)));
 	}
 
 	function grouping() {
