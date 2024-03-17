@@ -5,10 +5,17 @@ export enum OpCode {
 	Return,
 	Constant,
 	Negate,
+	Equal,
+	Greater,
+	Less,
 	Add,
 	Subtract,
 	Multiply,
 	Divide,
+	Not,
+	False,
+	True,
+	Nil,
 }
 
 // XXX is there a more idiomatic way to do dynamic arrays?

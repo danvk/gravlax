@@ -6,7 +6,17 @@ import { compile } from "./compiler.js";
 import { disassembleInstruction } from "./debug.js";
 import { Int } from "./int.js";
 import { assertUnreachable } from "./util.js";
-import { Value } from "./value.js";
+import {
+	NilValue,
+	NumberValue,
+	Value,
+	ValueType,
+	boolValue,
+	formatValue,
+	nilValue,
+	numberValue,
+	printValue,
+} from "./value.js";
 
 export enum InterpretResult {
 	OK,
@@ -15,6 +25,23 @@ export enum InterpretResult {
 }
 
 const STACK_MAX = 256;
+
+function isFalsey(value: Value): boolean {
+	return (
+		value.type === ValueType.Nil || (value.type === ValueType.Bool && !value.as)
+	);
+}
+
+function valuesEqual(a: Value, b: Value) {
+	if (a.type !== b.type) {
+		return false;
+	}
+	if (a.type == ValueType.Nil) {
+		return true;
+	}
+	const bnn = b as Exclude<Value, NilValue>;
+	return a.as === bnn.as;
+}
 
 export class VM {
 	#chunk: Chunk;
@@ -25,7 +52,7 @@ export class VM {
 		this.#chunk = new Chunk();
 		this.#ip = Int(0);
 		// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-		this.#stack = new Array(STACK_MAX).fill(Value(-1));
+		this.#stack = new Array(STACK_MAX).fill(numberValue(-1));
 		this.#stackTop = 0;
 	}
 	free() {
@@ -42,6 +69,9 @@ export class VM {
 		const result = this.run();
 		chunk.free();
 		return result;
+	}
+	peek(distance: number): Value {
+		return this.#stack[this.#stackTop - distance];
 	}
 	pop(): Value {
 		this.#stackTop--;
@@ -61,7 +91,7 @@ export class VM {
 			if (DEBUG_TRACE_EXECUTION) {
 				let stack = "          ";
 				for (const value of this.#stack.slice(0, this.#stackTop)) {
-					stack += sprintf("[ %s ]", value);
+					stack += "[ " + formatValue(value) + " ]";
 				}
 				console.log(stack);
 				disassembleInstruction(chunk, ip);
@@ -69,7 +99,7 @@ export class VM {
 			const instruction = readByte() as OpCode;
 			switch (instruction) {
 				case OpCode.Return:
-					console.log(this.pop());
+					printValue(this.pop());
 					return InterpretResult.OK;
 
 				case OpCode.Constant: {
@@ -79,34 +109,72 @@ export class VM {
 				}
 
 				case OpCode.Negate:
-					this.push(Value(-this.pop()));
+					if (this.peek(0).type !== ValueType.Number) {
+						runtimeError("Operand must be a number.");
+						return InterpretResult.RuntimeError;
+					}
+					this.push(numberValue(-(this.pop() as NumberValue).as));
 					break;
 
+				case OpCode.Nil:
+					this.push(nilValue);
+					break;
+				case OpCode.True:
+					this.push(boolValue(true));
+					break;
+				case OpCode.False:
+					this.push(boolValue(false));
+					break;
+
+				case OpCode.Equal: {
+					const b = this.pop();
+					const a = this.pop();
+					this.push(boolValue(valuesEqual(a, b)));
+					break;
+				}
+
+				case OpCode.Greater:
+				case OpCode.Less:
 				case OpCode.Add:
 				case OpCode.Subtract:
 				case OpCode.Multiply:
 				case OpCode.Divide: {
-					const [b, a] = [this.pop(), this.pop()];
+					const [bv, av] = [this.pop(), this.pop()];
+					if (av.type !== ValueType.Number || bv.type !== ValueType.Number) {
+						runtimeError("Operands must be numbers.");
+						return InterpretResult.RuntimeError;
+					}
+					const [a, b] = [av.as, bv.as];
 					let v;
 					switch (instruction) {
 						case OpCode.Add:
-							v = a + b;
+							v = numberValue(a + b);
 							break;
 						case OpCode.Subtract:
-							v = a - b;
+							v = numberValue(a - b);
 							break;
 						case OpCode.Multiply:
-							v = a * b;
+							v = numberValue(a * b);
 							break;
 						case OpCode.Divide:
-							v = a / b;
+							v = numberValue(a / b);
+							break;
+						case OpCode.Greater:
+							v = boolValue(a > b);
+							break;
+						case OpCode.Less:
+							v = boolValue(a < b);
 							break;
 						default:
 							assertUnreachable(instruction);
 					}
-					this.push(Value(v));
+					this.push(v);
 					break;
 				}
+
+				case OpCode.Not:
+					this.push(boolValue(isFalsey(this.pop())));
+					break;
 
 				default:
 					assertUnreachable(instruction);
@@ -121,6 +189,13 @@ export class VM {
 
 		function readConstant() {
 			return chunk.getValueAt(readByte());
+		}
+
+		function runtimeError(format: string, ...args: any[]) {
+			console.error(sprintf(format, args));
+			const instruction = ip - 1;
+			const line = chunk.lines[instruction];
+			console.error(`[line ${line} in script]`);
 		}
 	}
 }
