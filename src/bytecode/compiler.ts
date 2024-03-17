@@ -7,7 +7,7 @@ import { Chunk, OpCode } from "./chunk.js";
 import { DEBUG_PRINT_CODE } from "./common.js";
 import { disassembleChunk } from "./debug.js";
 import { Int } from "./int.js";
-import { Value } from "./value.js";
+import { Value, numberValue } from "./value.js";
 
 const UINT8_MAX = 255;
 
@@ -152,7 +152,7 @@ export function compile(source: string): Chunk | null {
 
 	function number() {
 		const value = Number(previous.lexeme);
-		emitConstant(Value(value));
+		emitConstant(numberValue(value));
 	}
 
 	function grouping() {
