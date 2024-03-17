@@ -49,12 +49,7 @@ export function valuesEqual(a: Value, b: Value) {
 		case ValueType.Number:
 			return a.as === (b as typeof a).as;
 		case ValueType.Obj:
-			const aStr = getIfObjOfType(a, ObjType.String);
-			const bStr = getIfObjOfType(b, ObjType.String);
-			if (!aStr || !bStr) {
-				throw new Error(`Only support strings for now.`);
-			}
-			return aStr.chars === bStr.chars;
+			return a.obj === (b as typeof a).obj;
 	}
 }
 

@@ -1,6 +1,6 @@
 // There's a lot more ceremony around this in C.
 
-import { Pointer, alloc, deref } from "./heap.js";
+import { Pointer, alloc, deref, free } from "./heap.js";
 import { ObjValue, Value, ValueType } from "./value.js";
 
 export enum ObjType {
@@ -26,6 +26,8 @@ export function getIfObjOfType(value: Value, type: ObjType): Obj | null {
 	return obj.type === type ? obj : null;
 }
 
+const strings = new Map<string, ObjValue>();
+
 export function asString(value: Value) {
 	const obj = getIfObjOfType(value, ObjType.String);
 	if (!obj) {
@@ -35,7 +37,20 @@ export function asString(value: Value) {
 }
 
 export function copyString(chars: string): ObjValue {
-	const obj: ObjString = { type: ObjType.String, chars };
-	const pointer = alloc(obj);
-	return { type: ValueType.Obj, obj: pointer };
+	const interned = strings.get(chars);
+	if (interned) {
+		return interned;
+	}
+	const objStr: ObjString = { type: ObjType.String, chars };
+	const pointer = alloc(objStr);
+	const obj: ObjValue = { type: ValueType.Obj, obj: pointer };
+	strings.set(chars, obj);
+	return obj;
+}
+
+/** Free interned strings */
+export function freeStrings() {
+	for (const value of strings.values()) {
+		free(value.obj);
+	}
 }

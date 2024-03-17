@@ -8,6 +8,7 @@ import { Int } from "./int.js";
 import { assertUnreachable } from "./util.js";
 import {
 	NumberValue,
+	ObjValue,
 	Value,
 	ValueType,
 	boolValue,
