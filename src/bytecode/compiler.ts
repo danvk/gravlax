@@ -5,6 +5,7 @@ import { Token } from "../token.js";
 import { TokenType } from "../token-type.js";
 import { Chunk, OpCode } from "./chunk.js";
 import { Int } from "./int.js";
+import { noop } from "./util.js";
 import { Value } from "./value.js";
 
 const UINT8_MAX = 255;
@@ -23,6 +24,22 @@ enum Precedence {
 	Primary,
 }
 
+interface ParseRuleBase {
+	precedence: Precedence;
+}
+
+interface ParseRulePrefix extends ParseRuleBase {
+	prefix: () => void;
+}
+
+interface ParseRuleInfix extends ParseRuleBase {
+	infix: () => void;
+}
+
+type ParseRule = ParseRuleBase | ParseRuleInfix | ParseRulePrefix;
+
+const emptyRule: ParseRule = { precedence: Precedence.None };
+
 export class Scanner {
 	index: number;
 	tokens: Token[];
@@ -40,6 +57,18 @@ export class Scanner {
 }
 
 export function compile(source: string): Chunk | null {
+	/* eslint-disable perfectionist/sort-objects */
+	const rules: Partial<Record<TokenType, ParseRule>> = {
+		"(": { prefix: grouping, precedence: Precedence.None },
+		"-": { prefix: unary, infix: binary, precedence: Precedence.Term },
+		"+": { infix: binary, precedence: Precedence.Term },
+		"/": { infix: binary, precedence: Precedence.Factor },
+		"*": { infix: binary, precedence: Precedence.Factor },
+		number: { prefix: number, precedence: Precedence.None },
+		// ... to be filled in ...
+	};
+	/* eslint-enable perfectionist/sort-objects */
+
 	const chunk = new Chunk();
 	const scanner = new Scanner(source);
 	advance();
@@ -98,6 +127,23 @@ export function compile(source: string): Chunk | null {
 		emitReturn();
 	}
 
+	function binary() {
+		const operatorType = previous.type;
+		const rule = getRule(operatorType);
+		parsePrecedence(rule.precedence + 1); // +1 = left assoc, +0 = right assoc
+
+		const binOpCodes = {
+			"*": OpCode.Multiply,
+			"+": OpCode.Add,
+			"/": OpCode.Divide,
+			"-": OpCode.Subtract,
+		};
+		const opCode = binOpCodes[operatorType as keyof typeof binOpCodes];
+		if (opCode) {
+			emitOpCode(opCode);
+		}
+	}
+
 	function expression() {
 		parsePrecedence(Precedence.Assignment);
 	}
@@ -124,7 +170,29 @@ export function compile(source: string): Chunk | null {
 		}
 	}
 
-	function parsePrecedence(precedence: Precedence) {}
+	function parsePrecedence(precedence: Precedence) {
+		advance();
+		const rule = getRule(previous.type);
+		if (!("prefix" in rule)) {
+			error("Expect expression.");
+			return;
+		}
+		rule.prefix();
+		while (precedence <= getRule(current.type).precedence) {
+			advance();
+			const inRule = getRule(previous.type);
+			if ("infix" in inRule) {
+				inRule.infix();
+			} else {
+				error("Expected infix rule");
+				return;
+			}
+		}
+	}
+
+	function getRule(type: TokenType): ParseRule {
+		return rules[type] ?? emptyRule;
+	}
 
 	function advance() {
 		previous = current;
