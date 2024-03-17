@@ -18,7 +18,7 @@ import {
 	printValue,
 	valuesEqual,
 } from "./value.js";
-import { ObjType, copyString, getIfObjOfType } from "./object.js";
+import { ObjType, copyString, freeStrings, getIfObjOfType } from "./object.js";
 import { freeObjects } from "./heap.js";
 
 export enum InterpretResult {
@@ -49,6 +49,7 @@ export class VM {
 	}
 	free() {
 		this.#chunk.free();
+		freeStrings();
 		freeObjects();
 	}
 	interpret(source: string): InterpretResult {
