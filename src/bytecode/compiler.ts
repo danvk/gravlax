@@ -8,7 +8,6 @@ import { DEBUG_PRINT_CODE } from "./common.js";
 import { disassembleChunk } from "./debug.js";
 import { Int } from "./int.js";
 import { Value, numberValue } from "./value.js";
-import { assertUnreachable } from "./util.js";
 
 const UINT8_MAX = 255;
 
@@ -59,10 +58,16 @@ export class Scanner {
 }
 
 const BIN_OP_CODES = {
-	"*": OpCode.Multiply,
-	"+": OpCode.Add,
-	"/": OpCode.Divide,
-	"-": OpCode.Subtract,
+	"!=": [OpCode.Equal, OpCode.Not],
+	"==": [OpCode.Equal],
+	">": [OpCode.Greater],
+	">=": [OpCode.Less, OpCode.Not],
+	"<": [OpCode.Less],
+	"<=": [OpCode.Greater, OpCode.Not],
+	"*": [OpCode.Multiply],
+	"+": [OpCode.Add],
+	"/": [OpCode.Divide],
+	"-": [OpCode.Subtract],
 };
 
 export function compile(source: string): Chunk | null {
@@ -73,6 +78,13 @@ export function compile(source: string): Chunk | null {
 		"+": { infix: binary, precedence: Precedence.Term },
 		"/": { infix: binary, precedence: Precedence.Factor },
 		"*": { infix: binary, precedence: Precedence.Factor },
+		"!": { prefix: unary, precedence: Precedence.None },
+		"!=": { infix: binary, precedence: Precedence.Equality },
+		"==": { infix: binary, precedence: Precedence.Equality },
+		">": { infix: binary, precedence: Precedence.Comparison },
+		">=": { infix: binary, precedence: Precedence.Comparison },
+		"<": { infix: binary, precedence: Precedence.Comparison },
+		"<=": { infix: binary, precedence: Precedence.Comparison },
 		number: { prefix: number, precedence: Precedence.None },
 		false: { prefix: emitLiteral(OpCode.False), precedence: Precedence.None },
 		true: { prefix: emitLiteral(OpCode.True), precedence: Precedence.None },
@@ -144,9 +156,9 @@ export function compile(source: string): Chunk | null {
 		const rule = getRule(operatorType);
 		parsePrecedence(rule.precedence + 1); // +1 = left assoc, +0 = right assoc
 
-		const opCode = BIN_OP_CODES[operatorType as keyof typeof BIN_OP_CODES];
-		if (opCode) {
-			emitOpCode(opCode);
+		const opCodes = BIN_OP_CODES[operatorType as keyof typeof BIN_OP_CODES];
+		if (opCodes) {
+			opCodes.forEach(emitOpCode);
 		}
 	}
 
@@ -176,6 +188,9 @@ export function compile(source: string): Chunk | null {
 		switch (operatorType) {
 			case "-":
 				emitOpCode(OpCode.Negate);
+				break;
+			case "!":
+				emitOpCode(OpCode.Not);
 				break;
 			default:
 				return; // unreachable

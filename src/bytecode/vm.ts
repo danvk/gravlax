@@ -7,6 +7,7 @@ import { disassembleInstruction } from "./debug.js";
 import { Int } from "./int.js";
 import { assertUnreachable } from "./util.js";
 import {
+	NilValue,
 	NumberValue,
 	Value,
 	ValueType,
@@ -24,6 +25,23 @@ export enum InterpretResult {
 }
 
 const STACK_MAX = 256;
+
+function isFalsey(value: Value): boolean {
+	return (
+		value.type === ValueType.Nil || (value.type === ValueType.Bool && !value.as)
+	);
+}
+
+function valuesEqual(a: Value, b: Value) {
+	if (a.type !== b.type) {
+		return false;
+	}
+	if (a.type == ValueType.Nil) {
+		return true;
+	}
+	const bnn = b as Exclude<Value, NilValue>;
+	return a.as === bnn.as;
+}
 
 export class VM {
 	#chunk: Chunk;
@@ -108,6 +126,15 @@ export class VM {
 					this.push(boolValue(false));
 					break;
 
+				case OpCode.Equal: {
+					const b = this.pop();
+					const a = this.pop();
+					this.push(boolValue(valuesEqual(a, b)));
+					break;
+				}
+
+				case OpCode.Greater:
+				case OpCode.Less:
 				case OpCode.Add:
 				case OpCode.Subtract:
 				case OpCode.Multiply:
@@ -121,23 +148,33 @@ export class VM {
 					let v;
 					switch (instruction) {
 						case OpCode.Add:
-							v = a + b;
+							v = numberValue(a + b);
 							break;
 						case OpCode.Subtract:
-							v = a - b;
+							v = numberValue(a - b);
 							break;
 						case OpCode.Multiply:
-							v = a * b;
+							v = numberValue(a * b);
 							break;
 						case OpCode.Divide:
-							v = a / b;
+							v = numberValue(a / b);
+							break;
+						case OpCode.Greater:
+							v = boolValue(a > b);
+							break;
+						case OpCode.Less:
+							v = boolValue(a < b);
 							break;
 						default:
 							assertUnreachable(instruction);
 					}
-					this.push(numberValue(v));
+					this.push(v);
 					break;
 				}
+
+				case OpCode.Not:
+					this.push(boolValue(isFalsey(this.pop())));
+					break;
 
 				default:
 					assertUnreachable(instruction);

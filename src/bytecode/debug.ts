@@ -22,6 +22,10 @@ const simpleInstructions = {
 	[OpCode.False]: "OP_FALSE",
 	[OpCode.True]: "OP_TRUE",
 	[OpCode.Nil]: "OP_NIL",
+	[OpCode.Not]: "OP_NOT",
+	[OpCode.Less]: "OP_LESS",
+	[OpCode.Greater]: "OP_GREATER",
+	[OpCode.Equal]: "OP_EQUAL",
 } satisfies Partial<Record<OpCode, string>>;
 
 export function disassembleInstruction(chunk: Chunk, offset: Int): Int {
@@ -34,6 +38,7 @@ export function disassembleInstruction(chunk: Chunk, offset: Int): Int {
 	process.stderr.write(logLine);
 	const instruction = chunk.getByteAt(offset) as OpCode;
 	switch (instruction) {
+		// Would be nice to eliminate the duplication with simpleInstructions
 		case OpCode.Return:
 		case OpCode.Negate:
 		case OpCode.Add:
@@ -43,6 +48,10 @@ export function disassembleInstruction(chunk: Chunk, offset: Int): Int {
 		case OpCode.False:
 		case OpCode.True:
 		case OpCode.Nil:
+		case OpCode.Not:
+		case OpCode.Less:
+		case OpCode.Greater:
+		case OpCode.Equal:
 			return simpleInstruction(simpleInstructions[instruction], offset);
 		case OpCode.Constant:
 			return constantInstruction("OP_CONSTANT", chunk, offset);
