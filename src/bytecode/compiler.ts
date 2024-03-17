@@ -73,12 +73,12 @@ export function compile(source: string): Chunk | null {
 
 	const chunk = new Chunk();
 	const scanner = new Scanner(source);
-	advance();
 	let compilingChunk = chunk;
 	let hadError = false;
 	let panicMode = false;
 	let previous = scanner.tokens[0];
 	let current = scanner.tokens[0];
+	advance();
 	expression();
 	consume("eof", "Expect end of expression.");
 	endCompiler();
