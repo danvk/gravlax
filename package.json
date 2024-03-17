@@ -45,10 +45,14 @@
 	"lint-staged": {
 		"*": "prettier --ignore-unknown --write"
 	},
+	"dependencies": {
+		"sprintf-js": "^1.1.3"
+	},
 	"devDependencies": {
 		"@release-it/conventional-changelog": "^8.0.1",
 		"@types/eslint": "^8.56.1",
 		"@types/node": "^20.10.7",
+		"@types/sprintf-js": "^1.1.4",
 		"@typescript-eslint/eslint-plugin": "^7.0.0",
 		"@typescript-eslint/parser": "^7.0.0",
 		"@vitest/coverage-v8": "^1.1.3",
