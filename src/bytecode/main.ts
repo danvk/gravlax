@@ -2,7 +2,6 @@ import { once } from "node:events";
 import * as fs from "node:fs/promises";
 import { createInterface } from "node:readline";
 
-import { compile } from "./compiler.js";
 import { InterpretResult, VM } from "./vm.js";
 
 async function repl(vm: VM) {
@@ -13,26 +12,21 @@ async function repl(vm: VM) {
 	});
 	rl.prompt();
 	rl.on("line", (line) => {
-		interpret(vm, line);
+		vm.interpret(line);
 		rl.prompt();
 	});
 
 	await once(rl, "close");
 }
 
-function interpret(vm: VM, source: string): InterpretResult {
-	compile(source);
-	return InterpretResult.OK;
-}
-
 export async function runFile(vm: VM, path: string) {
 	const source = await fs.readFile(path, "utf-8");
-	const result = interpret(vm, source);
-	if (result === InterpretResult.COMPILE_ERROR) {
+	const result = vm.interpret(source);
+	if (result === InterpretResult.CompileError) {
 		// eslint-disable-next-line n/no-process-exit
 		process.exit(65);
 	}
-	if (result === InterpretResult.RUNTIME_ERROR) {
+	if (result === InterpretResult.RuntimeError) {
 		// eslint-disable-next-line n/no-process-exit
 		process.exit(70);
 	}
