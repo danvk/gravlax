@@ -5,6 +5,23 @@ import { Token } from "../token.js";
 import { TokenType } from "../token-type.js";
 import { Chunk, OpCode } from "./chunk.js";
 import { Int } from "./int.js";
+import { Value } from "./value.js";
+
+const UINT8_MAX = 255;
+
+enum Precedence {
+	None,
+	Assignment, // =
+	Or, // or
+	And, // and
+	Equality, // == !=
+	Comparison, // < > <= >=
+	Term, // + -
+	Factor, // * /
+	Unary, // ! -
+	Call, // . ()
+	Primary,
+}
 
 export class Scanner {
 	index: number;
@@ -55,16 +72,59 @@ export function compile(source: string): Chunk | null {
 	function emitOpCode(code: OpCode) {
 		currentChunk().writeOp(code, Int(previous.line));
 	}
+	function emitOpAndByte(code: OpCode, byte: Int) {
+		emitOpCode(code);
+		emitByte(byte);
+	}
 
 	function emitReturn() {
 		emitOpCode(OpCode.Return);
+	}
+
+	function emitConstant(value: Value) {
+		emitOpAndByte(OpCode.Constant, makeConstant(value));
+	}
+
+	function makeConstant(value: Value): Int {
+		const constant = currentChunk().addConstant(value);
+		if (constant > UINT8_MAX) {
+			error("Too many constants in one chunk.");
+			return Int(0);
+		}
+		return constant;
 	}
 
 	function endCompiler() {
 		emitReturn();
 	}
 
-	function expression() {}
+	function expression() {
+		parsePrecedence(Precedence.Assignment);
+	}
+
+	function number() {
+		const value = Number(previous.lexeme);
+		emitConstant(Value(value));
+	}
+
+	function grouping() {
+		expression();
+		consume(")", "Expect ')' after expression.");
+	}
+
+	function unary() {
+		const operatorType = previous.type;
+		parsePrecedence(Precedence.Unary);
+		switch (operatorType) {
+			case "-":
+				emitOpCode(OpCode.Negate);
+				break;
+			default:
+				return; // unreachable
+		}
+	}
+
+	function parsePrecedence(precedence: Precedence) {}
 
 	function advance() {
 		previous = current;
