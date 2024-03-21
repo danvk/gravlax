@@ -136,11 +136,23 @@ export class VM {
 					this.pop();
 					break;
 
-				case OpCode.DefineGlobal:
+				case OpCode.GetGlobal: {
+					const name = readString();
+					const value = this.#globals.get(name.chars);
+					if (!value) {
+						runtimeError(`Undefined Variable ${name.chars}`);
+						return InterpretResult.RuntimeError;
+					}
+					this.push(value);
+					break;
+				}
+
+				case OpCode.DefineGlobal: {
 					const name = readString();
 					this.#globals.set(name.chars, this.peek(0));
 					this.pop();
 					break;
+				}
 
 				case OpCode.Equal: {
 					const b = this.pop();

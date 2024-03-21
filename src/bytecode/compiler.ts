@@ -86,6 +86,7 @@ export function compile(source: string): Chunk | null {
 		">=": { infix: binary, precedence: Precedence.Comparison },
 		"<": { infix: binary, precedence: Precedence.Comparison },
 		"<=": { infix: binary, precedence: Precedence.Comparison },
+		identifier: { prefix: variable, precedence: Precedence.None },
 		number: { prefix: number, precedence: Precedence.None },
 		false: { prefix: emitLiteral(OpCode.False), precedence: Precedence.None },
 		true: { prefix: emitLiteral(OpCode.True), precedence: Precedence.None },
@@ -245,6 +246,13 @@ export function compile(source: string): Chunk | null {
 	}
 	function string() {
 		emitConstant(copyString(previous.lexeme.slice(1, -1)));
+	}
+	function namedVariable(name: Token) {
+		const arg = identifierConstant(name);
+		emitOpAndByte(OpCode.GetGlobal, arg);
+	}
+	function variable() {
+		namedVariable(previous);
 	}
 
 	function grouping() {
