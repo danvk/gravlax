@@ -187,8 +187,34 @@ export function compile(source: string): Chunk | null {
 		emitOpCode(OpCode.Print);
 	}
 
+	function synchronize() {
+		panicMode = false;
+		while (current.type != "eof") {
+			if (previous.type === ";") {
+				return;
+			}
+			switch (current.type) {
+				case "class":
+				case "fun":
+				case "var":
+				case "for":
+				case "if":
+				case "while":
+				case "return":
+					return;
+				default:
+				// do nothing by default
+			}
+			advance();
+		}
+	}
+
 	function declaration() {
 		statement();
+
+		if (panicMode) {
+			synchronize();
+		}
 	}
 
 	function statement() {
