@@ -17,6 +17,7 @@ export enum OpCode {
 	False,
 	True,
 	Nil,
+	Pop,
 }
 
 // XXX is there a more idiomatic way to do dynamic arrays?

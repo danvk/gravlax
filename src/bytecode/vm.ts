@@ -123,6 +123,10 @@ export class VM {
 					this.push(boolValue(false));
 					break;
 
+				case OpCode.Pop:
+					this.pop();
+					break;
+
 				case OpCode.Equal: {
 					const b = this.pop();
 					const a = this.pop();

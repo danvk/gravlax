@@ -175,6 +175,12 @@ export function compile(source: string): Chunk | null {
 		parsePrecedence(Precedence.Assignment);
 	}
 
+	function expressionStatement() {
+		expression();
+		consume(";", "Expect ';' after expression.");
+		emitOpCode(OpCode.Pop);
+	}
+
 	function printStatement() {
 		expression();
 		consume(";", "Expect ';' after value.");
@@ -188,6 +194,8 @@ export function compile(source: string): Chunk | null {
 	function statement() {
 		if (match("print")) {
 			printStatement();
+		} else {
+			expressionStatement();
 		}
 	}
 

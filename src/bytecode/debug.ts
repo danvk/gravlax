@@ -23,6 +23,7 @@ const simpleInstructions = {
 	[OpCode.False]: "OP_FALSE",
 	[OpCode.True]: "OP_TRUE",
 	[OpCode.Nil]: "OP_NIL",
+	[OpCode.Pop]: "OP_POP",
 	[OpCode.Not]: "OP_NOT",
 	[OpCode.Less]: "OP_LESS",
 	[OpCode.Greater]: "OP_GREATER",
@@ -50,6 +51,7 @@ export function disassembleInstruction(chunk: Chunk, offset: Int): Int {
 		case OpCode.False:
 		case OpCode.True:
 		case OpCode.Nil:
+		case OpCode.Pop:
 		case OpCode.Not:
 		case OpCode.Less:
 		case OpCode.Greater:
