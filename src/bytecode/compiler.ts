@@ -175,6 +175,17 @@ export function compile(source: string): Chunk | null {
 		parsePrecedence(Precedence.Assignment);
 	}
 
+	function varDeclaration() {
+		const global = parseVariable("Expect variable name.");
+		if (match("=")) {
+			expression();
+		} else {
+			emitOpCode(OpCode.Nil);
+		}
+		consume(";", "Expect ';' after variable declaration.");
+		defineVariable(global);
+	}
+
 	function expressionStatement() {
 		expression();
 		consume(";", "Expect ';' after expression.");
@@ -210,8 +221,11 @@ export function compile(source: string): Chunk | null {
 	}
 
 	function declaration() {
-		statement();
-
+		if (match("var")) {
+			varDeclaration();
+		} else {
+			statement();
+		}
 		if (panicMode) {
 			synchronize();
 		}
@@ -271,6 +285,24 @@ export function compile(source: string): Chunk | null {
 				return;
 			}
 		}
+	}
+
+	function identifierConstant(name: Token) {
+		if (typeof name.literal !== "string") {
+			error("Variable names must be strings.");
+			return Int(0);
+		}
+
+		return makeConstant(copyString(name.literal));
+	}
+
+	function parseVariable(errorMessage: string) {
+		consume("identifier", errorMessage);
+		return identifierConstant(previous);
+	}
+
+	function defineVariable(global: Int) {
+		emitOpAndByte(OpCode.DefineGlobal, global);
 	}
 
 	function getRule(type: TokenType): ParseRule {

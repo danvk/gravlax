@@ -18,6 +18,7 @@ export enum OpCode {
 	True,
 	Nil,
 	Pop,
+	DefineGlobal,
 }
 
 // XXX is there a more idiomatic way to do dynamic arrays?
