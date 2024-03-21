@@ -15,6 +15,7 @@ export function disassembleChunk(chunk: Chunk, name: string) {
 const simpleInstructions = {
 	[OpCode.Return]: "OP_RETURN",
 	[OpCode.Negate]: "OP_NEGATE",
+	[OpCode.Print]: "OP_PRINT",
 	[OpCode.Add]: "OP_ADD",
 	[OpCode.Subtract]: "OP_SUBTRACT",
 	[OpCode.Multiply]: "OP_MULTIPLY",
@@ -41,6 +42,7 @@ export function disassembleInstruction(chunk: Chunk, offset: Int): Int {
 		// Would be nice to eliminate the duplication with simpleInstructions
 		case OpCode.Return:
 		case OpCode.Negate:
+		case OpCode.Print:
 		case OpCode.Add:
 		case OpCode.Subtract:
 		case OpCode.Multiply:

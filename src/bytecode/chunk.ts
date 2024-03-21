@@ -5,6 +5,7 @@ export enum OpCode {
 	Return,
 	Constant,
 	Negate,
+	Print,
 	Equal,
 	Greater,
 	Less,

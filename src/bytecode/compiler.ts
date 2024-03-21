@@ -103,8 +103,9 @@ export function compile(source: string): Chunk | null {
 	let previous = scanner.tokens[0];
 	let current = scanner.tokens[0];
 	advance();
-	expression();
-	consume("eof", "Expect end of expression.");
+	while (!match("eof")) {
+		declaration();
+	}
 	endCompiler();
 	if (hadError) {
 		return null;
@@ -174,6 +175,22 @@ export function compile(source: string): Chunk | null {
 		parsePrecedence(Precedence.Assignment);
 	}
 
+	function printStatement() {
+		expression();
+		consume(";", "Expect ';' after value.");
+		emitOpCode(OpCode.Print);
+	}
+
+	function declaration() {
+		statement();
+	}
+
+	function statement() {
+		if (match("print")) {
+			printStatement();
+		}
+	}
+
 	function number() {
 		const value = Number(previous.lexeme);
 		emitConstant(numberValue(value));
@@ -238,6 +255,18 @@ export function compile(source: string): Chunk | null {
 			return;
 		}
 		errorAtCurrent(message);
+	}
+
+	function check(type: TokenType) {
+		return current.type === type;
+	}
+
+	function match(type: TokenType) {
+		if (!check(type)) {
+			return false;
+		}
+		advance();
+		return true;
 	}
 
 	function errorAt(token: Token, message: string) {

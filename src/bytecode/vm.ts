@@ -93,8 +93,11 @@ export class VM {
 			const instruction = readByte() as OpCode;
 			switch (instruction) {
 				case OpCode.Return:
-					printValue(this.pop());
 					return InterpretResult.OK;
+
+				case OpCode.Print:
+					printValue(this.pop());
+					break;
 
 				case OpCode.Constant: {
 					const constant = readConstant();
