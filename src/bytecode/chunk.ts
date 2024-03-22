@@ -5,6 +5,7 @@ export enum OpCode {
 	Return,
 	Constant,
 	Negate,
+	Print,
 	Equal,
 	Greater,
 	Less,
@@ -16,6 +17,10 @@ export enum OpCode {
 	False,
 	True,
 	Nil,
+	Pop,
+	GetGlobal,
+	DefineGlobal,
+	SetGlobal,
 }
 
 // XXX is there a more idiomatic way to do dynamic arrays?

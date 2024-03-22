@@ -15,6 +15,7 @@ export function disassembleChunk(chunk: Chunk, name: string) {
 const simpleInstructions = {
 	[OpCode.Return]: "OP_RETURN",
 	[OpCode.Negate]: "OP_NEGATE",
+	[OpCode.Print]: "OP_PRINT",
 	[OpCode.Add]: "OP_ADD",
 	[OpCode.Subtract]: "OP_SUBTRACT",
 	[OpCode.Multiply]: "OP_MULTIPLY",
@@ -22,6 +23,7 @@ const simpleInstructions = {
 	[OpCode.False]: "OP_FALSE",
 	[OpCode.True]: "OP_TRUE",
 	[OpCode.Nil]: "OP_NIL",
+	[OpCode.Pop]: "OP_POP",
 	[OpCode.Not]: "OP_NOT",
 	[OpCode.Less]: "OP_LESS",
 	[OpCode.Greater]: "OP_GREATER",
@@ -41,6 +43,7 @@ export function disassembleInstruction(chunk: Chunk, offset: Int): Int {
 		// Would be nice to eliminate the duplication with simpleInstructions
 		case OpCode.Return:
 		case OpCode.Negate:
+		case OpCode.Print:
 		case OpCode.Add:
 		case OpCode.Subtract:
 		case OpCode.Multiply:
@@ -48,6 +51,7 @@ export function disassembleInstruction(chunk: Chunk, offset: Int): Int {
 		case OpCode.False:
 		case OpCode.True:
 		case OpCode.Nil:
+		case OpCode.Pop:
 		case OpCode.Not:
 		case OpCode.Less:
 		case OpCode.Greater:
@@ -55,6 +59,12 @@ export function disassembleInstruction(chunk: Chunk, offset: Int): Int {
 			return simpleInstruction(simpleInstructions[instruction], offset);
 		case OpCode.Constant:
 			return constantInstruction("OP_CONSTANT", chunk, offset);
+		case OpCode.DefineGlobal:
+			return constantInstruction("OP_DEFINE_GLOBAL", chunk, offset);
+		case OpCode.GetGlobal:
+			return constantInstruction("OP_GET_GLOBAL", chunk, offset);
+		case OpCode.SetGlobal:
+			return constantInstruction("OP_SET_GLOBAL", chunk, offset);
 		default:
 			console.log("Unknown opcode", instruction);
 			assertUnreachable(instruction);

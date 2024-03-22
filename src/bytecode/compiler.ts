@@ -31,7 +31,7 @@ interface ParseRuleBase {
 }
 
 interface ParseRulePrefix extends ParseRuleBase {
-	prefix: () => void;
+	prefix: (canAssign: boolean) => void;
 }
 
 interface ParseRuleInfix extends ParseRuleBase {
@@ -86,6 +86,7 @@ export function compile(source: string): Chunk | null {
 		">=": { infix: binary, precedence: Precedence.Comparison },
 		"<": { infix: binary, precedence: Precedence.Comparison },
 		"<=": { infix: binary, precedence: Precedence.Comparison },
+		identifier: { prefix: variable, precedence: Precedence.None },
 		number: { prefix: number, precedence: Precedence.None },
 		false: { prefix: emitLiteral(OpCode.False), precedence: Precedence.None },
 		true: { prefix: emitLiteral(OpCode.True), precedence: Precedence.None },
@@ -103,8 +104,9 @@ export function compile(source: string): Chunk | null {
 	let previous = scanner.tokens[0];
 	let current = scanner.tokens[0];
 	advance();
-	expression();
-	consume("eof", "Expect end of expression.");
+	while (!match("eof")) {
+		declaration();
+	}
 	endCompiler();
 	if (hadError) {
 		return null;
@@ -174,12 +176,88 @@ export function compile(source: string): Chunk | null {
 		parsePrecedence(Precedence.Assignment);
 	}
 
+	function varDeclaration() {
+		const global = parseVariable("Expect variable name.");
+		if (match("=")) {
+			expression();
+		} else {
+			emitOpCode(OpCode.Nil);
+		}
+		consume(";", "Expect ';' after variable declaration.");
+		defineVariable(global);
+	}
+
+	function expressionStatement() {
+		expression();
+		consume(";", "Expect ';' after expression.");
+		emitOpCode(OpCode.Pop);
+	}
+
+	function printStatement() {
+		expression();
+		consume(";", "Expect ';' after value.");
+		emitOpCode(OpCode.Print);
+	}
+
+	function synchronize() {
+		panicMode = false;
+		while (current.type != "eof") {
+			if (previous.type === ";") {
+				return;
+			}
+			switch (current.type) {
+				case "class":
+				case "fun":
+				case "var":
+				case "for":
+				case "if":
+				case "while":
+				case "return":
+					return;
+				default:
+				// do nothing by default
+			}
+			advance();
+		}
+	}
+
+	function declaration() {
+		if (match("var")) {
+			varDeclaration();
+		} else {
+			statement();
+		}
+		if (panicMode) {
+			synchronize();
+		}
+	}
+
+	function statement() {
+		if (match("print")) {
+			printStatement();
+		} else {
+			expressionStatement();
+		}
+	}
+
 	function number() {
 		const value = Number(previous.lexeme);
 		emitConstant(numberValue(value));
 	}
 	function string() {
 		emitConstant(copyString(previous.lexeme.slice(1, -1)));
+	}
+	function namedVariable(name: Token, canAssign: boolean) {
+		const arg = identifierConstant(name);
+		if (canAssign && match("=")) {
+			expression();
+			emitOpAndByte(OpCode.SetGlobal, arg);
+		} else {
+			emitOpAndByte(OpCode.GetGlobal, arg);
+		}
+	}
+	function variable(canAssign: boolean) {
+		namedVariable(previous, canAssign);
 	}
 
 	function grouping() {
@@ -209,7 +287,8 @@ export function compile(source: string): Chunk | null {
 			error("Expect expression.");
 			return;
 		}
-		rule.prefix();
+		const canAssign = precedence <= Precedence.Assignment;
+		rule.prefix(canAssign);
 		while (precedence <= getRule(current.type).precedence) {
 			advance();
 			const inRule = getRule(previous.type);
@@ -219,7 +298,29 @@ export function compile(source: string): Chunk | null {
 				error("Expected infix rule");
 				return;
 			}
+
+			if (canAssign && match("=")) {
+				error("Invalid assignment target.");
+			}
 		}
+	}
+
+	function identifierConstant(name: Token) {
+		if (typeof name.literal !== "string") {
+			error("Variable names must be strings.");
+			return Int(0);
+		}
+
+		return makeConstant(copyString(name.literal));
+	}
+
+	function parseVariable(errorMessage: string) {
+		consume("identifier", errorMessage);
+		return identifierConstant(previous);
+	}
+
+	function defineVariable(global: Int) {
+		emitOpAndByte(OpCode.DefineGlobal, global);
 	}
 
 	function getRule(type: TokenType): ParseRule {
@@ -238,6 +339,18 @@ export function compile(source: string): Chunk | null {
 			return;
 		}
 		errorAtCurrent(message);
+	}
+
+	function check(type: TokenType) {
+		return current.type === type;
+	}
+
+	function match(type: TokenType) {
+		if (!check(type)) {
+			return false;
+		}
+		advance();
+		return true;
 	}
 
 	function errorAt(token: Token, message: string) {

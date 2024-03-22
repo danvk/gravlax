@@ -18,7 +18,13 @@ import {
 	printValue,
 	valuesEqual,
 } from "./value.js";
-import { ObjType, copyString, freeStrings, getIfObjOfType } from "./object.js";
+import {
+	ObjType,
+	asString,
+	copyString,
+	freeStrings,
+	getIfObjOfType,
+} from "./object.js";
 import { freeObjects } from "./heap.js";
 
 export enum InterpretResult {
@@ -40,17 +46,20 @@ export class VM {
 	#ip: Int; // alternatively could be a Uint8Array
 	#stack: Value[];
 	#stackTop: number;
+	#globals: Map<string, Value>;
 	constructor() {
 		this.#chunk = new Chunk();
 		this.#ip = Int(0);
 		// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
 		this.#stack = new Array(STACK_MAX).fill(numberValue(-1));
 		this.#stackTop = 0;
+		this.#globals = new Map();
 	}
 	free() {
 		this.#chunk.free();
 		freeStrings();
 		freeObjects();
+		// Don't think we need to free this.#globals here.
 	}
 	interpret(source: string): InterpretResult {
 		const chunk = compile(source);
@@ -93,8 +102,11 @@ export class VM {
 			const instruction = readByte() as OpCode;
 			switch (instruction) {
 				case OpCode.Return:
-					printValue(this.pop());
 					return InterpretResult.OK;
+
+				case OpCode.Print:
+					printValue(this.pop());
+					break;
 
 				case OpCode.Constant: {
 					const constant = readConstant();
@@ -119,6 +131,39 @@ export class VM {
 				case OpCode.False:
 					this.push(boolValue(false));
 					break;
+
+				case OpCode.Pop:
+					this.pop();
+					break;
+
+				case OpCode.GetGlobal: {
+					const name = readString();
+					const value = this.#globals.get(name.chars);
+					if (!value) {
+						runtimeError(`Undefined Variable ${name.chars}`);
+						return InterpretResult.RuntimeError;
+					}
+					this.push(value);
+					break;
+				}
+
+				case OpCode.DefineGlobal: {
+					const name = readString();
+					this.#globals.set(name.chars, this.peek(0));
+					this.pop();
+					break;
+				}
+
+				case OpCode.SetGlobal: {
+					const name = readString();
+					if (!this.#globals.has(name.chars)) {
+						runtimeError(`Undefined Variable ${name.chars}`);
+						return InterpretResult.RuntimeError;
+					}
+					this.#globals.set(name.chars, this.peek(0)); // no pop bc assignment is an expression
+
+					break;
+				}
 
 				case OpCode.Equal: {
 					const b = this.pop();
@@ -203,6 +248,10 @@ export class VM {
 
 		function readConstant() {
 			return chunk.getValueAt(readByte());
+		}
+
+		function readString() {
+			return asString(readConstant());
 		}
 
 		function runtimeError(format: string, ...args: any[]) {
