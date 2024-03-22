@@ -63,6 +63,8 @@ export function disassembleInstruction(chunk: Chunk, offset: Int): Int {
 			return constantInstruction("OP_DEFINE_GLOBAL", chunk, offset);
 		case OpCode.GetGlobal:
 			return constantInstruction("OP_GET_GLOBAL", chunk, offset);
+		case OpCode.SetGlobal:
+			return constantInstruction("OP_SET_GLOBAL", chunk, offset);
 		default:
 			console.log("Unknown opcode", instruction);
 			assertUnreachable(instruction);

@@ -154,6 +154,17 @@ export class VM {
 					break;
 				}
 
+				case OpCode.SetGlobal: {
+					const name = readString();
+					if (!this.#globals.has(name.chars)) {
+						runtimeError(`Undefined Variable ${name.chars}`);
+						return InterpretResult.RuntimeError;
+					}
+					this.#globals.set(name.chars, this.peek(0)); // no pop bc assignment is an expression
+
+					break;
+				}
+
 				case OpCode.Equal: {
 					const b = this.pop();
 					const a = this.pop();

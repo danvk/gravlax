@@ -31,7 +31,7 @@ interface ParseRuleBase {
 }
 
 interface ParseRulePrefix extends ParseRuleBase {
-	prefix: () => void;
+	prefix: (canAssign: boolean) => void;
 }
 
 interface ParseRuleInfix extends ParseRuleBase {
@@ -247,12 +247,17 @@ export function compile(source: string): Chunk | null {
 	function string() {
 		emitConstant(copyString(previous.lexeme.slice(1, -1)));
 	}
-	function namedVariable(name: Token) {
+	function namedVariable(name: Token, canAssign: boolean) {
 		const arg = identifierConstant(name);
-		emitOpAndByte(OpCode.GetGlobal, arg);
+		if (canAssign && match("=")) {
+			expression();
+			emitOpAndByte(OpCode.SetGlobal, arg);
+		} else {
+			emitOpAndByte(OpCode.GetGlobal, arg);
+		}
 	}
-	function variable() {
-		namedVariable(previous);
+	function variable(canAssign: boolean) {
+		namedVariable(previous, canAssign);
 	}
 
 	function grouping() {
@@ -282,7 +287,8 @@ export function compile(source: string): Chunk | null {
 			error("Expect expression.");
 			return;
 		}
-		rule.prefix();
+		const canAssign = precedence <= Precedence.Assignment;
+		rule.prefix(canAssign);
 		while (precedence <= getRule(current.type).precedence) {
 			advance();
 			const inRule = getRule(previous.type);
@@ -291,6 +297,10 @@ export function compile(source: string): Chunk | null {
 			} else {
 				error("Expected infix rule");
 				return;
+			}
+
+			if (canAssign && match("=")) {
+				error("Invalid assignment target.");
 			}
 		}
 	}

@@ -20,6 +20,7 @@ export enum OpCode {
 	Pop,
 	GetGlobal,
 	DefineGlobal,
+	SetGlobal,
 }
 
 // XXX is there a more idiomatic way to do dynamic arrays?
