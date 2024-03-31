@@ -65,6 +65,10 @@ export function disassembleInstruction(chunk: Chunk, offset: Int): Int {
 			return constantInstruction("OP_GET_GLOBAL", chunk, offset);
 		case OpCode.SetGlobal:
 			return constantInstruction("OP_SET_GLOBAL", chunk, offset);
+		case OpCode.GetLocal:
+			return byteInstruction("OP_GET_LOCAL", chunk, offset);
+		case OpCode.SetLocal:
+			return byteInstruction("OP_SET_LOCAL", chunk, offset);
 		default:
 			console.log("Unknown opcode", instruction);
 			assertUnreachable(instruction);
@@ -78,9 +82,14 @@ export function simpleInstruction(name: string, offset: Int) {
 	return (offset + 1) as Int;
 }
 
+export function byteInstruction(name: string, chunk: Chunk, offset: Int) {
+	const slot = chunk.getByteAt((offset + 1) as Int);
+	console.log(sprintf("%-16s %4d\n", name, slot));
+	return (offset + 2) as Int;
+}
+
 export function constantInstruction(name: string, chunk: Chunk, offset: Int) {
 	const constant = chunk.getByteAt((offset + 1) as Int);
-	// console.log("%-16s %4d '%g'", name, constant, chunk.getValueAt(constant));
 	console.log(
 		sprintf(
 			"%-16s %4d '%s'",
