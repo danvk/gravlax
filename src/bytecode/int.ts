@@ -9,8 +9,14 @@ export function assertU8(byte: number): asserts byte is Int {
 	}
 }
 
+export function assertI8(byte: number): asserts byte is Int {
+	if (byte < -128 || byte > 127 || !Number.isInteger(byte)) {
+		throw new Error(`Invalid byte ${byte}`);
+	}
+}
+
 export function Int(byte: number): Int {
-	assertU8(byte);
+	assertI8(byte);
 	return byte;
 }
 

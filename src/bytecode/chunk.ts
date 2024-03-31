@@ -18,6 +18,8 @@ export enum OpCode {
 	True,
 	Nil,
 	Pop,
+	GetLocal,
+	SetLocal,
 	GetGlobal,
 	DefineGlobal,
 	SetGlobal,

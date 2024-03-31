@@ -11,6 +11,7 @@ import { Value, numberValue } from "./value.js";
 import { copyString } from "./object.js";
 
 const UINT8_MAX = 255;
+const UINT8_COUNT = 256;
 
 enum Precedence {
 	None,
@@ -39,6 +40,17 @@ interface ParseRuleInfix extends ParseRuleBase {
 }
 
 type ParseRule = ParseRuleBase | ParseRuleInfix | ParseRulePrefix;
+
+interface CompilerState {
+	locals: Local[]; // this is fixed-size in the book
+	localCount: number; // this probably isn't needed
+	scopeDepth: number;
+}
+
+interface Local {
+	name: Token;
+	depth: number;
+}
 
 const emptyRule: ParseRule = { precedence: Precedence.None };
 
@@ -98,6 +110,7 @@ export function compile(source: string): Chunk | null {
 
 	const chunk = new Chunk();
 	const scanner = new Scanner(source);
+	let currentState = initCompiler(); // TODO: this could be a class
 	let compilingChunk = chunk;
 	let hadError = false;
 	let panicMode = false;
@@ -146,12 +159,37 @@ export function compile(source: string): Chunk | null {
 		return constant;
 	}
 
+	function initCompiler(): CompilerState {
+		return {
+			locals: [],
+			localCount: 0,
+			scopeDepth: 0,
+		};
+	}
+
 	function endCompiler() {
 		emitReturn();
 		if (DEBUG_PRINT_CODE) {
 			if (!hadError) {
 				disassembleChunk(currentChunk(), "code");
 			}
+		}
+	}
+
+	function beginScope() {
+		currentState.scopeDepth++;
+	}
+
+	function endScope() {
+		currentState.scopeDepth--;
+		while (
+			currentState.locals.length > 0 &&
+			currentState.locals.at(-1)!.depth > currentState.scopeDepth
+		) {
+			// TODO: add an OpCode.PopN to pop N items from the stack.
+			emitOpCode(OpCode.Pop);
+			currentState.locals.pop();
+			currentState.localCount--;
 		}
 	}
 
@@ -174,6 +212,13 @@ export function compile(source: string): Chunk | null {
 
 	function expression() {
 		parsePrecedence(Precedence.Assignment);
+	}
+
+	function block() {
+		while (!check("}") && !check("eof")) {
+			declaration();
+		}
+		consume("}", "Expect '}' after block.");
 	}
 
 	function varDeclaration() {
@@ -235,6 +280,10 @@ export function compile(source: string): Chunk | null {
 	function statement() {
 		if (match("print")) {
 			printStatement();
+		} else if (match("{")) {
+			beginScope();
+			block();
+			endScope();
 		} else {
 			expressionStatement();
 		}
@@ -248,12 +297,21 @@ export function compile(source: string): Chunk | null {
 		emitConstant(copyString(previous.lexeme.slice(1, -1)));
 	}
 	function namedVariable(name: Token, canAssign: boolean) {
-		const arg = identifierConstant(name);
+		let getOp: OpCode, setOp: OpCode;
+		let arg = resolveLocal(currentState, name);
+		if (arg !== -1) {
+			getOp = OpCode.GetLocal;
+			setOp = OpCode.SetLocal;
+		} else {
+			arg = identifierConstant(name);
+			getOp = OpCode.GetGlobal;
+			setOp = OpCode.SetGlobal;
+		}
 		if (canAssign && match("=")) {
 			expression();
-			emitOpAndByte(OpCode.SetGlobal, arg);
+			emitOpAndByte(setOp, arg);
 		} else {
-			emitOpAndByte(OpCode.GetGlobal, arg);
+			emitOpAndByte(getOp, arg);
 		}
 	}
 	function variable(canAssign: boolean) {
@@ -314,12 +372,66 @@ export function compile(source: string): Chunk | null {
 		return makeConstant(copyString(name.literal));
 	}
 
+	function resolveLocal(compiler: CompilerState, name: Token): Int {
+		for (let i = compiler.locals.length - 1; i >= 0; i--) {
+			const local = compiler.locals[i];
+			if (name.literal === local.name.literal) {
+				if (local.depth === -1) {
+					error("Can't read local variable in its own initializer.");
+				}
+				return Int(i);
+			}
+		}
+		return Int(-1);
+	}
+
+	function addLocal(name: Token) {
+		if (currentState.localCount == UINT8_COUNT) {
+			error("Too many local variables in function.");
+			return;
+		}
+		currentState.locals.push({
+			name,
+			depth: -1,
+		});
+		currentState.localCount++;
+	}
+
+	function declareVariable() {
+		if (currentState.scopeDepth === 0) {
+			return;
+		}
+
+		const name = previous;
+		for (const local of currentState.locals.toReversed()) {
+			if (local.depth !== -1 && local.depth < currentState.scopeDepth) {
+				break;
+			}
+			if (name.literal !== local.name.literal) {
+				error("Already a variable with this name in this scope.");
+			}
+		}
+		addLocal(name);
+	}
+
 	function parseVariable(errorMessage: string) {
 		consume("identifier", errorMessage);
+		declareVariable();
+		if (currentState.scopeDepth > 0) {
+			return Int(0);
+		}
 		return identifierConstant(previous);
 	}
 
+	function markInitialized() {
+		currentState.locals.at(-1)!.depth = currentState.scopeDepth;
+	}
+
 	function defineVariable(global: Int) {
+		if (currentState.scopeDepth > 0) {
+			markInitialized();
+			return; // value is already on top of the stack
+		}
 		emitOpAndByte(OpCode.DefineGlobal, global);
 	}
 

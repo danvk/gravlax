@@ -136,6 +136,18 @@ export class VM {
 					this.pop();
 					break;
 
+				case OpCode.GetLocal: {
+					const slot = readByte();
+					this.push(this.#stack[slot]);
+					break;
+				}
+
+				case OpCode.SetLocal: {
+					const slot = readByte();
+					this.#stack[slot] = this.peek(0);
+					break;
+				}
+
 				case OpCode.GetGlobal: {
 					const name = readString();
 					const value = this.#globals.get(name.chars);
