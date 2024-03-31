@@ -8,6 +8,7 @@ export enum OpCode {
 	Print,
 	Jump,
 	JumpIfFalse,
+	Loop,
 	Equal,
 	Greater,
 	Less,

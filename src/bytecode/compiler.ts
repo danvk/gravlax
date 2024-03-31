@@ -145,6 +145,17 @@ export function compile(source: string): Chunk | null {
 		emitByte(byte);
 	}
 
+	function emitLoop(loopStart: number) {
+		emitOpCode(OpCode.Loop);
+		const offset = currentChunk().count - loopStart + 2;
+		if (offset > UINT16_MAX) {
+			error("Loop body too large.");
+		}
+		// TODO: implement emitShort()
+		emitByte(UInt8((offset >> 8) & 0xff));
+		emitByte(UInt8(offset & 0xff));
+	}
+
 	function emitJump(code: OpCode): number {
 		emitOpCode(code);
 		emitByte(UInt8(255));
@@ -280,6 +291,19 @@ export function compile(source: string): Chunk | null {
 		emitOpCode(OpCode.Print);
 	}
 
+	function whileStatement() {
+		const loopStart = currentChunk().count;
+		consume("(", "Expect '(' after 'while'.");
+		expression();
+		consume(")", "Expect ')' after condition.");
+		const exitJump = emitJump(OpCode.JumpIfFalse);
+		emitOpCode(OpCode.Pop);
+		statement();
+		emitLoop(loopStart);
+		patchJump(exitJump);
+		emitOpCode(OpCode.Pop);
+	}
+
 	function synchronize() {
 		panicMode = false;
 		while (current.type != "eof") {
@@ -318,6 +342,8 @@ export function compile(source: string): Chunk | null {
 			printStatement();
 		} else if (match("if")) {
 			ifStatement();
+		} else if (match("while")) {
+			whileStatement();
 		} else if (match("{")) {
 			beginScope();
 			block();

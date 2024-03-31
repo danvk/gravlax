@@ -81,6 +81,8 @@ export function disassembleInstruction(chunk: Chunk, offset: Int): Int {
 			return jumpInstruction("OP_JUMP", 1, chunk, offset);
 		case OpCode.JumpIfFalse:
 			return jumpInstruction("OP_JUMP_IF_FALSE", 1, chunk, offset);
+		case OpCode.Loop:
+			return jumpInstruction("OP_LOOP", -1, chunk, offset);
 		default:
 			console.log("Unknown opcode", instruction);
 			assertUnreachable(instruction);

@@ -115,6 +115,12 @@ export class VM {
 					break;
 				}
 
+				case OpCode.Loop: {
+					const offset = readShort();
+					ip = (ip - offset) as Int;
+					break;
+				}
+
 				case OpCode.Return:
 					return InterpretResult.OK;
 
