@@ -101,6 +101,8 @@ export function compile(source: string): Chunk | null {
 		"<=": { infix: binary, precedence: Precedence.Comparison },
 		identifier: { prefix: variable, precedence: Precedence.None },
 		number: { prefix: number, precedence: Precedence.None },
+		and: { infix: and, precedence: Precedence.And },
+		or: { infix: or, precedence: Precedence.Or },
 		false: { prefix: emitLiteral(OpCode.False), precedence: Precedence.None },
 		true: { prefix: emitLiteral(OpCode.True), precedence: Precedence.None },
 		nil: { prefix: emitLiteral(OpCode.Nil), precedence: Precedence.None },
@@ -329,9 +331,20 @@ export function compile(source: string): Chunk | null {
 		const value = Number(previous.lexeme);
 		emitConstant(numberValue(value));
 	}
+
+	function or() {
+		const elseJump = emitJump(OpCode.JumpIfFalse);
+		const endJump = emitJump(OpCode.Jump);
+		patchJump(elseJump);
+		emitOpCode(OpCode.Pop);
+		parsePrecedence(Precedence.Or);
+		patchJump(endJump);
+	}
+
 	function string() {
 		emitConstant(copyString(previous.lexeme.slice(1, -1)));
 	}
+
 	function namedVariable(name: Token, canAssign: boolean) {
 		let getOp: OpCode, setOp: OpCode;
 		let arg = resolveLocal(currentState, name);
@@ -469,6 +482,13 @@ export function compile(source: string): Chunk | null {
 			return; // value is already on top of the stack
 		}
 		emitOpAndByte(OpCode.DefineGlobal, global);
+	}
+
+	function and() {
+		const endJump = emitJump(OpCode.JumpIfFalse);
+		emitOpCode(OpCode.Pop);
+		parsePrecedence(Precedence.And);
+		patchJump(endJump);
 	}
 
 	function getRule(type: TokenType): ParseRule {
