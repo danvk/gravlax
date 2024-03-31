@@ -6,12 +6,13 @@ import { TokenType } from "../token-type.js";
 import { Chunk, OpCode } from "./chunk.js";
 import { DEBUG_PRINT_CODE } from "./common.js";
 import { disassembleChunk } from "./debug.js";
-import { Int } from "./int.js";
+import { Int, UInt8 } from "./int.js";
 import { Value, numberValue } from "./value.js";
 import { copyString } from "./object.js";
 
 const UINT8_MAX = 255;
 const UINT8_COUNT = 256;
+const UINT16_MAX = 65536;
 
 enum Precedence {
 	None,
@@ -100,6 +101,8 @@ export function compile(source: string): Chunk | null {
 		"<=": { infix: binary, precedence: Precedence.Comparison },
 		identifier: { prefix: variable, precedence: Precedence.None },
 		number: { prefix: number, precedence: Precedence.None },
+		and: { infix: and, precedence: Precedence.And },
+		or: { infix: or, precedence: Precedence.Or },
 		false: { prefix: emitLiteral(OpCode.False), precedence: Precedence.None },
 		true: { prefix: emitLiteral(OpCode.True), precedence: Precedence.None },
 		nil: { prefix: emitLiteral(OpCode.Nil), precedence: Precedence.None },
@@ -132,14 +135,32 @@ export function compile(source: string): Chunk | null {
 	}
 
 	function emitByte(byte: Int) {
-		currentChunk().writeByte(byte, Int(previous.line));
+		currentChunk().writeByte(byte, previous.line);
 	}
 	function emitOpCode(code: OpCode) {
-		currentChunk().writeOp(code, Int(previous.line));
+		currentChunk().writeOp(code, previous.line);
 	}
 	function emitOpAndByte(code: OpCode, byte: Int) {
 		emitOpCode(code);
 		emitByte(byte);
+	}
+
+	function emitLoop(loopStart: number) {
+		emitOpCode(OpCode.Loop);
+		const offset = currentChunk().count - loopStart + 2;
+		if (offset > UINT16_MAX) {
+			error("Loop body too large.");
+		}
+		// TODO: implement emitShort()
+		emitByte(UInt8((offset >> 8) & 0xff));
+		emitByte(UInt8(offset & 0xff));
+	}
+
+	function emitJump(code: OpCode): number {
+		emitOpCode(code);
+		emitByte(UInt8(255));
+		emitByte(UInt8(255));
+		return currentChunk().count - 2;
 	}
 
 	function emitReturn() {
@@ -148,6 +169,16 @@ export function compile(source: string): Chunk | null {
 
 	function emitConstant(value: Value) {
 		emitOpAndByte(OpCode.Constant, makeConstant(value));
+	}
+
+	function patchJump(offset: number) {
+		// -2 to adjust for the bytecode for the jump offset itself.
+		const jump = currentChunk().count - offset - 2;
+		if (jump > UINT16_MAX) {
+			error("Too much code to jump over.");
+		}
+		currentChunk().code[offset] = (jump >> 8) & 0xff;
+		currentChunk().code[offset + 1] = jump & 0xff;
 	}
 
 	function makeConstant(value: Value): Int {
@@ -238,10 +269,80 @@ export function compile(source: string): Chunk | null {
 		emitOpCode(OpCode.Pop);
 	}
 
+	function forStatement() {
+		beginScope();
+		consume("(", "Expect '(' after 'for'.");
+		if (match(";")) {
+			// no initializer
+		} else if (match("var")) {
+			varDeclaration();
+		} else {
+			expressionStatement();
+		}
+		let loopStart = currentChunk().count;
+		let exitJump = -1;
+		if (!match(";")) {
+			expression();
+			consume(";", "Expect ';' after loop condition.");
+			// Jump out of the loop if the condition is false.
+			exitJump = emitJump(OpCode.JumpIfFalse);
+			emitOpCode(OpCode.Pop);
+		}
+
+		if (!match(")")) {
+			// This is convoluted because of the single-pass compile.
+			const bodyJump = emitJump(OpCode.Jump);
+			const incrementStart = currentChunk().count;
+			expression();
+			emitOpCode(OpCode.Pop);
+			consume(")", "Expect ')' after for clauses.");
+			emitLoop(loopStart);
+			loopStart = incrementStart;
+			patchJump(bodyJump);
+		}
+
+		statement();
+		emitLoop(loopStart);
+		if (exitJump !== -1) {
+			patchJump(exitJump);
+			emitOpCode(OpCode.Pop); // condition
+		}
+		endScope();
+	}
+
+	function ifStatement() {
+		consume("(", "Expect '(' after 'if'.");
+		expression();
+		consume(")", "Expect ')' after 'if'.");
+		const thenJump = emitJump(OpCode.JumpIfFalse);
+		emitOpCode(OpCode.Pop);
+		statement();
+		const elseJump = emitJump(OpCode.Jump);
+		patchJump(thenJump);
+		emitOpCode(OpCode.Pop);
+		if (match("else")) {
+			statement();
+		}
+		patchJump(elseJump);
+	}
+
 	function printStatement() {
 		expression();
 		consume(";", "Expect ';' after value.");
 		emitOpCode(OpCode.Print);
+	}
+
+	function whileStatement() {
+		const loopStart = currentChunk().count;
+		consume("(", "Expect '(' after 'while'.");
+		expression();
+		consume(")", "Expect ')' after condition.");
+		const exitJump = emitJump(OpCode.JumpIfFalse);
+		emitOpCode(OpCode.Pop);
+		statement();
+		emitLoop(loopStart);
+		patchJump(exitJump);
+		emitOpCode(OpCode.Pop);
 	}
 
 	function synchronize() {
@@ -280,6 +381,12 @@ export function compile(source: string): Chunk | null {
 	function statement() {
 		if (match("print")) {
 			printStatement();
+		} else if (match("for")) {
+			forStatement();
+		} else if (match("if")) {
+			ifStatement();
+		} else if (match("while")) {
+			whileStatement();
 		} else if (match("{")) {
 			beginScope();
 			block();
@@ -293,9 +400,20 @@ export function compile(source: string): Chunk | null {
 		const value = Number(previous.lexeme);
 		emitConstant(numberValue(value));
 	}
+
+	function or() {
+		const elseJump = emitJump(OpCode.JumpIfFalse);
+		const endJump = emitJump(OpCode.Jump);
+		patchJump(elseJump);
+		emitOpCode(OpCode.Pop);
+		parsePrecedence(Precedence.Or);
+		patchJump(endJump);
+	}
+
 	function string() {
 		emitConstant(copyString(previous.lexeme.slice(1, -1)));
 	}
+
 	function namedVariable(name: Token, canAssign: boolean) {
 		let getOp: OpCode, setOp: OpCode;
 		let arg = resolveLocal(currentState, name);
@@ -433,6 +551,13 @@ export function compile(source: string): Chunk | null {
 			return; // value is already on top of the stack
 		}
 		emitOpAndByte(OpCode.DefineGlobal, global);
+	}
+
+	function and() {
+		const endJump = emitJump(OpCode.JumpIfFalse);
+		emitOpCode(OpCode.Pop);
+		parsePrecedence(Precedence.And);
+		patchJump(endJump);
 	}
 
 	function getRule(type: TokenType): ParseRule {

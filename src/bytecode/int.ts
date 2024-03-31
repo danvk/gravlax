@@ -20,6 +20,11 @@ export function Int(byte: number): Int {
 	return byte;
 }
 
+export function UInt8(byte: number): Int {
+	assertU8(byte);
+	return byte;
+}
+
 export function addInts(a: Int, b: Int): Int {
 	return (a + b) as Int;
 }
