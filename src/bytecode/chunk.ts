@@ -6,6 +6,7 @@ export enum OpCode {
 	Constant,
 	Negate,
 	Print,
+	Jump,
 	JumpIfFalse,
 	Equal,
 	Greater,

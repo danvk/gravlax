@@ -77,6 +77,10 @@ export function disassembleInstruction(chunk: Chunk, offset: Int): Int {
 			return byteInstruction("OP_GET_LOCAL", chunk, offset);
 		case OpCode.SetLocal:
 			return byteInstruction("OP_SET_LOCAL", chunk, offset);
+		case OpCode.Jump:
+			return jumpInstruction("OP_JUMP", 1, chunk, offset);
+		case OpCode.JumpIfFalse:
+			return jumpInstruction("OP_JUMP_IF_FALSE", 1, chunk, offset);
 		default:
 			console.log("Unknown opcode", instruction);
 			assertUnreachable(instruction);
@@ -96,6 +100,20 @@ export function byteInstruction(name: string, chunk: Chunk, offset: Int) {
 	return (offset + 2) as Int;
 }
 
+export function jumpInstruction(
+	name: string,
+	sign: number,
+	chunk: Chunk,
+	offset: Int,
+) {
+	const a = chunk.getByteAt((offset + 1) as Int);
+	const b = chunk.getByteAt((offset + 2) as Int);
+	const jump = (a << 8) | b;
+	console.log(
+		sprintf("%-16s %4d -> %d", name, offset, offset + 3 + sign * jump),
+	);
+	return (offset + 3) as Int;
+}
 export function constantInstruction(name: string, chunk: Chunk, offset: Int) {
 	const constant = chunk.getByteAt((offset + 1) as Int);
 	console.log(

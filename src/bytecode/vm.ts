@@ -101,6 +101,12 @@ export class VM {
 			}
 			const instruction = readByte() as OpCode;
 			switch (instruction) {
+				case OpCode.Jump: {
+					const offset = readShort();
+					ip = (ip + offset) as Int;
+					break;
+				}
+
 				case OpCode.JumpIfFalse: {
 					const offset = readShort();
 					if (isFalsey(this.peek(0))) {

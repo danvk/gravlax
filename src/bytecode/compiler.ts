@@ -261,8 +261,15 @@ export function compile(source: string): Chunk | null {
 		expression();
 		consume(")", "Expect ')' after 'if'.");
 		const thenJump = emitJump(OpCode.JumpIfFalse);
+		emitOpCode(OpCode.Pop);
 		statement();
+		const elseJump = emitJump(OpCode.Jump);
 		patchJump(thenJump);
+		emitOpCode(OpCode.Pop);
+		if (match("else")) {
+			statement();
+		}
+		patchJump(elseJump);
 	}
 
 	function printStatement() {
