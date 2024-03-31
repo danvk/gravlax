@@ -376,6 +376,9 @@ export function compile(source: string): Chunk | null {
 		for (let i = compiler.locals.length - 1; i >= 0; i--) {
 			const local = compiler.locals[i];
 			if (name.literal === local.name.literal) {
+				if (local.depth === -1) {
+					error("Can't read local variable in its own initializer.");
+				}
 				return Int(i);
 			}
 		}
@@ -389,7 +392,7 @@ export function compile(source: string): Chunk | null {
 		}
 		currentState.locals.push({
 			name,
-			depth: currentState.scopeDepth,
+			depth: -1,
 		});
 		currentState.localCount++;
 	}
@@ -420,8 +423,13 @@ export function compile(source: string): Chunk | null {
 		return identifierConstant(previous);
 	}
 
+	function markInitialized() {
+		currentState.locals.at(-1)!.depth = currentState.scopeDepth;
+	}
+
 	function defineVariable(global: Int) {
 		if (currentState.scopeDepth > 0) {
+			markInitialized();
 			return; // value is already on top of the stack
 		}
 		emitOpAndByte(OpCode.DefineGlobal, global);
