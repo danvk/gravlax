@@ -6,12 +6,13 @@ import { TokenType } from "../token-type.js";
 import { Chunk, OpCode } from "./chunk.js";
 import { DEBUG_PRINT_CODE } from "./common.js";
 import { disassembleChunk } from "./debug.js";
-import { Int } from "./int.js";
+import { Int, UInt8 } from "./int.js";
 import { Value, numberValue } from "./value.js";
 import { copyString } from "./object.js";
 
 const UINT8_MAX = 255;
 const UINT8_COUNT = 256;
+const UINT16_MAX = 65536;
 
 enum Precedence {
 	None,
@@ -132,14 +133,21 @@ export function compile(source: string): Chunk | null {
 	}
 
 	function emitByte(byte: Int) {
-		currentChunk().writeByte(byte, Int(previous.line));
+		currentChunk().writeByte(byte, previous.line);
 	}
 	function emitOpCode(code: OpCode) {
-		currentChunk().writeOp(code, Int(previous.line));
+		currentChunk().writeOp(code, previous.line);
 	}
 	function emitOpAndByte(code: OpCode, byte: Int) {
 		emitOpCode(code);
 		emitByte(byte);
+	}
+
+	function emitJump(code: OpCode): number {
+		emitOpCode(code);
+		emitByte(UInt8(255));
+		emitByte(UInt8(255));
+		return currentChunk().count - 2;
 	}
 
 	function emitReturn() {
@@ -148,6 +156,16 @@ export function compile(source: string): Chunk | null {
 
 	function emitConstant(value: Value) {
 		emitOpAndByte(OpCode.Constant, makeConstant(value));
+	}
+
+	function patchJump(offset: number) {
+		// -2 to adjust for the bytecode for the jump offset itself.
+		const jump = currentChunk().count - offset - 2;
+		if (jump > UINT16_MAX) {
+			error("Too much code to jump over.");
+		}
+		currentChunk().code[offset] = (jump >> 8) & 0xff;
+		currentChunk().code[offset + 1] = jump & 0xff;
 	}
 
 	function makeConstant(value: Value): Int {
@@ -238,6 +256,15 @@ export function compile(source: string): Chunk | null {
 		emitOpCode(OpCode.Pop);
 	}
 
+	function ifStatement() {
+		consume("(", "Expect '(' after 'if'.");
+		expression();
+		consume(")", "Expect ')' after 'if'.");
+		const thenJump = emitJump(OpCode.JumpIfFalse);
+		statement();
+		patchJump(thenJump);
+	}
+
 	function printStatement() {
 		expression();
 		consume(";", "Expect ';' after value.");
@@ -280,6 +307,8 @@ export function compile(source: string): Chunk | null {
 	function statement() {
 		if (match("print")) {
 			printStatement();
+		} else if (match("if")) {
+			ifStatement();
 		} else if (match("{")) {
 			beginScope();
 			block();

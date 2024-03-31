@@ -101,6 +101,14 @@ export class VM {
 			}
 			const instruction = readByte() as OpCode;
 			switch (instruction) {
+				case OpCode.JumpIfFalse: {
+					const offset = readShort();
+					if (isFalsey(this.peek(0))) {
+						ip = (ip + offset) as Int;
+					}
+					break;
+				}
+
 				case OpCode.Return:
 					return InterpretResult.OK;
 
@@ -260,6 +268,12 @@ export class VM {
 
 		function readConstant() {
 			return chunk.getValueAt(readByte());
+		}
+
+		function readShort() {
+			const a = readByte();
+			const b = readByte();
+			return (a << 8) | b;
 		}
 
 		function readString() {
