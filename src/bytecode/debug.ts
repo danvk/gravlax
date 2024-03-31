@@ -30,6 +30,13 @@ const simpleInstructions = {
 	[OpCode.Equal]: "OP_EQUAL",
 } satisfies Partial<Record<OpCode, string>>;
 
+const constantInstructions = {
+	[OpCode.Constant]: "OP_CONSTANT",
+	[OpCode.DefineGlobal]: "OP_DEFINE_GLOBAL",
+	[OpCode.GetGlobal]: "OP_GET_GLOBAL",
+	[OpCode.SetGlobal]: "OP_SET_GLOBAL",
+} satisfies Partial<Record<OpCode, string>>;
+
 export function disassembleInstruction(chunk: Chunk, offset: Int): Int {
 	let logLine = sprintf("%04d", offset);
 	if (offset > 0 && chunk.lines[offset] == chunk.lines[offset - 1]) {
@@ -58,13 +65,14 @@ export function disassembleInstruction(chunk: Chunk, offset: Int): Int {
 		case OpCode.Equal:
 			return simpleInstruction(simpleInstructions[instruction], offset);
 		case OpCode.Constant:
-			return constantInstruction("OP_CONSTANT", chunk, offset);
 		case OpCode.DefineGlobal:
-			return constantInstruction("OP_DEFINE_GLOBAL", chunk, offset);
 		case OpCode.GetGlobal:
-			return constantInstruction("OP_GET_GLOBAL", chunk, offset);
 		case OpCode.SetGlobal:
-			return constantInstruction("OP_SET_GLOBAL", chunk, offset);
+			return constantInstruction(
+				constantInstructions[instruction],
+				chunk,
+				offset,
+			);
 		case OpCode.GetLocal:
 			return byteInstruction("OP_GET_LOCAL", chunk, offset);
 		case OpCode.SetLocal:
