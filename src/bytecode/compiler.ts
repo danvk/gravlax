@@ -269,6 +269,47 @@ export function compile(source: string): Chunk | null {
 		emitOpCode(OpCode.Pop);
 	}
 
+	function forStatement() {
+		beginScope();
+		consume("(", "Expect '(' after 'for'.");
+		if (match(";")) {
+			// no initializer
+		} else if (match("var")) {
+			varDeclaration();
+		} else {
+			expressionStatement();
+		}
+		let loopStart = currentChunk().count;
+		let exitJump = -1;
+		if (!match(";")) {
+			expression();
+			consume(";", "Expect ';' after loop condition.");
+			// Jump out of the loop if the condition is false.
+			exitJump = emitJump(OpCode.JumpIfFalse);
+			emitOpCode(OpCode.Pop);
+		}
+
+		if (!match(")")) {
+			// This is convoluted because of the single-pass compile.
+			const bodyJump = emitJump(OpCode.Jump);
+			const incrementStart = currentChunk().count;
+			expression();
+			emitOpCode(OpCode.Pop);
+			consume(")", "Expect ')' after for clauses.");
+			emitLoop(loopStart);
+			loopStart = incrementStart;
+			patchJump(bodyJump);
+		}
+
+		statement();
+		emitLoop(loopStart);
+		if (exitJump !== -1) {
+			patchJump(exitJump);
+			emitOpCode(OpCode.Pop); // condition
+		}
+		endScope();
+	}
+
 	function ifStatement() {
 		consume("(", "Expect '(' after 'if'.");
 		expression();
@@ -340,6 +381,8 @@ export function compile(source: string): Chunk | null {
 	function statement() {
 		if (match("print")) {
 			printStatement();
+		} else if (match("for")) {
+			forStatement();
 		} else if (match("if")) {
 			ifStatement();
 		} else if (match("while")) {
