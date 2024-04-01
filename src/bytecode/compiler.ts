@@ -3,12 +3,12 @@ import util from "node:util";
 import { Scanner as TreewalkScanner } from "../scanner.js";
 import { Token } from "../token.js";
 import { TokenType } from "../token-type.js";
-import { Chunk, OpCode } from "./chunk.js";
+import { OpCode } from "./chunk.js";
 import { DEBUG_PRINT_CODE } from "./common.js";
 import { disassembleChunk } from "./debug.js";
 import { Int, UInt8 } from "./int.js";
-import { Value, numberValue } from "./value.js";
-import { ObjFunction, asFunction, copyString, newFunction } from "./object.js";
+import { Value, ValueType, numberValue } from "./value.js";
+import { ObjFunction, asString, copyString, newFunction } from "./object.js";
 import { Pointer, deref } from "./heap.js";
 
 const UINT8_MAX = 255;
@@ -44,6 +44,7 @@ interface ParseRuleInfix extends ParseRuleBase {
 type ParseRule = ParseRuleBase | ParseRuleInfix | ParseRulePrefix;
 
 interface CompilerState {
+	enclosing: CompilerState | null;
 	function: Pointer<ObjFunction>;
 	type: FunctionType;
 	locals: Local[]; // this is fixed-size in the book
@@ -120,7 +121,8 @@ export function compile(source: string): Pointer<ObjFunction> | null {
 	/* eslint-enable perfectionist/sort-objects */
 
 	const scanner = new Scanner(source);
-	let currentState = initCompiler(FunctionType.Script); // TODO: this could be a class
+	let currentState: CompilerState = null as any;
+	currentState = initCompiler(FunctionType.Script); // TODO: this could be a class
 	let hadError = false;
 	let panicMode = false;
 	let previous = scanner.tokens[0];
@@ -129,8 +131,8 @@ export function compile(source: string): Pointer<ObjFunction> | null {
 	while (!match("eof")) {
 		declaration();
 	}
-	const fn = endCompiler();
-	return hadError ? null : fn;
+	const func = endCompiler();
+	return hadError ? null : func;
 
 	function currentChunk() {
 		return deref(currentState.function).chunk;
@@ -193,7 +195,9 @@ export function compile(source: string): Pointer<ObjFunction> | null {
 	}
 
 	function initCompiler(type: FunctionType): CompilerState {
-		return {
+		// book sets currentState here
+		const state: CompilerState = {
+			enclosing: currentState,
 			function: newFunction(),
 			type,
 			locals: [
@@ -206,6 +210,10 @@ export function compile(source: string): Pointer<ObjFunction> | null {
 			localCount: 1,
 			scopeDepth: 0,
 		};
+		if (type !== FunctionType.Script) {
+			deref(state.function).name = asString(copyString(previous.lexeme));
+		}
+		return state;
 	}
 
 	function endCompiler(): Pointer<ObjFunction> {
@@ -217,6 +225,7 @@ export function compile(source: string): Pointer<ObjFunction> | null {
 				disassembleChunk(currentChunk(), fn.name?.chars ?? "<script>");
 			}
 		}
+		currentState = currentState.enclosing!;
 		return fnPtr;
 	}
 
@@ -263,6 +272,39 @@ export function compile(source: string): Pointer<ObjFunction> | null {
 			declaration();
 		}
 		consume("}", "Expect '}' after block.");
+	}
+
+	function fn(type: FunctionType) {
+		currentState = initCompiler(type);
+		beginScope(); // intentionally no matching endScope()
+
+		consume("(", "Expect '(' after function name.");
+		if (!check(")")) {
+			do {
+				deref(currentState.function).arity++;
+				if (deref(currentState.function).arity > 255) {
+					errorAtCurrent("Can't have more than 255 parameters.");
+				}
+				const constant = parseVariable("Expect parameter name.");
+				defineVariable(constant);
+			} while (match(","));
+		}
+		consume(")", "Expect ')' after parameters.");
+		consume("{", "Expect '{' before function body.");
+		block();
+
+		const func = endCompiler();
+		emitOpAndByte(
+			OpCode.Constant,
+			makeConstant({ type: ValueType.Obj, obj: func }),
+		);
+	}
+
+	function funDeclaration() {
+		const global = parseVariable("Expect function name.");
+		markInitialized();
+		fn(FunctionType.Function);
+		defineVariable(global);
 	}
 
 	function varDeclaration() {
@@ -381,7 +423,9 @@ export function compile(source: string): Pointer<ObjFunction> | null {
 	}
 
 	function declaration() {
-		if (match("var")) {
+		if (match("fun")) {
+			funDeclaration();
+		} else if (match("var")) {
 			varDeclaration();
 		} else {
 			statement();
@@ -555,6 +599,9 @@ export function compile(source: string): Pointer<ObjFunction> | null {
 	}
 
 	function markInitialized() {
+		if (currentState.scopeDepth === 0) {
+			return;
+		}
 		currentState.locals.at(-1)!.depth = currentState.scopeDepth;
 	}
 
