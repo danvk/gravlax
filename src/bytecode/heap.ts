@@ -1,3 +1,5 @@
+import { freeObject } from "./object.js";
+
 interface HeapEntry {
 	isLive: boolean;
 	contents: unknown;
@@ -43,7 +45,8 @@ export function freeObjects() {
 			continue;
 		}
 		if (entry.isLive) {
-			console.log(`  freed ${i} (live)`, entry.contents);
+			// console.log(`  freed ${i} (live)`, entry.contents);
+			console.log(`  freed ${i} (live)`);
 		} else {
 			console.log(`  collected ${i}`);
 		}
