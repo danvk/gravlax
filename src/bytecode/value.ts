@@ -76,9 +76,11 @@ export function formatObj(value: ObjValue) {
 	switch (obj.type) {
 		case ObjType.String:
 			return obj.chars;
+		case ObjType.Function:
+			return `<fn ${obj.name!.chars}>`;
 		// XXX weird that a one-case switch in TS isn't exhaustive
-		// default:
-		// 	assertUnreachable(obj);
+		default:
+			assertUnreachable(obj);
 	}
 }
 

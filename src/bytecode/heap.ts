@@ -35,6 +35,7 @@ export function free(pointer: Pointer) {
 	entry.isLive = false;
 }
 
+// XXX this diverges a bit from the book.
 export function freeObjects() {
 	for (const [i, entry] of heap.entries()) {
 		if (!entry) {
