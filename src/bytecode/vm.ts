@@ -19,13 +19,16 @@ import {
 	valuesEqual,
 } from "./value.js";
 import {
+	NativeFn,
 	ObjFunction,
 	ObjType,
 	asFunction,
+	asNative,
 	asString,
 	copyString,
 	freeStrings,
 	getIfObjOfType,
+	newNative,
 } from "./object.js";
 import { Pointer, deref, freeObjects } from "./heap.js";
 
@@ -49,6 +52,10 @@ function isFalsey(value: Value): boolean {
 		value.type === ValueType.Nil || (value.type === ValueType.Bool && !value.as)
 	);
 }
+
+const clockNative: NativeFn = (argCount, args) => {
+	return numberValue(Date.now() / 1000);
+};
 
 export class VM {
 	// #chunk: Chunk;
@@ -74,6 +81,7 @@ export class VM {
 				slotIndex: 0,
 			}),
 		);
+		this.defineNative("clock", clockNative);
 	}
 	free() {
 		// this.#chunk.free();
@@ -110,6 +118,15 @@ export class VM {
 	resetStack() {
 		this.#stackTop = 0;
 	}
+	defineNative(name: string, fn: NativeFn) {
+		this.push(copyString(name));
+		const nativeObj: Value = { type: ValueType.Obj, obj: newNative(fn) };
+		this.push(nativeObj);
+		this.#globals.set(name, nativeObj);
+		this.pop();
+		this.pop();
+	}
+
 	run(): InterpretResult {
 		const vm = this;
 		let frame = this.#frames[this.#frameCount - 1];
@@ -370,6 +387,13 @@ export class VM {
 				switch (obj.type) {
 					case ObjType.Function:
 						return call(asFunction(callee), argCount);
+					case ObjType.Native: {
+						const native = asNative(callee);
+						const result = native.fn(argCount, vm.#stack.slice(-argCount));
+						vm.#stackTop -= argCount + 1;
+						vm.push(result);
+						return true;
+					}
 					default:
 						break; // non-callable object type
 				}

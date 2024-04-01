@@ -8,6 +8,7 @@ import { ObjValue, Value, ValueType } from "./value.js";
 export enum ObjType {
 	String,
 	Function,
+	Native,
 }
 
 export interface ObjFunction {
@@ -22,7 +23,14 @@ export interface ObjString {
 	chars: string;
 }
 
-export type Obj = ObjString | ObjFunction;
+export type NativeFn = (argCount: number, args: Value[]) => Value;
+
+export interface ObjNative {
+	type: ObjType.Native;
+	fn: NativeFn;
+}
+
+export type Obj = ObjString | ObjFunction | ObjNative;
 
 export function derefObj<T extends Obj>(pointer: Pointer<T>): T {
 	return deref(pointer);
@@ -57,6 +65,14 @@ export function asFunction(value: Value) {
 	return obj;
 }
 
+export function asNative(value: Value) {
+	const obj = getIfObjOfType(value, ObjType.Native);
+	if (!obj) {
+		throw new Error(`Tried to use ${value} as native function`);
+	}
+	return obj;
+}
+
 export function copyString(chars: string): ObjValue {
 	const interned = strings.get(chars);
 	if (interned) {
@@ -86,6 +102,14 @@ export function newFunction() {
 	return alloc(fn);
 }
 
+export function newNative(fn: NativeFn) {
+	const func: ObjNative = {
+		type: ObjType.Native,
+		fn,
+	};
+	return alloc(func);
+}
+
 export function freeFunction(object: Pointer<ObjFunction>) {
 	const fn = derefObj(object);
 	if (fn.type !== ObjType.Function) {
@@ -95,7 +119,7 @@ export function freeFunction(object: Pointer<ObjFunction>) {
 	free(object);
 }
 
-export function freeObj(object: Pointer<Obj>) {
+export function freeObject(object: Pointer<Obj>) {
 	const obj = derefObj(object);
 	switch (obj.type) {
 		case ObjType.String:
@@ -103,6 +127,9 @@ export function freeObj(object: Pointer<Obj>) {
 			break;
 		case ObjType.Function:
 			freeFunction(object as Pointer<ObjFunction>);
+			break;
+		case ObjType.Native:
+			free(object);
 			break;
 		default:
 			assertUnreachable(obj);
@@ -116,6 +143,8 @@ export function formatObj(value: ObjValue) {
 			return obj.chars;
 		case ObjType.Function:
 			return obj.name ? `<fn ${obj.name.chars}>` : "<script>";
+		case ObjType.Native:
+			return "<native fn>";
 		// XXX weird that a one-case switch in TS isn't exhaustive
 		default:
 			assertUnreachable(obj);
