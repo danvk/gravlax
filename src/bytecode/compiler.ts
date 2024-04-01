@@ -92,7 +92,7 @@ const BIN_OP_CODES = {
 	"-": [OpCode.Subtract],
 };
 
-export function compile(source: string): Chunk | null {
+export function compile(source: string): Pointer<ObjFunction> | null {
 	/* eslint-disable perfectionist/sort-objects */
 	const rules: Partial<Record<TokenType, ParseRule>> = {
 		"(": { prefix: grouping, precedence: Precedence.None },
@@ -130,12 +130,8 @@ export function compile(source: string): Chunk | null {
 	while (!match("eof")) {
 		declaration();
 	}
-	endCompiler();
-	if (hadError) {
-		return null;
-	} else {
-		return chunk;
-	}
+	const fn = endCompiler();
+	return hadError ? null : fn;
 
 	function currentChunk() {
 		return deref(currentState.function).chunk;
@@ -198,6 +194,13 @@ export function compile(source: string): Chunk | null {
 	}
 
 	function initCompiler(type: FunctionType): CompilerState {
+		// claim slot zero for internal use
+		currentState.locals.push({
+			depth: 0,
+			name: { lexeme: "", line: 0, literal: null, type: "string" },
+		});
+		currentState.localCount++;
+
 		return {
 			function: newFunction(),
 			type,
@@ -207,13 +210,16 @@ export function compile(source: string): Chunk | null {
 		};
 	}
 
-	function endCompiler() {
+	function endCompiler(): Pointer<ObjFunction> {
 		emitReturn();
+		const fnPtr = currentState.function;
+		const fn = deref(fnPtr);
 		if (DEBUG_PRINT_CODE) {
 			if (!hadError) {
-				disassembleChunk(currentChunk(), "code");
+				disassembleChunk(currentChunk(), fn.name?.chars ?? "<script>");
 			}
 		}
+		return fnPtr;
 	}
 
 	function beginScope() {

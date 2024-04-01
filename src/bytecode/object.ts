@@ -1,6 +1,5 @@
 // There's a lot more ceremony around this in C.
 
-import { Func } from "../ast.js";
 import { Chunk } from "./chunk.js";
 import { Pointer, alloc, deref, free } from "./heap.js";
 import { assertUnreachable } from "./util.js";
@@ -105,6 +104,19 @@ export function freeObj(object: Pointer<Obj>) {
 		case ObjType.Function:
 			freeFunction(object as Pointer<ObjFunction>);
 			break;
+		default:
+			assertUnreachable(obj);
+	}
+}
+
+export function formatObj(value: ObjValue) {
+	const obj = derefObj(value.obj);
+	switch (obj.type) {
+		case ObjType.String:
+			return obj.chars;
+		case ObjType.Function:
+			return obj.name ? `<fn ${obj.name.chars}>` : "<script>";
+		// XXX weird that a one-case switch in TS isn't exhaustive
 		default:
 			assertUnreachable(obj);
 	}
