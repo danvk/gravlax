@@ -3,12 +3,13 @@ import util from "node:util";
 import { Scanner as TreewalkScanner } from "../scanner.js";
 import { Token } from "../token.js";
 import { TokenType } from "../token-type.js";
-import { Chunk, OpCode } from "./chunk.js";
+import { OpCode } from "./chunk.js";
 import { DEBUG_PRINT_CODE } from "./common.js";
 import { disassembleChunk } from "./debug.js";
 import { Int, UInt8 } from "./int.js";
-import { Value, numberValue } from "./value.js";
-import { copyString } from "./object.js";
+import { Value, ValueType, numberValue } from "./value.js";
+import { ObjFunction, asString, copyString, newFunction } from "./object.js";
+import { Pointer, deref } from "./heap.js";
 
 const UINT8_MAX = 255;
 const UINT8_COUNT = 256;
@@ -43,6 +44,9 @@ interface ParseRuleInfix extends ParseRuleBase {
 type ParseRule = ParseRuleBase | ParseRuleInfix | ParseRulePrefix;
 
 interface CompilerState {
+	enclosing: CompilerState | null;
+	function: Pointer<ObjFunction>;
+	type: FunctionType;
 	locals: Local[]; // this is fixed-size in the book
 	localCount: number; // this probably isn't needed
 	scopeDepth: number;
@@ -51,6 +55,11 @@ interface CompilerState {
 interface Local {
 	name: Token;
 	depth: number;
+}
+
+enum FunctionType {
+	Function,
+	Script,
 }
 
 const emptyRule: ParseRule = { precedence: Precedence.None };
@@ -84,10 +93,14 @@ const BIN_OP_CODES = {
 	"-": [OpCode.Subtract],
 };
 
-export function compile(source: string): Chunk | null {
+export function compile(source: string): Pointer<ObjFunction> | null {
 	/* eslint-disable perfectionist/sort-objects */
 	const rules: Partial<Record<TokenType, ParseRule>> = {
-		"(": { prefix: grouping, precedence: Precedence.None },
+		"(": {
+			prefix: grouping,
+			infix: call,
+			precedence: Precedence.Call,
+		},
 		"-": { prefix: unary, infix: binary, precedence: Precedence.Term },
 		"+": { infix: binary, precedence: Precedence.Term },
 		"/": { infix: binary, precedence: Precedence.Factor },
@@ -111,10 +124,9 @@ export function compile(source: string): Chunk | null {
 	};
 	/* eslint-enable perfectionist/sort-objects */
 
-	const chunk = new Chunk();
 	const scanner = new Scanner(source);
-	let currentState = initCompiler(); // TODO: this could be a class
-	let compilingChunk = chunk;
+	let currentState: CompilerState = null as any;
+	currentState = initCompiler(FunctionType.Script); // TODO: this could be a class
 	let hadError = false;
 	let panicMode = false;
 	let previous = scanner.tokens[0];
@@ -123,15 +135,11 @@ export function compile(source: string): Chunk | null {
 	while (!match("eof")) {
 		declaration();
 	}
-	endCompiler();
-	if (hadError) {
-		return null;
-	} else {
-		return chunk;
-	}
+	const func = endCompiler();
+	return hadError ? null : func;
 
 	function currentChunk() {
-		return compilingChunk;
+		return deref(currentState.function).chunk;
 	}
 
 	function emitByte(byte: Int) {
@@ -164,6 +172,7 @@ export function compile(source: string): Chunk | null {
 	}
 
 	function emitReturn() {
+		emitByte(Int(OpCode.Nil)); // implicit return
 		emitOpCode(OpCode.Return);
 	}
 
@@ -190,21 +199,39 @@ export function compile(source: string): Chunk | null {
 		return constant;
 	}
 
-	function initCompiler(): CompilerState {
-		return {
-			locals: [],
-			localCount: 0,
+	function initCompiler(type: FunctionType): CompilerState {
+		// book sets currentState here
+		const state: CompilerState = {
+			enclosing: currentState,
+			function: newFunction(),
+			type,
+			locals: [
+				// claim slot zero for internal use
+				{
+					depth: 0,
+					name: { lexeme: "", line: 0, literal: null, type: "string" },
+				},
+			],
+			localCount: 1,
 			scopeDepth: 0,
 		};
+		if (type !== FunctionType.Script) {
+			deref(state.function).name = asString(copyString(previous.lexeme));
+		}
+		return state;
 	}
 
-	function endCompiler() {
+	function endCompiler(): Pointer<ObjFunction> {
 		emitReturn();
+		const fnPtr = currentState.function;
+		const fn = deref(fnPtr);
 		if (DEBUG_PRINT_CODE) {
 			if (!hadError) {
-				disassembleChunk(currentChunk(), "code");
+				disassembleChunk(currentChunk(), fn.name?.chars ?? "<script>");
 			}
 		}
+		currentState = currentState.enclosing!;
+		return fnPtr;
 	}
 
 	function beginScope() {
@@ -235,6 +262,11 @@ export function compile(source: string): Chunk | null {
 		}
 	}
 
+	function call() {
+		const argCount = argumentList();
+		emitOpAndByte(OpCode.Call, Int(argCount));
+	}
+
 	function emitLiteral(code: OpCode) {
 		return () => {
 			emitOpCode(code);
@@ -250,6 +282,39 @@ export function compile(source: string): Chunk | null {
 			declaration();
 		}
 		consume("}", "Expect '}' after block.");
+	}
+
+	function fn(type: FunctionType) {
+		currentState = initCompiler(type);
+		beginScope(); // intentionally no matching endScope()
+
+		consume("(", "Expect '(' after function name.");
+		if (!check(")")) {
+			do {
+				deref(currentState.function).arity++;
+				if (deref(currentState.function).arity > 255) {
+					errorAtCurrent("Can't have more than 255 parameters.");
+				}
+				const constant = parseVariable("Expect parameter name.");
+				defineVariable(constant);
+			} while (match(","));
+		}
+		consume(")", "Expect ')' after parameters.");
+		consume("{", "Expect '{' before function body.");
+		block();
+
+		const func = endCompiler();
+		emitOpAndByte(
+			OpCode.Constant,
+			makeConstant({ type: ValueType.Obj, obj: func }),
+		);
+	}
+
+	function funDeclaration() {
+		const global = parseVariable("Expect function name.");
+		markInitialized();
+		fn(FunctionType.Function);
+		defineVariable(global);
 	}
 
 	function varDeclaration() {
@@ -332,6 +397,19 @@ export function compile(source: string): Chunk | null {
 		emitOpCode(OpCode.Print);
 	}
 
+	function returnStatement() {
+		if (currentState.type === FunctionType.Script) {
+			error("Can't return from top-level code.");
+		}
+		if (match(";")) {
+			emitReturn();
+		} else {
+			expression();
+			consume(";", "Expect ';' after return value.");
+			emitOpCode(OpCode.Return);
+		}
+	}
+
 	function whileStatement() {
 		const loopStart = currentChunk().count;
 		consume("(", "Expect '(' after 'while'.");
@@ -368,7 +446,9 @@ export function compile(source: string): Chunk | null {
 	}
 
 	function declaration() {
-		if (match("var")) {
+		if (match("fun")) {
+			funDeclaration();
+		} else if (match("var")) {
 			varDeclaration();
 		} else {
 			statement();
@@ -385,6 +465,8 @@ export function compile(source: string): Chunk | null {
 			forStatement();
 		} else if (match("if")) {
 			ifStatement();
+		} else if (match("return")) {
+			returnStatement();
 		} else if (match("while")) {
 			whileStatement();
 		} else if (match("{")) {
@@ -542,6 +624,9 @@ export function compile(source: string): Chunk | null {
 	}
 
 	function markInitialized() {
+		if (currentState.scopeDepth === 0) {
+			return;
+		}
 		currentState.locals.at(-1)!.depth = currentState.scopeDepth;
 	}
 
@@ -551,6 +636,21 @@ export function compile(source: string): Chunk | null {
 			return; // value is already on top of the stack
 		}
 		emitOpAndByte(OpCode.DefineGlobal, global);
+	}
+
+	function argumentList() {
+		let argCount = 0;
+		if (!check(")")) {
+			do {
+				expression();
+				if (argCount === 255) {
+					error("Can't have more than 255 arguments.");
+				}
+				argCount++;
+			} while (match(","));
+		}
+		consume(")", "Expect ')' after arguments.");
+		return argCount;
 	}
 
 	function and() {

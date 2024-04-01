@@ -5,7 +5,7 @@ import { DEBUG_TRACE_EXECUTION } from "./common.js";
 import { compile } from "./compiler.js";
 import { disassembleInstruction } from "./debug.js";
 import { Int } from "./int.js";
-import { assertUnreachable } from "./util.js";
+import { arrayWith, assertUnreachable } from "./util.js";
 import {
 	NumberValue,
 	ObjValue,
@@ -19,13 +19,18 @@ import {
 	valuesEqual,
 } from "./value.js";
 import {
+	NativeFn,
+	ObjFunction,
 	ObjType,
+	asFunction,
+	asNative,
 	asString,
 	copyString,
 	freeStrings,
 	getIfObjOfType,
+	newNative,
 } from "./object.js";
-import { freeObjects } from "./heap.js";
+import { Pointer, deref, freeObjects } from "./heap.js";
 
 export enum InterpretResult {
 	OK,
@@ -33,7 +38,14 @@ export enum InterpretResult {
 	RuntimeError,
 }
 
-const STACK_MAX = 256;
+const FRAMES_MAX = 64;
+const STACK_MAX = FRAMES_MAX * 256;
+
+export interface CallFrame {
+	fn: ObjFunction | null;
+	ip: Int;
+	slotIndex: number; // book has slots: Pointer<Value>
+}
 
 function isFalsey(value: Value): boolean {
 	return (
@@ -41,38 +53,57 @@ function isFalsey(value: Value): boolean {
 	);
 }
 
+const clockNative: NativeFn = (argCount, args) => {
+	return numberValue(Date.now() / 1000);
+};
+
 export class VM {
-	#chunk: Chunk;
-	#ip: Int; // alternatively could be a Uint8Array
+	// #chunk: Chunk;
+	// #ip: Int; // alternatively could be a Uint8Array
 	#stack: Value[];
 	#stackTop: number;
+	#frames: CallFrame[];
+	#frameCount: number;
 	#globals: Map<string, Value>;
 	constructor() {
-		this.#chunk = new Chunk();
-		this.#ip = Int(0);
+		// this.#chunk = new Chunk();
+		// this.#ip = Int(0);
 		// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-		this.#stack = new Array(STACK_MAX).fill(numberValue(-1));
+		this.#stack = arrayWith(STACK_MAX, () => numberValue(-1));
 		this.#stackTop = 0;
 		this.#globals = new Map();
+		this.#frameCount = 0;
+		this.#frames = arrayWith(
+			FRAMES_MAX,
+			(): CallFrame => ({
+				fn: null,
+				ip: Int(0),
+				slotIndex: 0,
+			}),
+		);
+		this.defineNative("clock", clockNative);
 	}
 	free() {
-		this.#chunk.free();
+		// this.#chunk.free();
 		freeStrings();
 		freeObjects();
 		// Don't think we need to free this.#globals here.
 	}
 	interpret(source: string): InterpretResult {
-		const chunk = compile(source);
-		if (!chunk) {
+		const fnPtr = compile(source);
+		if (!fnPtr) {
 			return InterpretResult.CompileError;
 		}
-
-		this.#chunk = chunk;
-		this.#ip = Int(0);
-		const result = this.run();
-		chunk.free();
-		return result;
+		this.push({ type: ValueType.Obj, obj: fnPtr });
+		const frame = this.#frames[this.#frameCount++];
+		// book calls call(fnPtr, 0) here.
+		frame.fn = deref(fnPtr);
+		frame.ip = Int(0); // book has fn.chunk.code
+		frame.slotIndex = this.#stackTop; // book has vm.stack
+		return this.run();
 	}
+
+	// TODO: consider makign these stack methods inline functions instead
 	peek(distance: number): Value {
 		return this.#stack[this.#stackTop - distance - 1];
 	}
@@ -87,9 +118,18 @@ export class VM {
 	resetStack() {
 		this.#stackTop = 0;
 	}
+	defineNative(name: string, fn: NativeFn) {
+		this.push(copyString(name));
+		const nativeObj: Value = { type: ValueType.Obj, obj: newNative(fn) };
+		this.push(nativeObj);
+		this.#globals.set(name, nativeObj);
+		this.pop();
+		this.pop();
+	}
+
 	run(): InterpretResult {
-		const chunk = this.#chunk;
-		let ip = this.#ip;
+		const vm = this;
+		let frame = this.#frames[this.#frameCount - 1];
 		while (true) {
 			if (DEBUG_TRACE_EXECUTION) {
 				let stack = "          ";
@@ -97,32 +137,51 @@ export class VM {
 					stack += "[ " + formatValue(value) + " ]";
 				}
 				console.log(stack);
-				disassembleInstruction(chunk, ip);
+				disassembleInstruction(frame.fn!.chunk, frame.ip);
 			}
 			const instruction = readByte() as OpCode;
 			switch (instruction) {
 				case OpCode.Jump: {
 					const offset = readShort();
-					ip = (ip + offset) as Int;
+					frame.ip = (frame.ip + offset) as Int;
 					break;
 				}
 
 				case OpCode.JumpIfFalse: {
 					const offset = readShort();
 					if (isFalsey(this.peek(0))) {
-						ip = (ip + offset) as Int;
+						frame.ip = (frame.ip + offset) as Int;
 					}
 					break;
 				}
 
 				case OpCode.Loop: {
 					const offset = readShort();
-					ip = (ip - offset) as Int;
+					frame.ip = (frame.ip - offset) as Int;
 					break;
 				}
 
-				case OpCode.Return:
-					return InterpretResult.OK;
+				case OpCode.Call: {
+					const argCount = readByte();
+					if (!callValue(this.peek(argCount), argCount)) {
+						return InterpretResult.RuntimeError;
+					}
+					frame = this.#frames[this.#frameCount - 1];
+					break;
+				}
+
+				case OpCode.Return: {
+					const result = this.pop();
+					vm.#frameCount--;
+					if (vm.#frameCount == 0) {
+						this.pop();
+						return InterpretResult.OK;
+					}
+					vm.#stackTop = frame.slotIndex;
+					this.push(result);
+					frame = vm.#frames[vm.#frameCount - 1];
+					break;
+				}
 
 				case OpCode.Print:
 					printValue(this.pop());
@@ -158,13 +217,13 @@ export class VM {
 
 				case OpCode.GetLocal: {
 					const slot = readByte();
-					this.push(this.#stack[slot]);
+					this.push(this.#stack[frame.slotIndex + slot]);
 					break;
 				}
 
 				case OpCode.SetLocal: {
 					const slot = readByte();
-					this.#stack[slot] = this.peek(0);
+					this.#stack[frame.slotIndex + slot] = this.peek(0);
 					break;
 				}
 
@@ -273,13 +332,15 @@ export class VM {
 		}
 
 		function readByte() {
-			const byte = chunk.getByteAt(ip);
-			ip++; // interesting that this is OK!
+			// XXX this diverges from the book. Their frame.ip is a pointer, but
+			//     mine is is an offset from the chunk start.
+			const byte = frame.fn!.chunk.getByteAt(frame.ip);
+			frame.ip++; // interesting that this is OK!
 			return byte;
 		}
 
 		function readConstant() {
-			return chunk.getValueAt(readByte());
+			return frame.fn!.chunk.getValueAt(readByte());
 		}
 
 		function readShort() {
@@ -294,9 +355,51 @@ export class VM {
 
 		function runtimeError(format: string, ...args: any[]) {
 			console.error(sprintf(format, args));
-			const instruction = ip - 1;
-			const line = chunk.lines[instruction];
-			console.error(`[line ${line} in script]`);
+			for (let i = vm.#frameCount - 1; i >= 0; i--) {
+				const frame = vm.#frames[i];
+				const fn = frame.fn!;
+				const line = fn.chunk.lines[frame.ip - 1];
+				const fnName = fn.name ? fn.name.chars + "()" : "script";
+				console.error(`[line ${line} in ${fnName}]`);
+			}
+			vm.resetStack();
+		}
+
+		function call(func: ObjFunction, argCount: number) {
+			if (argCount !== func.arity) {
+				runtimeError(`Expected ${func.arity} arguments but got ${argCount}`);
+				return false;
+			}
+			if (vm.#frameCount === FRAMES_MAX) {
+				runtimeError("Stack overflow.");
+				return false;
+			}
+			frame = vm.#frames[vm.#frameCount++];
+			frame.fn = func;
+			frame.ip = Int(0);
+			frame.slotIndex = vm.#stackTop - argCount - 1;
+			return true;
+		}
+
+		function callValue(callee: Value, argCount: number) {
+			if (callee.type === ValueType.Obj) {
+				const obj = deref(callee.obj);
+				switch (obj.type) {
+					case ObjType.Function:
+						return call(asFunction(callee), argCount);
+					case ObjType.Native: {
+						const native = asNative(callee);
+						const result = native.fn(argCount, vm.#stack.slice(-argCount));
+						vm.#stackTop -= argCount + 1;
+						vm.push(result);
+						return true;
+					}
+					default:
+						break; // non-callable object type
+				}
+			}
+			runtimeError("Can only call functions and classes.");
+			return false;
 		}
 	}
 }

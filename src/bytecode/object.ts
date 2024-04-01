@@ -1,10 +1,21 @@
 // There's a lot more ceremony around this in C.
 
+import { Chunk } from "./chunk.js";
 import { Pointer, alloc, deref, free } from "./heap.js";
+import { assertUnreachable } from "./util.js";
 import { ObjValue, Value, ValueType } from "./value.js";
 
 export enum ObjType {
 	String,
+	Function,
+	Native,
+}
+
+export interface ObjFunction {
+	type: ObjType.Function;
+	arity: number;
+	chunk: Chunk;
+	name: ObjString | null;
 }
 
 export interface ObjString {
@@ -12,18 +23,28 @@ export interface ObjString {
 	chars: string;
 }
 
-export type Obj = ObjString;
+export type NativeFn = (argCount: number, args: Value[]) => Value;
 
-export function derefObj(pointer: Pointer): Obj {
-	return deref(pointer) as Obj;
+export interface ObjNative {
+	type: ObjType.Native;
+	fn: NativeFn;
 }
 
-export function getIfObjOfType(value: Value, type: ObjType): Obj | null {
+export type Obj = ObjString | ObjFunction | ObjNative;
+
+export function derefObj<T extends Obj>(pointer: Pointer<T>): T {
+	return deref(pointer);
+}
+
+export function getIfObjOfType<T extends ObjType>(
+	value: Value,
+	type: T,
+): Extract<Obj, { type: T }> | null {
 	if (value.type !== ValueType.Obj) {
 		return null;
 	}
 	const obj = derefObj(value.obj);
-	return obj.type === type ? obj : null;
+	return obj.type === type ? (obj as Extract<Obj, { type: T }>) : null;
 }
 
 const strings = new Map<string, ObjValue>();
@@ -32,6 +53,22 @@ export function asString(value: Value) {
 	const obj = getIfObjOfType(value, ObjType.String);
 	if (!obj) {
 		throw new Error(`Tried to use ${value} as string`);
+	}
+	return obj;
+}
+
+export function asFunction(value: Value) {
+	const obj = getIfObjOfType(value, ObjType.Function);
+	if (!obj) {
+		throw new Error(`Tried to use ${value} as function`);
+	}
+	return obj;
+}
+
+export function asNative(value: Value) {
+	const obj = getIfObjOfType(value, ObjType.Native);
+	if (!obj) {
+		throw new Error(`Tried to use ${value} as native function`);
 	}
 	return obj;
 }
@@ -52,5 +89,64 @@ export function copyString(chars: string): ObjValue {
 export function freeStrings() {
 	for (const value of strings.values()) {
 		free(value.obj);
+	}
+}
+
+export function newFunction() {
+	const fn: ObjFunction = {
+		type: ObjType.Function,
+		arity: 0,
+		name: null,
+		chunk: new Chunk(),
+	};
+	return alloc(fn);
+}
+
+export function newNative(fn: NativeFn) {
+	const func: ObjNative = {
+		type: ObjType.Native,
+		fn,
+	};
+	return alloc(func);
+}
+
+export function freeFunction(object: Pointer<ObjFunction>) {
+	const fn = derefObj(object);
+	if (fn.type !== ObjType.Function) {
+		throw new Error("freeing non-function as function");
+	}
+	fn.chunk.free();
+	free(object);
+}
+
+export function freeObject(object: Pointer<Obj>) {
+	const obj = derefObj(object);
+	switch (obj.type) {
+		case ObjType.String:
+			//
+			break;
+		case ObjType.Function:
+			freeFunction(object as Pointer<ObjFunction>);
+			break;
+		case ObjType.Native:
+			free(object);
+			break;
+		default:
+			assertUnreachable(obj);
+	}
+}
+
+export function formatObj(value: ObjValue) {
+	const obj = derefObj(value.obj);
+	switch (obj.type) {
+		case ObjType.String:
+			return obj.chars;
+		case ObjType.Function:
+			return obj.name ? `<fn ${obj.name.chars}>` : "<script>";
+		case ObjType.Native:
+			return "<native fn>";
+		// XXX weird that a one-case switch in TS isn't exhaustive
+		default:
+			assertUnreachable(obj);
 	}
 }

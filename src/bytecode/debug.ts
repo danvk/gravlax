@@ -77,6 +77,8 @@ export function disassembleInstruction(chunk: Chunk, offset: Int): Int {
 			return byteInstruction("OP_GET_LOCAL", chunk, offset);
 		case OpCode.SetLocal:
 			return byteInstruction("OP_SET_LOCAL", chunk, offset);
+		case OpCode.Call:
+			return byteInstruction("OP_CALL", chunk, offset);
 		case OpCode.Jump:
 			return jumpInstruction("OP_JUMP", 1, chunk, offset);
 		case OpCode.JumpIfFalse:
@@ -98,7 +100,7 @@ export function simpleInstruction(name: string, offset: Int) {
 
 export function byteInstruction(name: string, chunk: Chunk, offset: Int) {
 	const slot = chunk.getByteAt((offset + 1) as Int);
-	console.log(sprintf("%-16s %4d\n", name, slot));
+	console.log(sprintf("%-16s %4d", name, slot));
 	return (offset + 2) as Int;
 }
 

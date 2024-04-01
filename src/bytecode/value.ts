@@ -1,7 +1,8 @@
 import util from "node:util";
 import { assertUnreachable } from "./util.js";
 import { Pointer } from "./heap.js";
-import { ObjType, derefObj, getIfObjOfType } from "./object.js";
+import { Obj } from "./object.js";
+import { formatObj } from "./object.js";
 
 export enum ValueType {
 	Bool,
@@ -26,7 +27,7 @@ export interface NilValue extends ValueBase {
 }
 export interface ObjValue extends ValueBase {
 	type: ValueType.Obj;
-	obj: Pointer;
+	obj: Pointer<Obj>;
 }
 export type Value = BoolValue | NilValue | NumberValue | ObjValue;
 
@@ -70,16 +71,3 @@ export function formatValue(value: Value) {
 export function printValue(value: Value) {
 	console.log(formatValue(value));
 }
-
-export function formatObj(value: ObjValue) {
-	const obj = derefObj(value.obj);
-	switch (obj.type) {
-		case ObjType.String:
-			return obj.chars;
-		// XXX weird that a one-case switch in TS isn't exhaustive
-		// default:
-		// 	assertUnreachable(obj);
-	}
-}
-
-// No need to implement ValueArray; it's just Value[].

@@ -1,14 +1,17 @@
+import { freeObject } from "./object.js";
+
 interface HeapEntry {
 	isLive: boolean;
 	contents: unknown;
 }
 
-// null = garbage collected
-const heap: (HeapEntry | null)[] = [];
+// null = garbage collected;
+// start with a blank entry so that alloc() never returns zero.
+const heap: (HeapEntry | null)[] = [null];
 
-export type Pointer = number & { __brand: "pointer" };
+export type Pointer<T> = number & { __brand: "pointer"; __payload: T };
 
-export function deref(pointer: Pointer) {
+export function deref<T>(pointer: Pointer<T>): T {
 	if (pointer < 0 || pointer >= heap.length || !Number.isInteger(pointer)) {
 		throw new Error(`Tried to dereference invalid pointer ${pointer}`);
 	}
@@ -16,15 +19,15 @@ export function deref(pointer: Pointer) {
 	if (!entry?.isLive) {
 		throw new Error(`Dereference after free: ${pointer}`);
 	}
-	return entry.contents;
+	return entry.contents as T;
 }
 
-export function alloc(contents: unknown): Pointer {
+export function alloc<T>(contents: T): Pointer<T> {
 	heap.push({ isLive: true, contents });
-	return (heap.length - 1) as Pointer;
+	return (heap.length - 1) as Pointer<T>;
 }
 
-export function free(pointer: Pointer) {
+export function free(pointer: Pointer<unknown>) {
 	if (pointer < 0 || pointer >= heap.length || !Number.isInteger(pointer)) {
 		throw new Error(`Tried to free invalid pointer ${pointer}`);
 	}
@@ -35,13 +38,15 @@ export function free(pointer: Pointer) {
 	entry.isLive = false;
 }
 
+// XXX this diverges a bit from the book.
 export function freeObjects() {
 	for (const [i, entry] of heap.entries()) {
 		if (!entry) {
 			continue;
 		}
 		if (entry.isLive) {
-			console.log(`  freed ${i} (live)`, entry.contents);
+			// console.log(`  freed ${i} (live)`, entry.contents);
+			console.log(`  freed ${i} (live)`);
 		} else {
 			console.log(`  collected ${i}`);
 		}
