@@ -26,6 +26,8 @@ export enum OpCode {
 	GetLocal,
 	SetLocal,
 	GetGlobal,
+	GetUpvalue,
+	SetUpvalue,
 	DefineGlobal,
 	SetGlobal,
 }

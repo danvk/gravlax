@@ -339,6 +339,11 @@ export class VM {
 					this.push(boolValue(isFalsey(this.pop())));
 					break;
 
+				case OpCode.GetUpvalue:
+				case OpCode.SetUpvalue:
+					runtimeError("not implemented");
+					break;
+
 				default:
 					assertUnreachable(instruction);
 			}

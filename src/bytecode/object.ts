@@ -15,6 +15,7 @@ export enum ObjType {
 export interface ObjFunction {
 	type: ObjType.Function;
 	arity: number;
+	upvalueCount: number;
 	chunk: Chunk;
 	name: ObjString | null;
 }
@@ -111,6 +112,7 @@ export function newFunction() {
 	const fn: ObjFunction = {
 		type: ObjType.Function,
 		arity: 0,
+		upvalueCount: 0,
 		name: null,
 		chunk: new Chunk(),
 	};

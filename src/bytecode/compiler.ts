@@ -48,6 +48,7 @@ interface CompilerState {
 	function: Pointer<ObjFunction>;
 	type: FunctionType;
 	locals: Local[]; // this is fixed-size in the book
+	upvalues: Upvalue[]; // this is fixed-size in the book
 	localCount: number; // this probably isn't needed
 	scopeDepth: number;
 }
@@ -55,6 +56,11 @@ interface CompilerState {
 interface Local {
 	name: Token;
 	depth: number;
+}
+
+interface Upvalue {
+	index: Int;
+	isLocal: boolean;
 }
 
 enum FunctionType {
@@ -212,6 +218,7 @@ export function compile(source: string): Pointer<ObjFunction> | null {
 					name: { lexeme: "", line: 0, literal: null, type: "string" },
 				},
 			],
+			upvalues: [],
 			localCount: 1,
 			scopeDepth: 0,
 		};
@@ -308,10 +315,14 @@ export function compile(source: string): Pointer<ObjFunction> | null {
 			OpCode.Closure,
 			makeConstant({ type: ValueType.Obj, obj: func }),
 		);
-		emitOpAndByte(
-			OpCode.Constant,
-			makeConstant({ type: ValueType.Obj, obj: func }),
-		);
+		const fn = deref(func);
+		console.log("upvalueCount:", fn.upvalueCount);
+		console.log("currentState.upvalues.length:", currentState.upvalues.length);
+		for (let i = 0; i < fn.upvalueCount; i++) {
+			const upvalue = currentState.upvalues[i];
+			emitByte(Int(upvalue.isLocal ? 1 : 0));
+			emitByte(UInt8(upvalue.index));
+		}
 	}
 
 	function funDeclaration() {
@@ -506,6 +517,9 @@ export function compile(source: string): Pointer<ObjFunction> | null {
 		if (arg !== -1) {
 			getOp = OpCode.GetLocal;
 			setOp = OpCode.SetLocal;
+		} else if ((arg = resolveUpvalue(currentState, name)) !== -1) {
+			getOp = OpCode.GetUpvalue;
+			setOp = OpCode.SetUpvalue;
 		} else {
 			arg = identifierConstant(name);
 			getOp = OpCode.GetGlobal;
@@ -589,6 +603,45 @@ export function compile(source: string): Pointer<ObjFunction> | null {
 		return Int(-1);
 	}
 
+	function addUpvalue(
+		compiler: CompilerState,
+		index: Int,
+		isLocal: boolean,
+	): Int {
+		const fn = deref(compiler.function);
+		for (const [i, upvalue] of compiler.upvalues.entries()) {
+			if (upvalue.index == index && upvalue.isLocal == isLocal) {
+				return UInt8(i);
+			}
+		}
+		if (fn.upvalueCount == UINT8_COUNT) {
+			error("Too many closure variables in function.");
+			return Int(0);
+		}
+		compiler.upvalues.push({ isLocal, index });
+		const result = UInt8(fn.upvalueCount++);
+		if (fn.upvalueCount !== compiler.upvalues.length) {
+			console.log("mismatch!");
+			console.log("add upvalue to", { ...compiler, enclosing: null }, fn);
+		}
+		return result;
+	}
+
+	function resolveUpvalue(compiler: CompilerState, name: Token): Int {
+		if (compiler.enclosing === null) {
+			return Int(-1);
+		}
+		const local = resolveLocal(compiler.enclosing, name);
+		if (local !== -1) {
+			return addUpvalue(compiler, local, true);
+		}
+		const upvalue = resolveUpvalue(compiler.enclosing, name);
+		if (upvalue !== -1) {
+			return addUpvalue(compiler, upvalue, false);
+		}
+		return Int(-1);
+	}
+
 	function addLocal(name: Token) {
 		if (currentState.localCount == UINT8_COUNT) {
 			error("Too many local variables in function.");
@@ -611,7 +664,7 @@ export function compile(source: string): Pointer<ObjFunction> | null {
 			if (local.depth !== -1 && local.depth < currentState.scopeDepth) {
 				break;
 			}
-			if (name.literal !== local.name.literal) {
+			if (name.literal === local.name.literal) {
 				error("Already a variable with this name in this scope.");
 			}
 		}
