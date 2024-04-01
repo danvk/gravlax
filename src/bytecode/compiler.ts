@@ -397,6 +397,19 @@ export function compile(source: string): Pointer<ObjFunction> | null {
 		emitOpCode(OpCode.Print);
 	}
 
+	function returnStatement() {
+		if (currentState.type === FunctionType.Script) {
+			error("Can't return from top-level code.");
+		}
+		if (match(";")) {
+			emitReturn();
+		} else {
+			expression();
+			consume(";", "Expect ';' after return value.");
+			emitOpCode(OpCode.Return);
+		}
+	}
+
 	function whileStatement() {
 		const loopStart = currentChunk().count;
 		consume("(", "Expect '(' after 'while'.");
@@ -452,6 +465,8 @@ export function compile(source: string): Pointer<ObjFunction> | null {
 			forStatement();
 		} else if (match("if")) {
 			ifStatement();
+		} else if (match("return")) {
+			returnStatement();
 		} else if (match("while")) {
 			whileStatement();
 		} else if (match("{")) {
