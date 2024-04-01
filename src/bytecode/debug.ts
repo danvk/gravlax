@@ -79,9 +79,9 @@ export function disassembleInstruction(chunk: Chunk, offset: Int): Int {
 		case OpCode.SetLocal:
 			return byteInstruction("OP_SET_LOCAL", chunk, offset);
 		case OpCode.GetUpvalue:
-			return byteInstruction("OP_GET_LOCAL", chunk, offset);
+			return byteInstruction("OP_GET_UPVALUE", chunk, offset);
 		case OpCode.SetUpvalue:
-			return byteInstruction("OP_SET_LOCAL", chunk, offset);
+			return byteInstruction("OP_SET_UPVALUE", chunk, offset);
 		case OpCode.Call:
 			return byteInstruction("OP_CALL", chunk, offset);
 		case OpCode.Closure: {

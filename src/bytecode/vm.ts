@@ -23,6 +23,7 @@ import {
 	ObjClosure,
 	ObjFunction,
 	ObjType,
+	ObjUpvalue,
 	asClosure,
 	asFunction,
 	asNative,
@@ -32,8 +33,9 @@ import {
 	getIfObjOfType,
 	newClosure,
 	newNative,
+	newUpvalue,
 } from "./object.js";
-import { Pointer, deref, freeObjects } from "./heap.js";
+import { Pointer, alloc, deref, freeObjects, setPointer } from "./heap.js";
 
 export enum InterpretResult {
 	OK,
@@ -178,8 +180,20 @@ export class VM {
 
 				case OpCode.Closure: {
 					const fn = asFunction(readConstant());
-					const closure = newClosure(fn);
-					this.push({ type: ValueType.Obj, obj: closure });
+					const obj = newClosure(fn);
+					const closure = deref(obj);
+					this.push({ type: ValueType.Obj, obj: obj });
+					for (let i = 0; i < closure.upvalues.length; i++) {
+						const isLocal = readByte();
+						const index = readByte();
+						if (isLocal) {
+							closure.upvalues[i] = captureUpvalue(
+								alloc(numberValue(frame.slotIndex + index)),
+							);
+						} else {
+							closure.upvalues[i] = frame.closure!.upvalues[index];
+						}
+					}
 					break;
 				}
 
@@ -266,6 +280,21 @@ export class VM {
 					}
 					this.#globals.set(name.chars, this.peek(0)); // no pop bc assignment is an expression
 
+					break;
+				}
+
+				case OpCode.GetUpvalue: {
+					const slot = readByte();
+					this.push(deref(deref(frame.closure!.upvalues[slot]).location));
+					break;
+				}
+
+				case OpCode.SetUpvalue: {
+					const slot = readByte();
+					setPointer(
+						deref(frame.closure!.upvalues[slot]).location,
+						this.peek(0),
+					);
 					break;
 				}
 
@@ -419,6 +448,11 @@ export class VM {
 			}
 			runtimeError("Can only call functions and classes.");
 			return false;
+		}
+
+		function captureUpvalue(local: Pointer<Value>): Pointer<ObjUpvalue> {
+			const createdUpvalue = newUpvalue(local);
+			return createdUpvalue;
 		}
 	}
 }

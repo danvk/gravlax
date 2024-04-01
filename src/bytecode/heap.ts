@@ -22,6 +22,11 @@ export function deref<T>(pointer: Pointer<T>): T {
 	return entry.contents as T;
 }
 
+export function setPointer<T>(pointer: Pointer<T>, value: T) {
+	deref(pointer);
+	heap[pointer]!.contents = value;
+}
+
 export function alloc<T>(contents: T): Pointer<T> {
 	heap.push({ isLive: true, contents });
 	return (heap.length - 1) as Pointer<T>;

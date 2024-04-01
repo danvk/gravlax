@@ -10,6 +10,7 @@ export enum ObjType {
 	Function,
 	Native,
 	Closure,
+	Upvalue,
 }
 
 export interface ObjFunction {
@@ -23,11 +24,17 @@ export interface ObjFunction {
 export interface ObjClosure {
 	type: ObjType.Closure;
 	fn: ObjFunction;
+	upvalues: Pointer<ObjUpvalue>[];
 }
 
 export interface ObjString {
 	type: ObjType.String;
 	chars: string;
+}
+
+export interface ObjUpvalue {
+	type: ObjType.Upvalue;
+	location: Pointer<Value>;
 }
 
 export type NativeFn = (argCount: number, args: Value[]) => Value;
@@ -37,7 +44,7 @@ export interface ObjNative {
 	fn: NativeFn;
 }
 
-export type Obj = ObjString | ObjFunction | ObjNative | ObjClosure;
+export type Obj = ObjString | ObjFunction | ObjNative | ObjClosure | ObjUpvalue;
 
 export function derefObj<T extends Obj>(pointer: Pointer<T>): T {
 	return deref(pointer);
@@ -89,6 +96,14 @@ export function asClosure(value: Value) {
 	return obj;
 }
 
+export function asUpvalue(value: Value) {
+	const obj = getIfObjOfType(value, ObjType.Upvalue);
+	if (!obj) {
+		throw new Error(`Tried to use ${value} as upvalue`);
+	}
+	return obj;
+}
+
 export function copyString(chars: string): ObjValue {
 	const interned = strings.get(chars);
 	if (interned) {
@@ -131,6 +146,14 @@ export function newClosure(fn: ObjFunction) {
 	return alloc<ObjClosure>({
 		type: ObjType.Closure,
 		fn,
+		upvalues: Array(fn.upvalueCount).fill(null),
+	});
+}
+
+export function newUpvalue(slot: Pointer<Value>) {
+	return alloc<ObjUpvalue>({
+		type: ObjType.Upvalue,
+		location: slot,
 	});
 }
 
@@ -153,9 +176,14 @@ export function freeObject(object: Pointer<Obj>) {
 			freeFunction(object as Pointer<ObjFunction>);
 			break;
 		case ObjType.Native:
-		case ObjType.Closure:
+		case ObjType.Upvalue:
 			free(object);
 			break;
+		case ObjType.Closure: {
+			obj.upvalues = [];
+			free(object);
+			break;
+		}
 		default:
 			assertUnreachable(obj);
 	}
@@ -172,6 +200,8 @@ export function formatObj(value: ObjValue) {
 			return "<native fn>";
 		case ObjType.Closure:
 			return obj.fn.name ? `<fn ${obj.fn.name.chars}>` : "<script>";
+		case ObjType.Upvalue:
+			return "upvalue";
 		// XXX weird that a one-case switch in TS isn't exhaustive
 		default:
 			assertUnreachable(obj);
