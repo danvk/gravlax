@@ -3,8 +3,9 @@ interface HeapEntry {
 	contents: unknown;
 }
 
-// null = garbage collected
-const heap: (HeapEntry | null)[] = [];
+// null = garbage collected;
+// start with a blank entry so that alloc() never returns zero.
+const heap: (HeapEntry | null)[] = [null];
 
 export type Pointer<T> = number & { __brand: "pointer"; __payload: T };
 

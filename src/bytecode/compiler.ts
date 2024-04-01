@@ -119,7 +119,6 @@ export function compile(source: string): Pointer<ObjFunction> | null {
 	};
 	/* eslint-enable perfectionist/sort-objects */
 
-	const chunk = new Chunk();
 	const scanner = new Scanner(source);
 	let currentState = initCompiler(FunctionType.Script); // TODO: this could be a class
 	let hadError = false;
@@ -194,18 +193,17 @@ export function compile(source: string): Pointer<ObjFunction> | null {
 	}
 
 	function initCompiler(type: FunctionType): CompilerState {
-		// claim slot zero for internal use
-		currentState.locals.push({
-			depth: 0,
-			name: { lexeme: "", line: 0, literal: null, type: "string" },
-		});
-		currentState.localCount++;
-
 		return {
 			function: newFunction(),
 			type,
-			locals: [],
-			localCount: 0,
+			locals: [
+				// claim slot zero for internal use
+				{
+					depth: 0,
+					name: { lexeme: "", line: 0, literal: null, type: "string" },
+				},
+			],
+			localCount: 1,
 			scopeDepth: 0,
 		};
 	}
