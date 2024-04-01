@@ -187,9 +187,7 @@ export class VM {
 						const isLocal = readByte();
 						const index = readByte();
 						if (isLocal) {
-							closure.upvalues[i] = captureUpvalue(
-								alloc(numberValue(frame.slotIndex + index)),
-							);
+							closure.upvalues[i] = captureUpvalue(frame.slotIndex + index);
 						} else {
 							closure.upvalues[i] = frame.closure!.upvalues[index];
 						}
@@ -285,16 +283,25 @@ export class VM {
 
 				case OpCode.GetUpvalue: {
 					const slot = readByte();
-					this.push(deref(deref(frame.closure!.upvalues[slot]).location));
+					const upvalue = deref(frame.closure!.upvalues[slot]);
+					const { location } = upvalue;
+					if (typeof location === "number") {
+						this.push(this.#stack[location]);
+					} else {
+						this.push(deref(location));
+					}
 					break;
 				}
 
 				case OpCode.SetUpvalue: {
 					const slot = readByte();
-					setPointer(
-						deref(frame.closure!.upvalues[slot]).location,
-						this.peek(0),
-					);
+					const upvalue = deref(frame.closure!.upvalues[slot]);
+					const { location } = upvalue;
+					if (typeof location === "number") {
+						this.#stack[location] = this.peek(0);
+					} else {
+						setPointer(deref(location), this.peek(0));
+					}
 					break;
 				}
 
@@ -450,7 +457,7 @@ export class VM {
 			return false;
 		}
 
-		function captureUpvalue(local: Pointer<Value>): Pointer<ObjUpvalue> {
+		function captureUpvalue(local: number): Pointer<ObjUpvalue> {
 			const createdUpvalue = newUpvalue(local);
 			return createdUpvalue;
 		}

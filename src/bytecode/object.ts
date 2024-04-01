@@ -34,7 +34,7 @@ export interface ObjString {
 
 export interface ObjUpvalue {
 	type: ObjType.Upvalue;
-	location: Pointer<Value>;
+	location: number | Pointer<Value>;
 }
 
 export type NativeFn = (argCount: number, args: Value[]) => Value;
@@ -150,7 +150,7 @@ export function newClosure(fn: ObjFunction) {
 	});
 }
 
-export function newUpvalue(slot: Pointer<Value>) {
+export function newUpvalue(slot: Pointer<Value> | number) {
 	return alloc<ObjUpvalue>({
 		type: ObjType.Upvalue,
 		location: slot,
