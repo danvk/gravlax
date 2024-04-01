@@ -4,6 +4,7 @@ import { Chunk, OpCode } from "./chunk.js";
 import { Int } from "./int.js";
 import { assertUnreachable } from "./util.js";
 import { formatValue } from "./value.js";
+import { asFunction } from "./object.js";
 
 export function disassembleChunk(chunk: Chunk, name: string) {
 	console.log(`== ${name} ==`);
@@ -28,6 +29,7 @@ const simpleInstructions = {
 	[OpCode.Less]: "OP_LESS",
 	[OpCode.Greater]: "OP_GREATER",
 	[OpCode.Equal]: "OP_EQUAL",
+	[OpCode.CloseUpvalue]: "OP_CLOSE_UPVALUE",
 } satisfies Partial<Record<OpCode, string>>;
 
 const constantInstructions = {
@@ -63,6 +65,7 @@ export function disassembleInstruction(chunk: Chunk, offset: Int): Int {
 		case OpCode.Less:
 		case OpCode.Greater:
 		case OpCode.Equal:
+		case OpCode.CloseUpvalue:
 			return simpleInstruction(simpleInstructions[instruction], offset);
 		case OpCode.Constant:
 		case OpCode.DefineGlobal:
@@ -77,14 +80,45 @@ export function disassembleInstruction(chunk: Chunk, offset: Int): Int {
 			return byteInstruction("OP_GET_LOCAL", chunk, offset);
 		case OpCode.SetLocal:
 			return byteInstruction("OP_SET_LOCAL", chunk, offset);
+		case OpCode.GetUpvalue:
+			return byteInstruction("OP_GET_UPVALUE", chunk, offset);
+		case OpCode.SetUpvalue:
+			return byteInstruction("OP_SET_UPVALUE", chunk, offset);
 		case OpCode.Call:
 			return byteInstruction("OP_CALL", chunk, offset);
+		case OpCode.Closure: {
+			offset++;
+			const constant = chunk.code[offset++];
+			console.log(
+				sprintf(
+					"%-16s %4d %s",
+					"OP_CLOSURE",
+					constant,
+					formatValue(chunk.constants[constant]),
+				),
+			);
+			const fn = asFunction(chunk.constants[constant]);
+			for (let j = 0; j < fn.upvalueCount; j++) {
+				const isLocal = chunk.code[offset++];
+				const index = chunk.code[offset++];
+				console.log(
+					sprintf(
+						"%04d      |                     %s %d",
+						offset - 2,
+						isLocal ? "local" : "upvalue",
+						index,
+					),
+				);
+			}
+			return offset;
+		}
 		case OpCode.Jump:
 			return jumpInstruction("OP_JUMP", 1, chunk, offset);
 		case OpCode.JumpIfFalse:
 			return jumpInstruction("OP_JUMP_IF_FALSE", 1, chunk, offset);
 		case OpCode.Loop:
 			return jumpInstruction("OP_LOOP", -1, chunk, offset);
+
 		default:
 			console.log("Unknown opcode", instruction);
 			assertUnreachable(instruction);

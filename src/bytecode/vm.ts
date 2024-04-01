@@ -20,17 +20,23 @@ import {
 } from "./value.js";
 import {
 	NativeFn,
+	ObjClosure,
 	ObjFunction,
 	ObjType,
+	ObjUpvalue,
+	ObjUpvalueOpen,
+	asClosure,
 	asFunction,
 	asNative,
 	asString,
 	copyString,
 	freeStrings,
 	getIfObjOfType,
+	newClosure,
 	newNative,
+	newUpvalue,
 } from "./object.js";
-import { Pointer, deref, freeObjects } from "./heap.js";
+import { Pointer, alloc, deref, freeObjects, setPointer } from "./heap.js";
 
 export enum InterpretResult {
 	OK,
@@ -42,7 +48,7 @@ const FRAMES_MAX = 64;
 const STACK_MAX = FRAMES_MAX * 256;
 
 export interface CallFrame {
-	fn: ObjFunction | null;
+	closure: ObjClosure | null;
 	ip: Int;
 	slotIndex: number; // book has slots: Pointer<Value>
 }
@@ -65,6 +71,7 @@ export class VM {
 	#frames: CallFrame[];
 	#frameCount: number;
 	#globals: Map<string, Value>;
+	#openUpValues: Pointer<ObjUpvalue> | null;
 	constructor() {
 		// this.#chunk = new Chunk();
 		// this.#ip = Int(0);
@@ -76,11 +83,12 @@ export class VM {
 		this.#frames = arrayWith(
 			FRAMES_MAX,
 			(): CallFrame => ({
-				fn: null,
+				closure: null,
 				ip: Int(0),
 				slotIndex: 0,
 			}),
 		);
+		this.#openUpValues = null;
 		this.defineNative("clock", clockNative);
 	}
 	free() {
@@ -95,9 +103,12 @@ export class VM {
 			return InterpretResult.CompileError;
 		}
 		this.push({ type: ValueType.Obj, obj: fnPtr });
+		const closure = newClosure(deref(fnPtr));
+		this.pop();
+		this.push({ type: ValueType.Obj, obj: closure });
 		const frame = this.#frames[this.#frameCount++];
 		// book calls call(fnPtr, 0) here.
-		frame.fn = deref(fnPtr);
+		frame.closure = deref(closure);
 		frame.ip = Int(0); // book has fn.chunk.code
 		frame.slotIndex = this.#stackTop; // book has vm.stack
 		return this.run();
@@ -137,7 +148,7 @@ export class VM {
 					stack += "[ " + formatValue(value) + " ]";
 				}
 				console.log(stack);
-				disassembleInstruction(frame.fn!.chunk, frame.ip);
+				disassembleInstruction(frame.closure!.fn.chunk, frame.ip);
 			}
 			const instruction = readByte() as OpCode;
 			switch (instruction) {
@@ -170,8 +181,33 @@ export class VM {
 					break;
 				}
 
+				case OpCode.Closure: {
+					const fn = asFunction(readConstant());
+					const obj = newClosure(fn);
+					const closure = deref(obj);
+					this.push({ type: ValueType.Obj, obj: obj });
+					for (let i = 0; i < closure.upvalues.length; i++) {
+						const isLocal = readByte();
+						const index = readByte();
+						if (isLocal) {
+							closure.upvalues[i] = captureUpvalue(frame.slotIndex + index);
+						} else {
+							closure.upvalues[i] = frame.closure!.upvalues[index];
+						}
+					}
+					break;
+				}
+
+				case OpCode.CloseUpvalue: {
+					closeUpvalues(vm.#stackTop - 1);
+					this.pop();
+					break;
+				}
+
 				case OpCode.Return: {
 					const result = this.pop();
+					// console.log("closeUpvalues", frame.slotIndex);
+					closeUpvalues(frame.slotIndex);
 					vm.#frameCount--;
 					if (vm.#frameCount == 0) {
 						this.pop();
@@ -256,6 +292,29 @@ export class VM {
 					break;
 				}
 
+				case OpCode.GetUpvalue: {
+					const slot = readByte();
+					const upvalue = deref(frame.closure!.upvalues[slot]);
+					// console.log("getUpvalue", upvalue);
+					if ("stackIndex" in upvalue) {
+						this.push(this.#stack[upvalue.stackIndex]);
+					} else {
+						this.push(deref(upvalue.location));
+					}
+					break;
+				}
+
+				case OpCode.SetUpvalue: {
+					const slot = readByte();
+					const upvalue = deref(frame.closure!.upvalues[slot]);
+					if ("stackIndex" in upvalue) {
+						this.#stack[upvalue.stackIndex] = this.peek(0);
+					} else {
+						setPointer(upvalue.location, this.peek(0));
+					}
+					break;
+				}
+
 				case OpCode.Equal: {
 					const b = this.pop();
 					const a = this.pop();
@@ -326,6 +385,14 @@ export class VM {
 					this.push(boolValue(isFalsey(this.pop())));
 					break;
 
+				case OpCode.GetUpvalue:
+				case OpCode.SetUpvalue:
+					runtimeError("not implemented");
+					break;
+
+				case OpCode.CloseUpvalue:
+					break;
+
 				default:
 					assertUnreachable(instruction);
 			}
@@ -334,13 +401,13 @@ export class VM {
 		function readByte() {
 			// XXX this diverges from the book. Their frame.ip is a pointer, but
 			//     mine is is an offset from the chunk start.
-			const byte = frame.fn!.chunk.getByteAt(frame.ip);
+			const byte = frame.closure!.fn.chunk.getByteAt(frame.ip);
 			frame.ip++; // interesting that this is OK!
 			return byte;
 		}
 
 		function readConstant() {
-			return frame.fn!.chunk.getValueAt(readByte());
+			return frame.closure!.fn.chunk.getValueAt(readByte());
 		}
 
 		function readShort() {
@@ -357,7 +424,7 @@ export class VM {
 			console.error(sprintf(format, args));
 			for (let i = vm.#frameCount - 1; i >= 0; i--) {
 				const frame = vm.#frames[i];
-				const fn = frame.fn!;
+				const fn = frame.closure!.fn;
 				const line = fn.chunk.lines[frame.ip - 1];
 				const fnName = fn.name ? fn.name.chars + "()" : "script";
 				console.error(`[line ${line} in ${fnName}]`);
@@ -365,7 +432,8 @@ export class VM {
 			vm.resetStack();
 		}
 
-		function call(func: ObjFunction, argCount: number) {
+		function call(closure: ObjClosure, argCount: number) {
+			const func = closure.fn;
 			if (argCount !== func.arity) {
 				runtimeError(`Expected ${func.arity} arguments but got ${argCount}`);
 				return false;
@@ -375,7 +443,7 @@ export class VM {
 				return false;
 			}
 			frame = vm.#frames[vm.#frameCount++];
-			frame.fn = func;
+			frame.closure = closure;
 			frame.ip = Int(0);
 			frame.slotIndex = vm.#stackTop - argCount - 1;
 			return true;
@@ -385,8 +453,8 @@ export class VM {
 			if (callee.type === ValueType.Obj) {
 				const obj = deref(callee.obj);
 				switch (obj.type) {
-					case ObjType.Function:
-						return call(asFunction(callee), argCount);
+					case ObjType.Closure:
+						return call(asClosure(callee), argCount);
 					case ObjType.Native: {
 						const native = asNative(callee);
 						const result = native.fn(argCount, vm.#stack.slice(-argCount));
@@ -400,6 +468,55 @@ export class VM {
 			}
 			runtimeError("Can only call functions and classes.");
 			return false;
+		}
+
+		function captureUpvalue(local: number): Pointer<ObjUpvalue> {
+			let prevUpvalue: Pointer<ObjUpvalue> | null = null;
+			let upvalue = vm.#openUpValues;
+			while (
+				upvalue !== null &&
+				// I _think_ this will work? Book doesn't need the typeof check.
+				(deref(upvalue) as ObjUpvalueOpen).stackIndex > local
+			) {
+				prevUpvalue = upvalue;
+				upvalue = deref(upvalue).next;
+			}
+
+			if (
+				upvalue !== null &&
+				(deref(upvalue) as ObjUpvalueOpen).stackIndex === local
+			) {
+				return upvalue;
+			}
+
+			const createdUpvalue = newUpvalue(local);
+			deref(createdUpvalue).next = upvalue;
+			if (prevUpvalue === null) {
+				vm.#openUpValues = createdUpvalue;
+			} else {
+				deref(prevUpvalue).next = createdUpvalue;
+			}
+			return createdUpvalue;
+		}
+
+		function closeUpvalues(last: number) {
+			// console.log("openUpValues:", vm.#openUpValues);
+			while (
+				vm.#openUpValues !== null &&
+				(deref(vm.#openUpValues) as ObjUpvalueOpen).stackIndex >= last
+			) {
+				// console.log("popping upvalue");
+				const upvalue = vm.#openUpValues;
+				const value = vm.#stack[(deref(upvalue) as ObjUpvalueOpen).stackIndex];
+				// console.log("upvalue value:", formatValue(value));
+				const ptr = alloc(value);
+				setPointer(upvalue, {
+					type: ObjType.Upvalue,
+					location: ptr,
+					next: deref(upvalue).next,
+				});
+				vm.#openUpValues = deref(upvalue).next;
+			}
 		}
 	}
 }

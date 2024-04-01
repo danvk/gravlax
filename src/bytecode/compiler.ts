@@ -48,6 +48,7 @@ interface CompilerState {
 	function: Pointer<ObjFunction>;
 	type: FunctionType;
 	locals: Local[]; // this is fixed-size in the book
+	upvalues: Upvalue[]; // this is fixed-size in the book
 	localCount: number; // this probably isn't needed
 	scopeDepth: number;
 }
@@ -55,6 +56,12 @@ interface CompilerState {
 interface Local {
 	name: Token;
 	depth: number;
+	isCaptured: boolean;
+}
+
+interface Upvalue {
+	index: Int;
+	isLocal: boolean;
 }
 
 enum FunctionType {
@@ -209,15 +216,18 @@ export function compile(source: string): Pointer<ObjFunction> | null {
 				// claim slot zero for internal use
 				{
 					depth: 0,
+					isCaptured: false,
 					name: { lexeme: "", line: 0, literal: null, type: "string" },
 				},
 			],
+			upvalues: [],
 			localCount: 1,
 			scopeDepth: 0,
 		};
 		if (type !== FunctionType.Script) {
 			deref(state.function).name = asString(copyString(previous.lexeme));
 		}
+		currentState = state;
 		return state;
 	}
 
@@ -240,12 +250,18 @@ export function compile(source: string): Pointer<ObjFunction> | null {
 
 	function endScope() {
 		currentState.scopeDepth--;
+		// console.log("endScope", currentState.locals);
 		while (
 			currentState.locals.length > 0 &&
 			currentState.locals.at(-1)!.depth > currentState.scopeDepth
 		) {
 			// TODO: add an OpCode.PopN to pop N items from the stack.
-			emitOpCode(OpCode.Pop);
+			if (currentState.locals.at(-1)!.isCaptured) {
+				// console.log("close upvalue");
+				emitOpCode(OpCode.CloseUpvalue);
+			} else {
+				emitOpCode(OpCode.Pop);
+			}
 			currentState.locals.pop();
 			currentState.localCount--;
 		}
@@ -286,6 +302,7 @@ export function compile(source: string): Pointer<ObjFunction> | null {
 
 	function fn(type: FunctionType) {
 		currentState = initCompiler(type);
+		const compiler = currentState;
 		beginScope(); // intentionally no matching endScope()
 
 		consume("(", "Expect '(' after function name.");
@@ -305,9 +322,15 @@ export function compile(source: string): Pointer<ObjFunction> | null {
 
 		const func = endCompiler();
 		emitOpAndByte(
-			OpCode.Constant,
+			OpCode.Closure,
 			makeConstant({ type: ValueType.Obj, obj: func }),
 		);
+		const fn = deref(func);
+		for (let i = 0; i < fn.upvalueCount; i++) {
+			const upvalue = compiler.upvalues[i];
+			emitByte(Int(upvalue.isLocal ? 1 : 0));
+			emitByte(UInt8(upvalue.index));
+		}
 	}
 
 	function funDeclaration() {
@@ -502,6 +525,9 @@ export function compile(source: string): Pointer<ObjFunction> | null {
 		if (arg !== -1) {
 			getOp = OpCode.GetLocal;
 			setOp = OpCode.SetLocal;
+		} else if ((arg = resolveUpvalue(currentState, name)) !== -1) {
+			getOp = OpCode.GetUpvalue;
+			setOp = OpCode.SetUpvalue;
 		} else {
 			arg = identifierConstant(name);
 			getOp = OpCode.GetGlobal;
@@ -585,6 +611,48 @@ export function compile(source: string): Pointer<ObjFunction> | null {
 		return Int(-1);
 	}
 
+	function addUpvalue(
+		compiler: CompilerState,
+		index: Int,
+		isLocal: boolean,
+	): Int {
+		const fn = deref(compiler.function);
+		for (const [i, upvalue] of compiler.upvalues.entries()) {
+			if (upvalue.index == index && upvalue.isLocal == isLocal) {
+				return UInt8(i);
+			}
+		}
+		if (fn.upvalueCount == UINT8_COUNT) {
+			error("Too many closure variables in function.");
+			return Int(0);
+		}
+		compiler.upvalues.push({ isLocal, index });
+		const result = UInt8(fn.upvalueCount++);
+		return result;
+	}
+
+	function resolveUpvalue(compiler: CompilerState, name: Token): Int {
+		if (compiler.enclosing === null) {
+			return Int(-1);
+		}
+		const local = resolveLocal(compiler.enclosing, name);
+		if (local !== -1) {
+			compiler.enclosing.locals[local].isCaptured = true;
+			// console.log(
+			// 	"capturing!",
+			// 	deref(compiler.enclosing.function).name?.chars,
+			// 	local,
+			// 	compiler.enclosing.locals,
+			// );
+			return addUpvalue(compiler, local, true);
+		}
+		const upvalue = resolveUpvalue(compiler.enclosing, name);
+		if (upvalue !== -1) {
+			return addUpvalue(compiler, upvalue, false);
+		}
+		return Int(-1);
+	}
+
 	function addLocal(name: Token) {
 		if (currentState.localCount == UINT8_COUNT) {
 			error("Too many local variables in function.");
@@ -593,6 +661,7 @@ export function compile(source: string): Pointer<ObjFunction> | null {
 		currentState.locals.push({
 			name,
 			depth: -1,
+			isCaptured: false,
 		});
 		currentState.localCount++;
 	}
@@ -607,7 +676,7 @@ export function compile(source: string): Pointer<ObjFunction> | null {
 			if (local.depth !== -1 && local.depth < currentState.scopeDepth) {
 				break;
 			}
-			if (name.literal !== local.name.literal) {
+			if (name.literal === local.name.literal) {
 				error("Already a variable with this name in this scope.");
 			}
 		}
