@@ -1,7 +1,7 @@
 import util from "node:util";
 import { assertUnreachable } from "./util.js";
 import { Pointer } from "./heap.js";
-import { ObjType, derefObj, getIfObjOfType } from "./object.js";
+import { Obj, ObjType, derefObj, getIfObjOfType } from "./object.js";
 
 export enum ValueType {
 	Bool,
@@ -26,7 +26,7 @@ export interface NilValue extends ValueBase {
 }
 export interface ObjValue extends ValueBase {
 	type: ValueType.Obj;
-	obj: Pointer;
+	obj: Pointer<Obj>;
 }
 export type Value = BoolValue | NilValue | NumberValue | ObjValue;
 

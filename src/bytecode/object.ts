@@ -1,5 +1,6 @@
 // There's a lot more ceremony around this in C.
 
+import { Func } from "../ast.js";
 import { Chunk } from "./chunk.js";
 import { Pointer, alloc, deref, free } from "./heap.js";
 import { assertUnreachable } from "./util.js";
@@ -24,8 +25,8 @@ export interface ObjString {
 
 export type Obj = ObjString | ObjFunction;
 
-export function derefObj(pointer: Pointer): Obj {
-	return deref(pointer) as Obj;
+export function derefObj<T extends Obj>(pointer: Pointer<T>): T {
+	return deref(pointer);
 }
 
 export function getIfObjOfType<T extends ObjType>(
@@ -86,7 +87,7 @@ export function newFunction() {
 	return alloc(fn);
 }
 
-export function freeFunction(object: Pointer) {
+export function freeFunction(object: Pointer<ObjFunction>) {
 	const fn = derefObj(object);
 	if (fn.type !== ObjType.Function) {
 		throw new Error("freeing non-function as function");
@@ -95,14 +96,14 @@ export function freeFunction(object: Pointer) {
 	free(object);
 }
 
-export function freeObj(object: Pointer) {
+export function freeObj(object: Pointer<Obj>) {
 	const obj = derefObj(object);
 	switch (obj.type) {
 		case ObjType.String:
 			//
 			break;
 		case ObjType.Function:
-			freeFunction(object);
+			freeFunction(object as Pointer<ObjFunction>);
 			break;
 		default:
 			assertUnreachable(obj);

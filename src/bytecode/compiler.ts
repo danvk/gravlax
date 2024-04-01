@@ -8,7 +8,8 @@ import { DEBUG_PRINT_CODE } from "./common.js";
 import { disassembleChunk } from "./debug.js";
 import { Int, UInt8 } from "./int.js";
 import { Value, numberValue } from "./value.js";
-import { copyString } from "./object.js";
+import { ObjFunction, asFunction, copyString, newFunction } from "./object.js";
+import { Pointer, deref } from "./heap.js";
 
 const UINT8_MAX = 255;
 const UINT8_COUNT = 256;
@@ -43,6 +44,8 @@ interface ParseRuleInfix extends ParseRuleBase {
 type ParseRule = ParseRuleBase | ParseRuleInfix | ParseRulePrefix;
 
 interface CompilerState {
+	function: Pointer<ObjFunction>;
+	type: FunctionType;
 	locals: Local[]; // this is fixed-size in the book
 	localCount: number; // this probably isn't needed
 	scopeDepth: number;
@@ -51,6 +54,11 @@ interface CompilerState {
 interface Local {
 	name: Token;
 	depth: number;
+}
+
+enum FunctionType {
+	Function,
+	Script,
 }
 
 const emptyRule: ParseRule = { precedence: Precedence.None };
@@ -113,8 +121,7 @@ export function compile(source: string): Chunk | null {
 
 	const chunk = new Chunk();
 	const scanner = new Scanner(source);
-	let currentState = initCompiler(); // TODO: this could be a class
-	let compilingChunk = chunk;
+	let currentState = initCompiler(FunctionType.Script); // TODO: this could be a class
 	let hadError = false;
 	let panicMode = false;
 	let previous = scanner.tokens[0];
@@ -131,7 +138,7 @@ export function compile(source: string): Chunk | null {
 	}
 
 	function currentChunk() {
-		return compilingChunk;
+		return deref(currentState.function).chunk;
 	}
 
 	function emitByte(byte: Int) {
@@ -190,8 +197,10 @@ export function compile(source: string): Chunk | null {
 		return constant;
 	}
 
-	function initCompiler(): CompilerState {
+	function initCompiler(type: FunctionType): CompilerState {
 		return {
+			function: newFunction(),
+			type,
 			locals: [],
 			localCount: 0,
 			scopeDepth: 0,

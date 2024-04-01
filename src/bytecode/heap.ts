@@ -6,9 +6,9 @@ interface HeapEntry {
 // null = garbage collected
 const heap: (HeapEntry | null)[] = [];
 
-export type Pointer = number & { __brand: "pointer" };
+export type Pointer<T> = number & { __brand: "pointer"; __payload: T };
 
-export function deref(pointer: Pointer) {
+export function deref<T>(pointer: Pointer<T>): T {
 	if (pointer < 0 || pointer >= heap.length || !Number.isInteger(pointer)) {
 		throw new Error(`Tried to dereference invalid pointer ${pointer}`);
 	}
@@ -16,15 +16,15 @@ export function deref(pointer: Pointer) {
 	if (!entry?.isLive) {
 		throw new Error(`Dereference after free: ${pointer}`);
 	}
-	return entry.contents;
+	return entry.contents as T;
 }
 
-export function alloc(contents: unknown): Pointer {
+export function alloc<T>(contents: T): Pointer<T> {
 	heap.push({ isLive: true, contents });
-	return (heap.length - 1) as Pointer;
+	return (heap.length - 1) as Pointer<T>;
 }
 
-export function free(pointer: Pointer) {
+export function free(pointer: Pointer<unknown>) {
 	if (pointer < 0 || pointer >= heap.length || !Number.isInteger(pointer)) {
 		throw new Error(`Tried to free invalid pointer ${pointer}`);
 	}
