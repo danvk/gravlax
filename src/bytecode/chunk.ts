@@ -11,6 +11,7 @@ export enum OpCode {
 	Loop,
 	Call,
 	Closure,
+	CloseUpvalue,
 	Equal,
 	Greater,
 	Less,

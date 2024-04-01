@@ -24,6 +24,7 @@ import {
 	ObjFunction,
 	ObjType,
 	ObjUpvalue,
+	ObjUpvalueOpen,
 	asClosure,
 	asFunction,
 	asNative,
@@ -70,6 +71,7 @@ export class VM {
 	#frames: CallFrame[];
 	#frameCount: number;
 	#globals: Map<string, Value>;
+	#openUpValues: Pointer<ObjUpvalue> | null;
 	constructor() {
 		// this.#chunk = new Chunk();
 		// this.#ip = Int(0);
@@ -86,6 +88,7 @@ export class VM {
 				slotIndex: 0,
 			}),
 		);
+		this.#openUpValues = null;
 		this.defineNative("clock", clockNative);
 	}
 	free() {
@@ -195,8 +198,16 @@ export class VM {
 					break;
 				}
 
+				case OpCode.CloseUpvalue: {
+					closeUpvalues(vm.#stackTop - 1);
+					this.pop();
+					break;
+				}
+
 				case OpCode.Return: {
 					const result = this.pop();
+					// console.log("closeUpvalues", frame.slotIndex);
+					closeUpvalues(frame.slotIndex);
 					vm.#frameCount--;
 					if (vm.#frameCount == 0) {
 						this.pop();
@@ -284,11 +295,11 @@ export class VM {
 				case OpCode.GetUpvalue: {
 					const slot = readByte();
 					const upvalue = deref(frame.closure!.upvalues[slot]);
-					const { location } = upvalue;
-					if (typeof location === "number") {
-						this.push(this.#stack[location]);
+					// console.log("getUpvalue", upvalue);
+					if ("stackIndex" in upvalue) {
+						this.push(this.#stack[upvalue.stackIndex]);
 					} else {
-						this.push(deref(location));
+						this.push(deref(upvalue.location));
 					}
 					break;
 				}
@@ -296,11 +307,10 @@ export class VM {
 				case OpCode.SetUpvalue: {
 					const slot = readByte();
 					const upvalue = deref(frame.closure!.upvalues[slot]);
-					const { location } = upvalue;
-					if (typeof location === "number") {
-						this.#stack[location] = this.peek(0);
+					if ("stackIndex" in upvalue) {
+						this.#stack[upvalue.stackIndex] = this.peek(0);
 					} else {
-						setPointer(deref(location), this.peek(0));
+						setPointer(upvalue.location, this.peek(0));
 					}
 					break;
 				}
@@ -378,6 +388,9 @@ export class VM {
 				case OpCode.GetUpvalue:
 				case OpCode.SetUpvalue:
 					runtimeError("not implemented");
+					break;
+
+				case OpCode.CloseUpvalue:
 					break;
 
 				default:
@@ -458,8 +471,52 @@ export class VM {
 		}
 
 		function captureUpvalue(local: number): Pointer<ObjUpvalue> {
+			let prevUpvalue: Pointer<ObjUpvalue> | null = null;
+			let upvalue = vm.#openUpValues;
+			while (
+				upvalue !== null &&
+				// I _think_ this will work? Book doesn't need the typeof check.
+				(deref(upvalue) as ObjUpvalueOpen).stackIndex > local
+			) {
+				prevUpvalue = upvalue;
+				upvalue = deref(upvalue).next;
+			}
+
+			if (
+				upvalue !== null &&
+				(deref(upvalue) as ObjUpvalueOpen).stackIndex === local
+			) {
+				return upvalue;
+			}
+
 			const createdUpvalue = newUpvalue(local);
+			deref(createdUpvalue).next = upvalue;
+			if (prevUpvalue === null) {
+				vm.#openUpValues = createdUpvalue;
+			} else {
+				deref(prevUpvalue).next = createdUpvalue;
+			}
 			return createdUpvalue;
+		}
+
+		function closeUpvalues(last: number) {
+			// console.log("openUpValues:", vm.#openUpValues);
+			while (
+				vm.#openUpValues !== null &&
+				(deref(vm.#openUpValues) as ObjUpvalueOpen).stackIndex >= last
+			) {
+				// console.log("popping upvalue");
+				const upvalue = vm.#openUpValues;
+				const value = vm.#stack[(deref(upvalue) as ObjUpvalueOpen).stackIndex];
+				// console.log("upvalue value:", formatValue(value));
+				const ptr = alloc(value);
+				setPointer(upvalue, {
+					type: ObjType.Upvalue,
+					location: ptr,
+					next: deref(upvalue).next,
+				});
+				vm.#openUpValues = deref(upvalue).next;
+			}
 		}
 	}
 }

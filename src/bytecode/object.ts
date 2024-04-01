@@ -3,7 +3,7 @@
 import { Chunk } from "./chunk.js";
 import { Pointer, alloc, deref, free } from "./heap.js";
 import { assertUnreachable } from "./util.js";
-import { ObjValue, Value, ValueType } from "./value.js";
+import { ObjValue, Value, ValueType, nilValue } from "./value.js";
 
 export enum ObjType {
 	String,
@@ -32,10 +32,18 @@ export interface ObjString {
 	chars: string;
 }
 
-export interface ObjUpvalue {
+export interface ObjUpvalueBase {
 	type: ObjType.Upvalue;
-	location: number | Pointer<Value>;
+	next: Pointer<ObjUpvalue> | null;
 }
+
+export interface ObjUpvalueOpen extends ObjUpvalueBase {
+	stackIndex: number;
+}
+export interface ObjUpvalueClosed extends ObjUpvalueBase {
+	location: Pointer<Value>;
+}
+export type ObjUpvalue = ObjUpvalueOpen | ObjUpvalueClosed;
 
 export type NativeFn = (argCount: number, args: Value[]) => Value;
 
@@ -150,10 +158,11 @@ export function newClosure(fn: ObjFunction) {
 	});
 }
 
-export function newUpvalue(slot: Pointer<Value> | number) {
+export function newUpvalue(slot: number) {
 	return alloc<ObjUpvalue>({
 		type: ObjType.Upvalue,
-		location: slot,
+		stackIndex: slot,
+		next: null,
 	});
 }
 

@@ -1,7 +1,7 @@
-# Should print:
-# return from outer
-# create inner closure
-# value
+// Should print:
+// return from outer
+// create inner closure
+// value
 fun outer() {
   var x = "value";
   fun middle() {

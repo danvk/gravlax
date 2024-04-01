@@ -56,6 +56,7 @@ interface CompilerState {
 interface Local {
 	name: Token;
 	depth: number;
+	isCaptured: boolean;
 }
 
 interface Upvalue {
@@ -215,6 +216,7 @@ export function compile(source: string): Pointer<ObjFunction> | null {
 				// claim slot zero for internal use
 				{
 					depth: 0,
+					isCaptured: false,
 					name: { lexeme: "", line: 0, literal: null, type: "string" },
 				},
 			],
@@ -248,12 +250,18 @@ export function compile(source: string): Pointer<ObjFunction> | null {
 
 	function endScope() {
 		currentState.scopeDepth--;
+		// console.log("endScope", currentState.locals);
 		while (
 			currentState.locals.length > 0 &&
 			currentState.locals.at(-1)!.depth > currentState.scopeDepth
 		) {
 			// TODO: add an OpCode.PopN to pop N items from the stack.
-			emitOpCode(OpCode.Pop);
+			if (currentState.locals.at(-1)!.isCaptured) {
+				// console.log("close upvalue");
+				emitOpCode(OpCode.CloseUpvalue);
+			} else {
+				emitOpCode(OpCode.Pop);
+			}
 			currentState.locals.pop();
 			currentState.localCount--;
 		}
@@ -629,6 +637,13 @@ export function compile(source: string): Pointer<ObjFunction> | null {
 		}
 		const local = resolveLocal(compiler.enclosing, name);
 		if (local !== -1) {
+			compiler.enclosing.locals[local].isCaptured = true;
+			// console.log(
+			// 	"capturing!",
+			// 	deref(compiler.enclosing.function).name?.chars,
+			// 	local,
+			// 	compiler.enclosing.locals,
+			// );
 			return addUpvalue(compiler, local, true);
 		}
 		const upvalue = resolveUpvalue(compiler.enclosing, name);
@@ -646,6 +661,7 @@ export function compile(source: string): Pointer<ObjFunction> | null {
 		currentState.locals.push({
 			name,
 			depth: -1,
+			isCaptured: false,
 		});
 		currentState.localCount++;
 	}

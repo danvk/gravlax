@@ -29,6 +29,7 @@ const simpleInstructions = {
 	[OpCode.Less]: "OP_LESS",
 	[OpCode.Greater]: "OP_GREATER",
 	[OpCode.Equal]: "OP_EQUAL",
+	[OpCode.CloseUpvalue]: "OP_CLOSE_UPVALUE",
 } satisfies Partial<Record<OpCode, string>>;
 
 const constantInstructions = {
@@ -64,6 +65,7 @@ export function disassembleInstruction(chunk: Chunk, offset: Int): Int {
 		case OpCode.Less:
 		case OpCode.Greater:
 		case OpCode.Equal:
+		case OpCode.CloseUpvalue:
 			return simpleInstruction(simpleInstructions[instruction], offset);
 		case OpCode.Constant:
 		case OpCode.DefineGlobal:
