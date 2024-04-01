@@ -5,7 +5,7 @@ import { DEBUG_TRACE_EXECUTION } from "./common.js";
 import { compile } from "./compiler.js";
 import { disassembleInstruction } from "./debug.js";
 import { Int } from "./int.js";
-import { assertUnreachable } from "./util.js";
+import { arrayWith, assertUnreachable } from "./util.js";
 import {
 	NumberValue,
 	ObjValue,
@@ -21,6 +21,7 @@ import {
 import {
 	ObjFunction,
 	ObjType,
+	asFunction,
 	asString,
 	copyString,
 	freeStrings,
@@ -61,15 +62,18 @@ export class VM {
 		// this.#chunk = new Chunk();
 		// this.#ip = Int(0);
 		// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-		this.#stack = new Array(STACK_MAX).fill(numberValue(-1));
+		this.#stack = arrayWith(STACK_MAX, () => numberValue(-1));
 		this.#stackTop = 0;
 		this.#globals = new Map();
 		this.#frameCount = 0;
-		this.#frames = new Array(FRAMES_MAX).fill({
-			fn: null,
-			ip: Int(0),
-			slotIndex: 0,
-		});
+		this.#frames = arrayWith(
+			FRAMES_MAX,
+			(): CallFrame => ({
+				fn: null,
+				ip: Int(0),
+				slotIndex: 0,
+			}),
+		);
 	}
 	free() {
 		// this.#chunk.free();
@@ -84,11 +88,14 @@ export class VM {
 		}
 		this.push({ type: ValueType.Obj, obj: fnPtr });
 		const frame = this.#frames[this.#frameCount++];
+		// book calls call(fnPtr, 0) here.
 		frame.fn = deref(fnPtr);
 		frame.ip = Int(0); // book has fn.chunk.code
 		frame.slotIndex = this.#stackTop; // book has vm.stack
 		return this.run();
 	}
+
+	// TODO: consider makign these stack methods inline functions instead
 	peek(distance: number): Value {
 		return this.#stack[this.#stackTop - distance - 1];
 	}
@@ -104,7 +111,8 @@ export class VM {
 		this.#stackTop = 0;
 	}
 	run(): InterpretResult {
-		const frame = this.#frames[this.#frameCount - 1];
+		const vm = this;
+		let frame = this.#frames[this.#frameCount - 1];
 		while (true) {
 			if (DEBUG_TRACE_EXECUTION) {
 				let stack = "          ";
@@ -133,6 +141,15 @@ export class VM {
 				case OpCode.Loop: {
 					const offset = readShort();
 					frame.ip = (frame.ip - offset) as Int;
+					break;
+				}
+
+				case OpCode.Call: {
+					const argCount = readByte();
+					if (!callValue(this.peek(argCount), argCount)) {
+						return InterpretResult.RuntimeError;
+					}
+					frame = this.#frames[this.#frameCount - 1];
 					break;
 				}
 
@@ -311,9 +328,44 @@ export class VM {
 
 		function runtimeError(format: string, ...args: any[]) {
 			console.error(sprintf(format, args));
-			const instruction = frame.ip - 1;
-			const line = frame.fn!.chunk.lines[instruction];
-			console.error(`[line ${line} in script]`);
+			for (let i = vm.#frameCount - 1; i >= 0; i--) {
+				const frame = vm.#frames[i];
+				const fn = frame.fn!;
+				const line = fn.chunk.lines[frame.ip - 1];
+				const fnName = fn.name ? fn.name.chars + "()" : "script";
+				console.error(`[line ${line} in ${fnName}]`);
+			}
+			vm.resetStack();
+		}
+
+		function call(func: ObjFunction, argCount: number) {
+			if (argCount !== func.arity) {
+				runtimeError(`Expected ${func.arity} arguments but got ${argCount}`);
+				return false;
+			}
+			if (vm.#frameCount === FRAMES_MAX) {
+				runtimeError("Stack overflow.");
+				return false;
+			}
+			frame = vm.#frames[vm.#frameCount++];
+			frame.fn = func;
+			frame.ip = Int(0);
+			frame.slotIndex = vm.#stackTop - argCount - 1;
+			return true;
+		}
+
+		function callValue(callee: Value, argCount: number) {
+			if (callee.type === ValueType.Obj) {
+				const obj = deref(callee.obj);
+				switch (obj.type) {
+					case ObjType.Function:
+						return call(asFunction(callee), argCount);
+					default:
+						break; // non-callable object type
+				}
+			}
+			runtimeError("Can only call functions and classes.");
+			return false;
 		}
 	}
 }

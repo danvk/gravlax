@@ -96,7 +96,11 @@ const BIN_OP_CODES = {
 export function compile(source: string): Pointer<ObjFunction> | null {
 	/* eslint-disable perfectionist/sort-objects */
 	const rules: Partial<Record<TokenType, ParseRule>> = {
-		"(": { prefix: grouping, precedence: Precedence.None },
+		"(": {
+			prefix: grouping,
+			infix: call,
+			precedence: Precedence.Call,
+		},
 		"-": { prefix: unary, infix: binary, precedence: Precedence.Term },
 		"+": { infix: binary, precedence: Precedence.Term },
 		"/": { infix: binary, precedence: Precedence.Factor },
@@ -255,6 +259,11 @@ export function compile(source: string): Pointer<ObjFunction> | null {
 		if (opCodes) {
 			opCodes.forEach(emitOpCode);
 		}
+	}
+
+	function call() {
+		const argCount = argumentList();
+		emitOpAndByte(OpCode.Call, Int(argCount));
 	}
 
 	function emitLiteral(code: OpCode) {
@@ -611,6 +620,21 @@ export function compile(source: string): Pointer<ObjFunction> | null {
 			return; // value is already on top of the stack
 		}
 		emitOpAndByte(OpCode.DefineGlobal, global);
+	}
+
+	function argumentList() {
+		let argCount = 0;
+		if (!check(")")) {
+			do {
+				expression();
+				if (argCount === 255) {
+					error("Can't have more than 255 arguments.");
+				}
+				argCount++;
+			} while (match(","));
+		}
+		consume(")", "Expect ')' after arguments.");
+		return argCount;
 	}
 
 	function and() {
