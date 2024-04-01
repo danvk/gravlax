@@ -10,6 +10,7 @@ export enum OpCode {
 	JumpIfFalse,
 	Loop,
 	Call,
+	Closure,
 	Equal,
 	Greater,
 	Less,
@@ -32,14 +33,14 @@ export enum OpCode {
 // XXX is there a more idiomatic way to do dynamic arrays?
 export class Chunk {
 	code: Uint8Array;
-	#constants: Value[];
+	constants: Value[];
 	count: number;
 	lines: number[];
 
 	constructor() {
 		this.code = new Uint8Array();
 		this.count = 0;
-		this.#constants = [];
+		this.constants = [];
 		this.lines = [];
 	}
 
@@ -54,15 +55,15 @@ export class Chunk {
 
 	/** Returns offset of the constant in constants table. */
 	addConstant(value: Value): Int {
-		this.#constants.push(value);
-		return (this.#constants.length - 1) as Int;
+		this.constants.push(value);
+		return (this.constants.length - 1) as Int;
 	}
 
 	free() {
 		// XXX duplication w/ constructor to avoid "not definitely assigned" errors
 		this.code = new Uint8Array();
 		this.count = 0;
-		this.#constants = [];
+		this.constants = [];
 		this.lines = [];
 	}
 
@@ -71,7 +72,7 @@ export class Chunk {
 	}
 
 	getValueAt(n: Int): Value {
-		return this.#constants[n];
+		return this.constants[n];
 	}
 
 	writeByte(byte: Int, line: number) {

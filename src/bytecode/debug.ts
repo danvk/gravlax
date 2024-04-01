@@ -79,6 +79,19 @@ export function disassembleInstruction(chunk: Chunk, offset: Int): Int {
 			return byteInstruction("OP_SET_LOCAL", chunk, offset);
 		case OpCode.Call:
 			return byteInstruction("OP_CALL", chunk, offset);
+		case OpCode.Closure: {
+			offset++;
+			const constant = chunk.code[offset++];
+			console.log(
+				sprintf(
+					"%-16s %4d %s",
+					"OP_CLOSURE",
+					constant,
+					formatValue(chunk.constants[constant]),
+				),
+			);
+			return offset;
+		}
 		case OpCode.Jump:
 			return jumpInstruction("OP_JUMP", 1, chunk, offset);
 		case OpCode.JumpIfFalse:

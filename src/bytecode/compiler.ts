@@ -305,6 +305,10 @@ export function compile(source: string): Pointer<ObjFunction> | null {
 
 		const func = endCompiler();
 		emitOpAndByte(
+			OpCode.Closure,
+			makeConstant({ type: ValueType.Obj, obj: func }),
+		);
+		emitOpAndByte(
 			OpCode.Constant,
 			makeConstant({ type: ValueType.Obj, obj: func }),
 		);

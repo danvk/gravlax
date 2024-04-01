@@ -9,6 +9,7 @@ export enum ObjType {
 	String,
 	Function,
 	Native,
+	Closure,
 }
 
 export interface ObjFunction {
@@ -16,6 +17,11 @@ export interface ObjFunction {
 	arity: number;
 	chunk: Chunk;
 	name: ObjString | null;
+}
+
+export interface ObjClosure {
+	type: ObjType.Closure;
+	fn: ObjFunction;
 }
 
 export interface ObjString {
@@ -30,7 +36,7 @@ export interface ObjNative {
 	fn: NativeFn;
 }
 
-export type Obj = ObjString | ObjFunction | ObjNative;
+export type Obj = ObjString | ObjFunction | ObjNative | ObjClosure;
 
 export function derefObj<T extends Obj>(pointer: Pointer<T>): T {
 	return deref(pointer);
@@ -49,6 +55,7 @@ export function getIfObjOfType<T extends ObjType>(
 
 const strings = new Map<string, ObjValue>();
 
+// TODO: factor out a helper for all of these
 export function asString(value: Value) {
 	const obj = getIfObjOfType(value, ObjType.String);
 	if (!obj) {
@@ -67,6 +74,14 @@ export function asFunction(value: Value) {
 
 export function asNative(value: Value) {
 	const obj = getIfObjOfType(value, ObjType.Native);
+	if (!obj) {
+		throw new Error(`Tried to use ${value} as native function`);
+	}
+	return obj;
+}
+
+export function asClosure(value: Value) {
+	const obj = getIfObjOfType(value, ObjType.Closure);
 	if (!obj) {
 		throw new Error(`Tried to use ${value} as native function`);
 	}
@@ -110,6 +125,13 @@ export function newNative(fn: NativeFn) {
 	return alloc(func);
 }
 
+export function newClosure(fn: ObjFunction) {
+	return alloc<ObjClosure>({
+		type: ObjType.Closure,
+		fn,
+	});
+}
+
 export function freeFunction(object: Pointer<ObjFunction>) {
 	const fn = derefObj(object);
 	if (fn.type !== ObjType.Function) {
@@ -129,6 +151,7 @@ export function freeObject(object: Pointer<Obj>) {
 			freeFunction(object as Pointer<ObjFunction>);
 			break;
 		case ObjType.Native:
+		case ObjType.Closure:
 			free(object);
 			break;
 		default:
@@ -145,6 +168,8 @@ export function formatObj(value: ObjValue) {
 			return obj.name ? `<fn ${obj.name.chars}>` : "<script>";
 		case ObjType.Native:
 			return "<native fn>";
+		case ObjType.Closure:
+			return obj.fn.name ? `<fn ${obj.fn.name.chars}>` : "<script>";
 		// XXX weird that a one-case switch in TS isn't exhaustive
 		default:
 			assertUnreachable(obj);

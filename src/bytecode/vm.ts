@@ -20,14 +20,17 @@ import {
 } from "./value.js";
 import {
 	NativeFn,
+	ObjClosure,
 	ObjFunction,
 	ObjType,
+	asClosure,
 	asFunction,
 	asNative,
 	asString,
 	copyString,
 	freeStrings,
 	getIfObjOfType,
+	newClosure,
 	newNative,
 } from "./object.js";
 import { Pointer, deref, freeObjects } from "./heap.js";
@@ -42,7 +45,7 @@ const FRAMES_MAX = 64;
 const STACK_MAX = FRAMES_MAX * 256;
 
 export interface CallFrame {
-	fn: ObjFunction | null;
+	closure: ObjClosure | null;
 	ip: Int;
 	slotIndex: number; // book has slots: Pointer<Value>
 }
@@ -76,7 +79,7 @@ export class VM {
 		this.#frames = arrayWith(
 			FRAMES_MAX,
 			(): CallFrame => ({
-				fn: null,
+				closure: null,
 				ip: Int(0),
 				slotIndex: 0,
 			}),
@@ -95,9 +98,12 @@ export class VM {
 			return InterpretResult.CompileError;
 		}
 		this.push({ type: ValueType.Obj, obj: fnPtr });
+		const closure = newClosure(deref(fnPtr));
+		this.pop();
+		this.push({ type: ValueType.Obj, obj: closure });
 		const frame = this.#frames[this.#frameCount++];
 		// book calls call(fnPtr, 0) here.
-		frame.fn = deref(fnPtr);
+		frame.closure = deref(closure);
 		frame.ip = Int(0); // book has fn.chunk.code
 		frame.slotIndex = this.#stackTop; // book has vm.stack
 		return this.run();
@@ -137,7 +143,7 @@ export class VM {
 					stack += "[ " + formatValue(value) + " ]";
 				}
 				console.log(stack);
-				disassembleInstruction(frame.fn!.chunk, frame.ip);
+				disassembleInstruction(frame.closure!.fn.chunk, frame.ip);
 			}
 			const instruction = readByte() as OpCode;
 			switch (instruction) {
@@ -167,6 +173,13 @@ export class VM {
 						return InterpretResult.RuntimeError;
 					}
 					frame = this.#frames[this.#frameCount - 1];
+					break;
+				}
+
+				case OpCode.Closure: {
+					const fn = asFunction(readConstant());
+					const closure = newClosure(fn);
+					this.push({ type: ValueType.Obj, obj: closure });
 					break;
 				}
 
@@ -334,13 +347,13 @@ export class VM {
 		function readByte() {
 			// XXX this diverges from the book. Their frame.ip is a pointer, but
 			//     mine is is an offset from the chunk start.
-			const byte = frame.fn!.chunk.getByteAt(frame.ip);
+			const byte = frame.closure!.fn.chunk.getByteAt(frame.ip);
 			frame.ip++; // interesting that this is OK!
 			return byte;
 		}
 
 		function readConstant() {
-			return frame.fn!.chunk.getValueAt(readByte());
+			return frame.closure!.fn.chunk.getValueAt(readByte());
 		}
 
 		function readShort() {
@@ -357,7 +370,7 @@ export class VM {
 			console.error(sprintf(format, args));
 			for (let i = vm.#frameCount - 1; i >= 0; i--) {
 				const frame = vm.#frames[i];
-				const fn = frame.fn!;
+				const fn = frame.closure!.fn;
 				const line = fn.chunk.lines[frame.ip - 1];
 				const fnName = fn.name ? fn.name.chars + "()" : "script";
 				console.error(`[line ${line} in ${fnName}]`);
@@ -365,7 +378,8 @@ export class VM {
 			vm.resetStack();
 		}
 
-		function call(func: ObjFunction, argCount: number) {
+		function call(closure: ObjClosure, argCount: number) {
+			const func = closure.fn;
 			if (argCount !== func.arity) {
 				runtimeError(`Expected ${func.arity} arguments but got ${argCount}`);
 				return false;
@@ -375,7 +389,7 @@ export class VM {
 				return false;
 			}
 			frame = vm.#frames[vm.#frameCount++];
-			frame.fn = func;
+			frame.closure = closure;
 			frame.ip = Int(0);
 			frame.slotIndex = vm.#stackTop - argCount - 1;
 			return true;
@@ -385,8 +399,8 @@ export class VM {
 			if (callee.type === ValueType.Obj) {
 				const obj = deref(callee.obj);
 				switch (obj.type) {
-					case ObjType.Function:
-						return call(asFunction(callee), argCount);
+					case ObjType.Closure:
+						return call(asClosure(callee), argCount);
 					case ObjType.Native: {
 						const native = asNative(callee);
 						const result = native.fn(argCount, vm.#stack.slice(-argCount));
