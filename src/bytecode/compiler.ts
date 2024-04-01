@@ -172,6 +172,7 @@ export function compile(source: string): Pointer<ObjFunction> | null {
 	}
 
 	function emitReturn() {
+		emitByte(Int(OpCode.Nil)); // implicit return
 		emitOpCode(OpCode.Return);
 	}
 

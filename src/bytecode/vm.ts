@@ -153,8 +153,18 @@ export class VM {
 					break;
 				}
 
-				case OpCode.Return:
-					return InterpretResult.OK;
+				case OpCode.Return: {
+					const result = this.pop();
+					vm.#frameCount--;
+					if (vm.#frameCount == 0) {
+						this.pop();
+						return InterpretResult.OK;
+					}
+					vm.#stackTop = frame.slotIndex;
+					this.push(result);
+					frame = vm.#frames[vm.#frameCount - 1];
+					break;
+				}
 
 				case OpCode.Print:
 					printValue(this.pop());
