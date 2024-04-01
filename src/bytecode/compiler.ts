@@ -225,6 +225,7 @@ export function compile(source: string): Pointer<ObjFunction> | null {
 		if (type !== FunctionType.Script) {
 			deref(state.function).name = asString(copyString(previous.lexeme));
 		}
+		currentState = state;
 		return state;
 	}
 
@@ -293,6 +294,7 @@ export function compile(source: string): Pointer<ObjFunction> | null {
 
 	function fn(type: FunctionType) {
 		currentState = initCompiler(type);
+		const compiler = currentState;
 		beginScope(); // intentionally no matching endScope()
 
 		consume("(", "Expect '(' after function name.");
@@ -316,10 +318,8 @@ export function compile(source: string): Pointer<ObjFunction> | null {
 			makeConstant({ type: ValueType.Obj, obj: func }),
 		);
 		const fn = deref(func);
-		console.log("upvalueCount:", fn.upvalueCount);
-		console.log("currentState.upvalues.length:", currentState.upvalues.length);
 		for (let i = 0; i < fn.upvalueCount; i++) {
-			const upvalue = currentState.upvalues[i];
+			const upvalue = compiler.upvalues[i];
 			emitByte(Int(upvalue.isLocal ? 1 : 0));
 			emitByte(UInt8(upvalue.index));
 		}
@@ -620,10 +620,6 @@ export function compile(source: string): Pointer<ObjFunction> | null {
 		}
 		compiler.upvalues.push({ isLocal, index });
 		const result = UInt8(fn.upvalueCount++);
-		if (fn.upvalueCount !== compiler.upvalues.length) {
-			console.log("mismatch!");
-			console.log("add upvalue to", { ...compiler, enclosing: null }, fn);
-		}
 		return result;
 	}
 
