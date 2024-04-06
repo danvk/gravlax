@@ -4,20 +4,8 @@ import { Chunk, OpCode } from "./chunk.js";
 import { DEBUG_TRACE_EXECUTION } from "./common.js";
 import { compile } from "./compiler.js";
 import { disassembleInstruction } from "./debug.js";
+import { Pointer, alloc, deref, freeObjects, setPointer } from "./heap.js";
 import { Int } from "./int.js";
-import { arrayWith, assertUnreachable } from "./util.js";
-import {
-	NumberValue,
-	ObjValue,
-	Value,
-	ValueType,
-	boolValue,
-	formatValue,
-	nilValue,
-	numberValue,
-	printValue,
-	valuesEqual,
-} from "./value.js";
 import {
 	NativeFn,
 	ObjClosure,
@@ -36,7 +24,19 @@ import {
 	newNative,
 	newUpvalue,
 } from "./object.js";
-import { Pointer, alloc, deref, freeObjects, setPointer } from "./heap.js";
+import { arrayWith, assertUnreachable } from "./util.js";
+import {
+	NumberValue,
+	ObjValue,
+	Value,
+	ValueType,
+	boolValue,
+	formatValue,
+	nilValue,
+	numberValue,
+	printValue,
+	valuesEqual,
+} from "./value.js";
 
 export enum InterpretResult {
 	OK,
@@ -65,17 +65,17 @@ const clockNative: NativeFn = (argCount, args) => {
 
 export class VM {
 	// #chunk: Chunk;
+	#frameCount: number;
+	#frames: CallFrame[];
+	#globals: Map<string, Value>;
+	#openUpValues: Pointer<ObjUpvalue> | null;
 	// #ip: Int; // alternatively could be a Uint8Array
 	#stack: Value[];
 	#stackTop: number;
-	#frames: CallFrame[];
-	#frameCount: number;
-	#globals: Map<string, Value>;
-	#openUpValues: Pointer<ObjUpvalue> | null;
 	constructor() {
 		// this.#chunk = new Chunk();
 		// this.#ip = Int(0);
-		// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+
 		this.#stack = arrayWith(STACK_MAX, () => numberValue(-1));
 		this.#stackTop = 0;
 		this.#globals = new Map();
@@ -91,21 +91,30 @@ export class VM {
 		this.#openUpValues = null;
 		this.defineNative("clock", clockNative);
 	}
+	defineNative(name: string, fn: NativeFn) {
+		this.push(copyString(name));
+		const nativeObj: Value = { obj: newNative(fn), type: ValueType.Obj };
+		this.push(nativeObj);
+		this.#globals.set(name, nativeObj);
+		this.pop();
+		this.pop();
+	}
 	free() {
 		// this.#chunk.free();
 		freeStrings();
 		freeObjects();
 		// Don't think we need to free this.#globals here.
 	}
+
 	interpret(source: string): InterpretResult {
 		const fnPtr = compile(source);
 		if (!fnPtr) {
 			return InterpretResult.CompileError;
 		}
-		this.push({ type: ValueType.Obj, obj: fnPtr });
+		this.push({ obj: fnPtr, type: ValueType.Obj });
 		const closure = newClosure(deref(fnPtr));
 		this.pop();
-		this.push({ type: ValueType.Obj, obj: closure });
+		this.push({ obj: closure, type: ValueType.Obj });
 		const frame = this.#frames[this.#frameCount++];
 		// book calls call(fnPtr, 0) here.
 		frame.closure = deref(closure);
@@ -113,8 +122,7 @@ export class VM {
 		frame.slotIndex = this.#stackTop; // book has vm.stack
 		return this.run();
 	}
-
-	// TODO: consider makign these stack methods inline functions instead
+	// TODO: consider making these stack methods inline functions instead
 	peek(distance: number): Value {
 		return this.#stack[this.#stackTop - distance - 1];
 	}
@@ -128,14 +136,6 @@ export class VM {
 	}
 	resetStack() {
 		this.#stackTop = 0;
-	}
-	defineNative(name: string, fn: NativeFn) {
-		this.push(copyString(name));
-		const nativeObj: Value = { type: ValueType.Obj, obj: newNative(fn) };
-		this.push(nativeObj);
-		this.#globals.set(name, nativeObj);
-		this.pop();
-		this.pop();
 	}
 
 	run(): InterpretResult {
@@ -185,7 +185,7 @@ export class VM {
 					const fn = asFunction(readConstant());
 					const obj = newClosure(fn);
 					const closure = deref(obj);
-					this.push({ type: ValueType.Obj, obj: obj });
+					this.push({ obj, type: ValueType.Obj });
 					for (let i = 0; i < closure.upvalues.length; i++) {
 						const isLocal = readByte();
 						const index = readByte();
@@ -511,9 +511,9 @@ export class VM {
 				// console.log("upvalue value:", formatValue(value));
 				const ptr = alloc(value);
 				setPointer(upvalue, {
-					type: ObjType.Upvalue,
 					location: ptr,
 					next: deref(upvalue).next,
+					type: ObjType.Upvalue,
 				});
 				vm.#openUpValues = deref(upvalue).next;
 			}

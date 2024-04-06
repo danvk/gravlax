@@ -39,6 +39,7 @@
 		"sprintf",
 		"Falsey",
 		"Treewalk",
-		"upvalue"
+		"upvalue",
+		"upvalues"
 	]
 }
