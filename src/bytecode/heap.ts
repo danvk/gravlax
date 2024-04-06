@@ -22,6 +22,7 @@ export function deref<T>(pointer: Pointer<T>): T {
 
 export function setPointer<T>(pointer: Pointer<T>, value: T) {
 	deref(pointer);
+	// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
 	heap[pointer]!.contents = value;
 }
 

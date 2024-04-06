@@ -133,7 +133,7 @@ export function compile(source: string): Pointer<ObjFunction> | null {
 	/* eslint-enable perfectionist/sort-objects */
 
 	const scanner = new Scanner(source);
-	let currentState: CompilerState = null as any;
+	let currentState: CompilerState = null as unknown as CompilerState;
 	currentState = initCompiler(FunctionType.Script); // TODO: this could be a class
 	let hadError = false;
 	let panicMode = false;
@@ -242,6 +242,7 @@ export function compile(source: string): Pointer<ObjFunction> | null {
 				disassembleChunk(currentChunk(), fn.name?.chars ?? "<script>");
 			}
 		}
+		// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
 		currentState = currentState.enclosing!;
 		return fnPtr;
 	}

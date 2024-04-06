@@ -143,6 +143,7 @@ export function newUpvalue(slot: number) {
 
 export function freeFunction(object: Pointer<ObjFunction>) {
 	const fn = derefObj(object);
+	// eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
 	assert(fn.type === ObjType.Function, "freeing non-function as function");
 	fn.chunk.free();
 	free(object);
