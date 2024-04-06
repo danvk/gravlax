@@ -2,7 +2,7 @@
 
 import { Chunk } from "./chunk.js";
 import { Pointer, alloc, deref, free } from "./heap.js";
-import { assertUnreachable } from "./util.js";
+import { assert, assertUnreachable } from "./util.js";
 import { ObjValue, Value, ValueType } from "./value.js";
 
 export enum ObjType {
@@ -71,46 +71,21 @@ export function getIfObjOfType<T extends ObjType>(
 
 const strings = new Map<string, ObjValue>();
 
-// TODO: factor out a helper for all of these
-export function asString(value: Value) {
-	const obj = getIfObjOfType(value, ObjType.String);
-	if (!obj) {
-		throw new Error(`Tried to use ${value} as string`);
-	}
-	return obj;
+function makeValueAssertion<T extends ObjType>(type: T) {
+	return (value: Value) => {
+		const obj = getIfObjOfType(value, type);
+		if (!obj) {
+			throw new Error(`Tried to use ${JSON.stringify(value)} as ${type}`);
+		}
+		return obj;
+	};
 }
 
-export function asFunction(value: Value) {
-	const obj = getIfObjOfType(value, ObjType.Function);
-	if (!obj) {
-		throw new Error(`Tried to use ${value} as function`);
-	}
-	return obj;
-}
-
-export function asNative(value: Value) {
-	const obj = getIfObjOfType(value, ObjType.Native);
-	if (!obj) {
-		throw new Error(`Tried to use ${value} as native function`);
-	}
-	return obj;
-}
-
-export function asClosure(value: Value) {
-	const obj = getIfObjOfType(value, ObjType.Closure);
-	if (!obj) {
-		throw new Error(`Tried to use ${value} as native function`);
-	}
-	return obj;
-}
-
-export function asUpvalue(value: Value) {
-	const obj = getIfObjOfType(value, ObjType.Upvalue);
-	if (!obj) {
-		throw new Error(`Tried to use ${value} as upvalue`);
-	}
-	return obj;
-}
+export const asString = makeValueAssertion(ObjType.String);
+export const asFunction = makeValueAssertion(ObjType.Function);
+export const asNative = makeValueAssertion(ObjType.Native);
+export const asClosure = makeValueAssertion(ObjType.Closure);
+export const asUpvalue = makeValueAssertion(ObjType.Upvalue);
 
 export function copyString(chars: string): ObjValue {
 	const interned = strings.get(chars);
@@ -154,7 +129,7 @@ export function newClosure(fn: ObjFunction) {
 	return alloc<ObjClosure>({
 		fn,
 		type: ObjType.Closure,
-		upvalues: Array(fn.upvalueCount).fill(null),
+		upvalues: Array(fn.upvalueCount).fill(null) as Pointer<ObjUpvalue>[],
 	});
 }
 
@@ -168,9 +143,7 @@ export function newUpvalue(slot: number) {
 
 export function freeFunction(object: Pointer<ObjFunction>) {
 	const fn = derefObj(object);
-	if (fn.type !== ObjType.Function) {
-		throw new Error("freeing non-function as function");
-	}
+	assert(fn.type === ObjType.Function, "freeing non-function as function");
 	fn.chunk.free();
 	free(object);
 }

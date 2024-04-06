@@ -11,5 +11,11 @@ export function arrayWith<T>(n: number, cb: (i: number) => T): T[] {
 	for (let i = 0; i < n; i++) {
 		arr[i] = cb(i);
 	}
-	return arr;
+	return arr as T[];
+}
+
+export function assert<C>(cond: C, message: string): asserts cond {
+	if (!cond) {
+		throw new Error(message);
+	}
 }
