@@ -38,6 +38,7 @@
 		"codegen",
 		"sprintf",
 		"Falsey",
-		"Treewalk"
+		"Treewalk",
+		"upvalue"
 	]
 }
