@@ -1,0 +1,10 @@
+# should print “assigned”
+fun outer() {
+  var x = "before";
+  fun inner() {
+    x = "assigned";
+  }
+  inner();
+  print x;
+}
+outer();

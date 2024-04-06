@@ -1,0 +1,73 @@
+fun decimalPart(x) {
+    if (x < 0) {
+        return decimalPart(-x);
+    } else if (x >= 0 and x < 1) {
+        return x;
+    }
+    // 2.34
+    // 0.234
+    var onesAndDec = 10 * decimalPart(x / 10);
+    while (onesAndDec >= 1) {
+        onesAndDec = onesAndDec - 1;
+    }
+    return onesAndDec;
+}
+
+print decimalPart(0.1234);
+print decimalPart(1.234);
+print decimalPart(12.34);
+print decimalPart(123.4);
+print decimalPart(5.875);
+
+fun mod(x, n) {
+    if (x < 0) {
+        return mod(-x, n);
+    }
+    x = n * decimalPart(x / n) + 0.01;
+
+    for (var i = 0; i < n; i = i + 1) {
+        if (x < i + 1) {
+            return i;
+        }
+    }
+    return x / nil;  // logic error
+}
+
+print "1234 % 100 =";
+print mod(1234, 100);
+
+print "23 % 7 =";
+print mod(23, 7);
+
+fun digitToStr(n) {
+    if (n < 0) { return 0 / nil; }
+    if (n < 1) { return "0"; }
+    if (n < 2) { return "1"; }
+    if (n < 3) { return "2"; }
+    if (n < 4) { return "3"; }
+    if (n < 5) { return "4"; }
+    if (n < 6) { return "5"; }
+    if (n < 7) { return "6"; }
+    if (n < 8) { return "7"; }
+    if (n < 9) { return "8"; }
+    if (n < 10) { return "9"; }
+    return 0 / nil;
+}
+
+fun intToStr(n) {
+    if (n < 0) {
+        return "-" + intToStr(abs(n));
+    }
+    if (n == 0) {
+        return "0";
+    }
+    var lastDigit = mod(n, 10);
+    var text = digitToStr(lastDigit);
+    if (n >= 10) {
+        text = intToStr(n / 10) + text;
+    }
+    return text;
+}
+
+print "123: " + intToStr(123);
+print "1234567: " + intToStr(1234567);

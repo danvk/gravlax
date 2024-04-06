@@ -1,0 +1,41 @@
+fun box(a, b) {
+    fun get(which) {
+        if (which == "a") {
+            return a;
+        } else if (which == "b") {
+            return b;
+        }
+        return which / nil;
+    }
+
+    fun set(which, value) {
+        if (which == "a") {
+            a = value;
+            return;
+        } else if (which == "b") {
+            b = value;
+            return;
+        }
+        return which / nil;
+    }
+
+    fun dispatch(method) {
+        if (method == "get") {
+            return get;
+        } else if (method == "set") {
+            return set;
+        }
+        return method / nil;
+    }
+
+    return dispatch;
+}
+
+var cell = box(10, 20);
+print cell("get")("a");
+print cell("get")("b");
+
+cell("set")("a", 100);
+cell("set")("b", 200);
+print cell("get")("a");
+print cell("get")("b");

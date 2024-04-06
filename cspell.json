@@ -35,6 +35,11 @@
 		"pâtissière",
 		"readline",
 		"jlox",
-		"codegen"
+		"codegen",
+		"sprintf",
+		"Falsey",
+		"Treewalk",
+		"upvalue",
+		"upvalues"
 	]
 }
