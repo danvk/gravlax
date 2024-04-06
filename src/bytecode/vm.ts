@@ -1,6 +1,6 @@
 import { sprintf } from "sprintf-js";
 
-import { Chunk, OpCode } from "./chunk.js";
+import { OpCode } from "./chunk.js";
 import { DEBUG_TRACE_EXECUTION } from "./common.js";
 import { compile } from "./compiler.js";
 import { disassembleInstruction } from "./debug.js";
@@ -9,7 +9,6 @@ import { Int } from "./int.js";
 import {
 	NativeFn,
 	ObjClosure,
-	ObjFunction,
 	ObjType,
 	ObjUpvalue,
 	ObjUpvalueOpen,
@@ -27,7 +26,6 @@ import {
 import { arrayWith, assertUnreachable } from "./util.js";
 import {
 	NumberValue,
-	ObjValue,
 	Value,
 	ValueType,
 	boolValue,
@@ -59,7 +57,7 @@ function isFalsey(value: Value): boolean {
 	);
 }
 
-const clockNative: NativeFn = (argCount, args) => {
+const clockNative: NativeFn = () => {
 	return numberValue(Date.now() / 1000);
 };
 
@@ -385,14 +383,6 @@ export class VM {
 					this.push(boolValue(isFalsey(this.pop())));
 					break;
 
-				case OpCode.GetUpvalue:
-				case OpCode.SetUpvalue:
-					runtimeError("not implemented");
-					break;
-
-				case OpCode.CloseUpvalue:
-					break;
-
 				default:
 					assertUnreachable(instruction);
 			}
@@ -420,7 +410,7 @@ export class VM {
 			return asString(readConstant());
 		}
 
-		function runtimeError(format: string, ...args: any[]) {
+		function runtimeError(format: string, ...args: unknown[]) {
 			console.error(sprintf(format, args));
 			for (let i = vm.#frameCount - 1; i >= 0; i--) {
 				const frame = vm.#frames[i];
