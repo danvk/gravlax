@@ -46,7 +46,7 @@ const FRAMES_MAX = 64;
 const STACK_MAX = FRAMES_MAX * 256;
 
 export interface CallFrame {
-	closure: ObjClosure | null;
+	closure: ObjClosure;
 	ip: Int;
 	slotIndex: number; // book has slots: Pointer<Value>
 }
@@ -81,7 +81,7 @@ export class VM {
 		this.#frames = arrayWith(
 			FRAMES_MAX,
 			(): CallFrame => ({
-				closure: null,
+				closure: null as unknown as ObjClosure,
 				ip: Int(0),
 				slotIndex: 0,
 			}),
@@ -137,6 +137,7 @@ export class VM {
 	}
 
 	run(): InterpretResult {
+		// eslint-disable-next-line @typescript-eslint/no-this-alias
 		const vm = this;
 		let frame = this.#frames[this.#frameCount - 1];
 		while (true) {
@@ -146,7 +147,7 @@ export class VM {
 					stack += "[ " + formatValue(value) + " ]";
 				}
 				console.log(stack);
-				disassembleInstruction(frame.closure!.fn.chunk, frame.ip);
+				disassembleInstruction(frame.closure.fn.chunk, frame.ip);
 			}
 			const instruction = readByte() as OpCode;
 			switch (instruction) {
@@ -190,7 +191,7 @@ export class VM {
 						if (isLocal) {
 							closure.upvalues[i] = captureUpvalue(frame.slotIndex + index);
 						} else {
-							closure.upvalues[i] = frame.closure!.upvalues[index];
+							closure.upvalues[i] = frame.closure.upvalues[index];
 						}
 					}
 					break;
@@ -292,7 +293,7 @@ export class VM {
 
 				case OpCode.GetUpvalue: {
 					const slot = readByte();
-					const upvalue = deref(frame.closure!.upvalues[slot]);
+					const upvalue = deref(frame.closure.upvalues[slot]);
 					// console.log("getUpvalue", upvalue);
 					if ("stackIndex" in upvalue) {
 						this.push(this.#stack[upvalue.stackIndex]);
@@ -304,7 +305,7 @@ export class VM {
 
 				case OpCode.SetUpvalue: {
 					const slot = readByte();
-					const upvalue = deref(frame.closure!.upvalues[slot]);
+					const upvalue = deref(frame.closure.upvalues[slot]);
 					if ("stackIndex" in upvalue) {
 						this.#stack[upvalue.stackIndex] = this.peek(0);
 					} else {
@@ -391,13 +392,13 @@ export class VM {
 		function readByte() {
 			// XXX this diverges from the book. Their frame.ip is a pointer, but
 			//     mine is is an offset from the chunk start.
-			const byte = frame.closure!.fn.chunk.getByteAt(frame.ip);
+			const byte = frame.closure.fn.chunk.getByteAt(frame.ip);
 			frame.ip++; // interesting that this is OK!
 			return byte;
 		}
 
 		function readConstant() {
-			return frame.closure!.fn.chunk.getValueAt(readByte());
+			return frame.closure.fn.chunk.getValueAt(readByte());
 		}
 
 		function readShort() {
@@ -414,7 +415,7 @@ export class VM {
 			console.error(sprintf(format, args));
 			for (let i = vm.#frameCount - 1; i >= 0; i--) {
 				const frame = vm.#frames[i];
-				const fn = frame.closure!.fn;
+				const fn = frame.closure.fn;
 				const line = fn.chunk.lines[frame.ip - 1];
 				const fnName = fn.name ? fn.name.chars + "()" : "script";
 				console.error(`[line ${line} in ${fnName}]`);
