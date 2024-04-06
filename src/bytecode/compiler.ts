@@ -6,10 +6,10 @@ import { TokenType } from "../token-type.js";
 import { OpCode } from "./chunk.js";
 import { DEBUG_PRINT_CODE } from "./common.js";
 import { disassembleChunk } from "./debug.js";
-import { Int, UInt8 } from "./int.js";
-import { Value, ValueType, numberValue } from "./value.js";
-import { ObjFunction, asString, copyString, newFunction } from "./object.js";
 import { Pointer, deref } from "./heap.js";
+import { Int, UInt8 } from "./int.js";
+import { ObjFunction, asString, copyString, newFunction } from "./object.js";
+import { Value, ValueType, numberValue } from "./value.js";
 
 const UINT8_MAX = 255;
 const UINT8_COUNT = 256;
@@ -89,14 +89,14 @@ export class Scanner {
 
 const BIN_OP_CODES = {
 	"!=": [OpCode.Equal, OpCode.Not],
-	"==": [OpCode.Equal],
-	">": [OpCode.Greater],
-	">=": [OpCode.Less, OpCode.Not],
-	"<": [OpCode.Less],
-	"<=": [OpCode.Greater, OpCode.Not],
 	"*": [OpCode.Multiply],
 	"+": [OpCode.Add],
 	"/": [OpCode.Divide],
+	"<": [OpCode.Less],
+	"<=": [OpCode.Greater, OpCode.Not],
+	"==": [OpCode.Equal],
+	">": [OpCode.Greater],
+	">=": [OpCode.Less, OpCode.Not],
 	"-": [OpCode.Subtract],
 };
 
@@ -211,7 +211,7 @@ export function compile(source: string): Pointer<ObjFunction> | null {
 		const state: CompilerState = {
 			enclosing: currentState,
 			function: newFunction(),
-			type,
+			localCount: 1,
 			locals: [
 				// claim slot zero for internal use
 				{
@@ -220,9 +220,9 @@ export function compile(source: string): Pointer<ObjFunction> | null {
 					name: { lexeme: "", line: 0, literal: null, type: "string" },
 				},
 			],
-			upvalues: [],
-			localCount: 1,
 			scopeDepth: 0,
+			type,
+			upvalues: [],
 		};
 		if (type !== FunctionType.Script) {
 			deref(state.function).name = asString(copyString(previous.lexeme));
@@ -323,7 +323,7 @@ export function compile(source: string): Pointer<ObjFunction> | null {
 		const func = endCompiler();
 		emitOpAndByte(
 			OpCode.Closure,
-			makeConstant({ type: ValueType.Obj, obj: func }),
+			makeConstant({ obj: func, type: ValueType.Obj }),
 		);
 		const fn = deref(func);
 		for (let i = 0; i < fn.upvalueCount; i++) {
@@ -626,7 +626,7 @@ export function compile(source: string): Pointer<ObjFunction> | null {
 			error("Too many closure variables in function.");
 			return Int(0);
 		}
-		compiler.upvalues.push({ isLocal, index });
+		compiler.upvalues.push({ index, isLocal });
 		const result = UInt8(fn.upvalueCount++);
 		return result;
 	}
@@ -659,9 +659,9 @@ export function compile(source: string): Pointer<ObjFunction> | null {
 			return;
 		}
 		currentState.locals.push({
-			name,
 			depth: -1,
 			isCaptured: false,
+			name,
 		});
 		currentState.localCount++;
 	}

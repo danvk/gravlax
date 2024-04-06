@@ -2,9 +2,9 @@ import { sprintf } from "sprintf-js";
 
 import { Chunk, OpCode } from "./chunk.js";
 import { Int } from "./int.js";
+import { asFunction } from "./object.js";
 import { assertUnreachable } from "./util.js";
 import { formatValue } from "./value.js";
-import { asFunction } from "./object.js";
 
 export function disassembleChunk(chunk: Chunk, name: string) {
 	console.log(`== ${name} ==`);
@@ -14,22 +14,22 @@ export function disassembleChunk(chunk: Chunk, name: string) {
 }
 
 const simpleInstructions = {
-	[OpCode.Return]: "OP_RETURN",
-	[OpCode.Negate]: "OP_NEGATE",
-	[OpCode.Print]: "OP_PRINT",
 	[OpCode.Add]: "OP_ADD",
-	[OpCode.Subtract]: "OP_SUBTRACT",
-	[OpCode.Multiply]: "OP_MULTIPLY",
-	[OpCode.Divide]: "OP_DIVIDE",
-	[OpCode.False]: "OP_FALSE",
-	[OpCode.True]: "OP_TRUE",
-	[OpCode.Nil]: "OP_NIL",
-	[OpCode.Pop]: "OP_POP",
-	[OpCode.Not]: "OP_NOT",
-	[OpCode.Less]: "OP_LESS",
-	[OpCode.Greater]: "OP_GREATER",
-	[OpCode.Equal]: "OP_EQUAL",
 	[OpCode.CloseUpvalue]: "OP_CLOSE_UPVALUE",
+	[OpCode.Divide]: "OP_DIVIDE",
+	[OpCode.Equal]: "OP_EQUAL",
+	[OpCode.False]: "OP_FALSE",
+	[OpCode.Greater]: "OP_GREATER",
+	[OpCode.Less]: "OP_LESS",
+	[OpCode.Multiply]: "OP_MULTIPLY",
+	[OpCode.Negate]: "OP_NEGATE",
+	[OpCode.Nil]: "OP_NIL",
+	[OpCode.Not]: "OP_NOT",
+	[OpCode.Pop]: "OP_POP",
+	[OpCode.Print]: "OP_PRINT",
+	[OpCode.Return]: "OP_RETURN",
+	[OpCode.Subtract]: "OP_SUBTRACT",
+	[OpCode.True]: "OP_TRUE",
 } satisfies Partial<Record<OpCode, string>>;
 
 const constantInstructions = {

@@ -1,8 +1,9 @@
 import util from "node:util";
-import { assertUnreachable } from "./util.js";
+
 import { Pointer } from "./heap.js";
 import { Obj } from "./object.js";
 import { formatObj } from "./object.js";
+import { assertUnreachable } from "./util.js";
 
 export enum ValueType {
 	Bool,

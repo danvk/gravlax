@@ -1,5 +1,3 @@
-import { freeObject } from "./object.js";
-
 interface HeapEntry {
 	isLive: boolean;
 	contents: unknown;
@@ -28,7 +26,7 @@ export function setPointer<T>(pointer: Pointer<T>, value: T) {
 }
 
 export function alloc<T>(contents: T): Pointer<T> {
-	heap.push({ isLive: true, contents });
+	heap.push({ contents, isLive: true });
 	return (heap.length - 1) as Pointer<T>;
 }
 

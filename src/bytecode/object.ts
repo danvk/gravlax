@@ -3,7 +3,7 @@
 import { Chunk } from "./chunk.js";
 import { Pointer, alloc, deref, free } from "./heap.js";
 import { assertUnreachable } from "./util.js";
-import { ObjValue, Value, ValueType, nilValue } from "./value.js";
+import { ObjValue, Value, ValueType } from "./value.js";
 
 export enum ObjType {
 	String,
@@ -43,7 +43,7 @@ export interface ObjUpvalueOpen extends ObjUpvalueBase {
 export interface ObjUpvalueClosed extends ObjUpvalueBase {
 	location: Pointer<Value>;
 }
-export type ObjUpvalue = ObjUpvalueOpen | ObjUpvalueClosed;
+export type ObjUpvalue = ObjUpvalueClosed | ObjUpvalueOpen;
 
 export type NativeFn = (argCount: number, args: Value[]) => Value;
 
@@ -52,7 +52,7 @@ export interface ObjNative {
 	fn: NativeFn;
 }
 
-export type Obj = ObjString | ObjFunction | ObjNative | ObjClosure | ObjUpvalue;
+export type Obj = ObjClosure | ObjFunction | ObjNative | ObjString | ObjUpvalue;
 
 export function derefObj<T extends Obj>(pointer: Pointer<T>): T {
 	return deref(pointer);
@@ -117,9 +117,9 @@ export function copyString(chars: string): ObjValue {
 	if (interned) {
 		return interned;
 	}
-	const objStr: ObjString = { type: ObjType.String, chars };
+	const objStr: ObjString = { chars, type: ObjType.String };
 	const pointer = alloc(objStr);
-	const obj: ObjValue = { type: ValueType.Obj, obj: pointer };
+	const obj: ObjValue = { obj: pointer, type: ValueType.Obj };
 	strings.set(chars, obj);
 	return obj;
 }
@@ -133,36 +133,36 @@ export function freeStrings() {
 
 export function newFunction() {
 	const fn: ObjFunction = {
-		type: ObjType.Function,
 		arity: 0,
-		upvalueCount: 0,
-		name: null,
 		chunk: new Chunk(),
+		name: null,
+		type: ObjType.Function,
+		upvalueCount: 0,
 	};
 	return alloc(fn);
 }
 
 export function newNative(fn: NativeFn) {
 	const func: ObjNative = {
-		type: ObjType.Native,
 		fn,
+		type: ObjType.Native,
 	};
 	return alloc(func);
 }
 
 export function newClosure(fn: ObjFunction) {
 	return alloc<ObjClosure>({
-		type: ObjType.Closure,
 		fn,
+		type: ObjType.Closure,
 		upvalues: Array(fn.upvalueCount).fill(null),
 	});
 }
 
 export function newUpvalue(slot: number) {
 	return alloc<ObjUpvalue>({
-		type: ObjType.Upvalue,
-		stackIndex: slot,
 		next: null,
+		stackIndex: slot,
+		type: ObjType.Upvalue,
 	});
 }
 
