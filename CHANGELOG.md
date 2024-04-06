@@ -1,3 +1,9 @@
+# [0.13.0](https://github.com/danvk/gravlax/compare/0.12.6...0.13.0) (2024-04-06)
+
+### Features
+
+- implement chapters 14-25 🇦🇺 🦘 ([#168](https://github.com/danvk/gravlax/issues/168)) ([7a8d0b9](https://github.com/danvk/gravlax/commit/7a8d0b9c5774050d291f382164c4508df00d5043))
+
 ## [0.12.6](https://github.com/danvk/gravlax/compare/0.12.5...0.12.6) (2024-02-24)
 
 ### Bug Fixes
