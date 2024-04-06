@@ -9,6 +9,7 @@ import { disassembleChunk } from "./debug.js";
 import { Pointer, deref } from "./heap.js";
 import { Int, UInt8 } from "./int.js";
 import { ObjFunction, asString, copyString, newFunction } from "./object.js";
+import { assert } from "./util.js";
 import { Value, ValueType, numberValue } from "./value.js";
 
 const UINT8_MAX = 255;
@@ -143,6 +144,7 @@ export function compile(source: string): Pointer<ObjFunction> | null {
 		declaration();
 	}
 	const func = endCompiler();
+	// eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
 	return hadError ? null : func;
 
 	function currentChunk() {
@@ -253,10 +255,10 @@ export function compile(source: string): Pointer<ObjFunction> | null {
 		// console.log("endScope", currentState.locals);
 		while (
 			currentState.locals.length > 0 &&
-			currentState.locals.at(-1)!.depth > currentState.scopeDepth
+			lastLocal().depth > currentState.scopeDepth
 		) {
 			// TODO: add an OpCode.PopN to pop N items from the stack.
-			if (currentState.locals.at(-1)!.isCaptured) {
+			if (lastLocal().isCaptured) {
 				// console.log("close upvalue");
 				emitOpCode(OpCode.CloseUpvalue);
 			} else {
@@ -273,6 +275,7 @@ export function compile(source: string): Pointer<ObjFunction> | null {
 		parsePrecedence(rule.precedence + 1); // +1 = left assoc, +0 = right assoc
 
 		const opCodes = BIN_OP_CODES[operatorType as keyof typeof BIN_OP_CODES];
+		// eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
 		if (opCodes) {
 			opCodes.forEach(emitOpCode);
 		}
@@ -666,6 +669,12 @@ export function compile(source: string): Pointer<ObjFunction> | null {
 		currentState.localCount++;
 	}
 
+	function lastLocal() {
+		const local = currentState.locals.at(-1);
+		assert(local !== undefined, "Expected at least one local");
+		return local;
+	}
+
 	function declareVariable() {
 		if (currentState.scopeDepth === 0) {
 			return;
@@ -696,7 +705,7 @@ export function compile(source: string): Pointer<ObjFunction> | null {
 		if (currentState.scopeDepth === 0) {
 			return;
 		}
-		currentState.locals.at(-1)!.depth = currentState.scopeDepth;
+		lastLocal().depth = currentState.scopeDepth;
 	}
 
 	function defineVariable(global: Int) {
