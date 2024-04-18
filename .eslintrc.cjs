@@ -82,6 +82,8 @@ module.exports = {
 				// "@typescript-eslint/switch-exhaustiveness-check": "error",
 				"deprecation/deprecation": "error",
 				"prefer-const": "off",
+				// We prefer default settings for this rule, not strict settings.
+				"@typescript-eslint/restrict-template-expressions": ["error", {}],
 			},
 		},
 		{
@@ -90,12 +92,14 @@ module.exports = {
 			files: ["*.json", "*.jsonc"],
 			parser: "jsonc-eslint-parser",
 			rules: {
+				"jsonc/comma-dangle": "off",
 				"jsonc/sort-keys": "error",
 			},
 		},
 		{
 			files: ["*.jsonc"],
 			rules: {
+				"jsonc/comma-dangle": "off",
 				"jsonc/no-comments": "off",
 			},
 		},
@@ -159,6 +163,7 @@ module.exports = {
 		// Stylistic concerns that don't interfere with Prettier
 		"no-useless-rename": "error",
 		"object-shorthand": "error",
+
 		"perfectionist/sort-objects": [
 			"error",
 			{

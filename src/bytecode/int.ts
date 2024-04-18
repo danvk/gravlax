@@ -1,5 +1,5 @@
 /** Not actually an int, but conveys intent. */
-export type Int = number & { __brand: "int" };
+export type Int = { __brand: "int" } & number;
 // XXX would this be better as a bigint?
 // You can't assign a bigint to a Uint8Array slot.
 
