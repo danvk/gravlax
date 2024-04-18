@@ -1,3 +1,9 @@
+## [0.13.1](https://github.com/danvk/gravlax/compare/0.13.0...0.13.1) (2024-04-18)
+
+### Bug Fixes
+
+- Fix build ([#181](https://github.com/danvk/gravlax/issues/181)) ([9245a4e](https://github.com/danvk/gravlax/commit/9245a4e6f2f35c364aca0f09869b50dea55c66c5))
+
 # [0.13.0](https://github.com/danvk/gravlax/compare/0.12.6...0.13.0) (2024-04-06)
 
 ### Features
