@@ -4,5 +4,5 @@
 	// See https://github.com/webpro/knip/issues/450
 	"exclude": ["classMembers"],
 	"ignoreExportsUsedInFile": true,
-	"project": ["src/**/*.ts!"]
+	"project": ["src/**/*.ts!"],
 }
