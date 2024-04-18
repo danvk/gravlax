@@ -7,7 +7,7 @@ interface HeapEntry {
 // start with a blank entry so that alloc() never returns zero.
 const heap: (HeapEntry | null)[] = [null];
 
-export type Pointer<T> = number & { __brand: "pointer"; __payload: T };
+export type Pointer<T> = { __brand: "pointer"; __payload: T } & number;
 
 export function deref<T>(pointer: Pointer<T>): T {
 	if (pointer < 0 || pointer >= heap.length || !Number.isInteger(pointer)) {
