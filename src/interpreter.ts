@@ -348,7 +348,7 @@ export class Interpreter {
 				const value = stmt.value && this.evaluate(stmt.value);
 				// While it's bad practice to throw something other than an Error subclass,
 				// doing so here result in a ~5x speedup on the Fibonacci benchmark.
-				// eslint-disable-next-line @typescript-eslint/no-throw-literal
+				// eslint-disable-next-line @typescript-eslint/only-throw-error
 				throw new ReturnCall(value);
 			}
 
