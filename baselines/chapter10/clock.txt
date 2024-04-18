@@ -1,2 +1,2 @@
 <native fn>
-0
+true
