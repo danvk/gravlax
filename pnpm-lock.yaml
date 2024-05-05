@@ -61,8 +61,8 @@ importers:
         specifier: ^17.0.0
         version: 17.4.0(eslint@8.57.0)
       eslint-plugin-no-autofix:
-        specifier: ^1.2.3
-        version: 1.2.3(eslint@8.57.0)
+        specifier: ^2.0.0
+        version: 2.0.0(eslint@8.57.0)
       eslint-plugin-no-only-tests:
         specifier: ^3.1.0
         version: 3.1.0
@@ -1893,11 +1893,11 @@ packages:
     peerDependencies:
       eslint: '>=8.23.0'
 
-  eslint-plugin-no-autofix@1.2.3:
-    resolution: {integrity: sha512-JFSYe82Da2A8Krh+Gfq7+3X2pchTScKgmrlMKIA4HmV6t5xGBF/kgjiFL3YTWRQXQ0NB9eOqpcxh6SuLtQUFjQ==}
-    engines: {node: '>=8'}
+  eslint-plugin-no-autofix@2.0.0:
+    resolution: {integrity: sha512-x9dbjpWVp/lg9vZ5161W29vDTjSw0MJRc6OQxV54pcY1y+zxZWmjq7WJ1UxA96DSZ74k1aBLFGjMV8UlAoofyQ==}
+    engines: {node: '>=18'}
     peerDependencies:
-      eslint: '>= 5.12.1'
+      eslint: '>=8'
 
   eslint-plugin-no-only-tests@3.1.0:
     resolution: {integrity: sha512-Lf4YW/bL6Un1R6A76pRZyE1dl1vr31G/ev8UzIc/geCgFWyrKil8hVjYqWVKGB/UIGmb6Slzs9T0wNezdSVegw==}
@@ -6057,7 +6057,7 @@ snapshots:
       minimatch: 9.0.4
       semver: 7.6.0
 
-  eslint-plugin-no-autofix@1.2.3(eslint@8.57.0):
+  eslint-plugin-no-autofix@2.0.0(eslint@8.57.0):
     dependencies:
       eslint: 8.57.0
       eslint-rule-composer: 0.3.0
